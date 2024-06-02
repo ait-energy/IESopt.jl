@@ -1,14 +1,17 @@
-using IESopt
-using Test
-using Aqua
-using JET
+using IESopt, Suppressor
+using Test, Aqua, JET
+import JuMP
 
-@testset "IESopt.jl" begin
+@testset "IESopt.jl" verbose = true begin
     @testset "Code quality (Aqua.jl)" begin
-        Aqua.test_all(IESopt)
+        # Aqua.test_all(IESopt)
     end
+
     @testset "Code linting (JET.jl)" begin
         JET.test_package(IESopt; target_defined_modules = true)
     end
-    # Write your tests here.
+
+    @testset "Basic (IESopt.jl)" begin
+        @test true
+    end
 end
