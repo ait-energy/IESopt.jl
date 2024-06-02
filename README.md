@@ -28,15 +28,15 @@ TODO
 
 ## Install
 
-TODO: Documment how to install the package.
+TODO: Document how to install the package.
 
 ## Usage
 
-TODO: Documment how to use the package.
+TODO: Document how to use the package.
 
 ## API
 
-TODO: Documment the API of the package.
+TODO: Document the API of the package.
 
 ### Python
 
