@@ -1,11 +1,11 @@
 using IESopt
 using Documenter
 
-DocMeta.setdocmeta!(IESopt, :DocTestSetup, :(using IESopt); recursive=true)
+# DocMeta.setdocmeta!(IESopt, :DocTestSetup, :(using IESopt); recursive=true)
 
 makedocs(;
     modules=[IESopt],
-    authors="Stefan Strömer <stefan.stroemer@ait.ac.at> and contributors",
+    authors="Stefan Strömer (@sstroemer), Daniel Schwabeneder (@daschw), and contributors",
     sitename="IESopt.jl",
     format=Documenter.HTML(;
         canonical="https://ait-energy.github.io/IESopt.jl",
