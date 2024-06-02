@@ -1,1 +1,13 @@
-# See https://domluna.github.io/JuliaFormatter.jl/stable/ for a list of options
+# Configuration file for JuliaFormatter.jl
+# For more information, see: https://domluna.github.io/JuliaFormatter.jl/stable/config/
+# This is (loosely) based on the formatting that https://github.com/jump-dev/JuMP.jl uses
+
+always_for_in = true
+always_use_return = true
+margin = 120
+remove_extra_newlines = true
+separate_kwargs_with_semicolon = true
+short_to_long_function_def = false
+whitespace_typedefs = true
+whitespace_in_kwargs = false
+whitespace_ops_in_indices = true
