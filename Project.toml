@@ -1,6 +1,5 @@
 name = "IESopt"
 uuid = "ed3f0a38-8ad9-4cf8-877e-929e8d190fe9"
-authors = ["Stefan Strömer <stefan.stroemer@ait.ac.at> and contributors"]
 version = "1.0.0"
 
 [compat]
