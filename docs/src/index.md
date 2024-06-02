@@ -15,13 +15,13 @@ for easy extension and customization.
 # TODO: cleanup the "About" section, and integrate it here
 ```
 
-Check out the following Github repositories for more information:
+Check out the following GitHub repositories for more information:
 
 - [IESopt.jl](https://github.com/ait-energy/IESopt.jl), the core model (a Julia package).
 - [iesopt-py](https://github.com/ait-energy/iesopt-py), the Python interface.
 
 !!! danger "Moving to open-source"
-    We are currently working (hard) on getting IESopt fully open-source on Github, which requires some clean-up of
+    We are currently working (hard) on getting IESopt fully open-source on GitHub, which requires some clean-up of
     (potentially) confindential left-overs (e.g., from projects). Meanwhile, a lot of internals are changing (after
     staying fixed for a long time), and the documentation needs to be checked page-by-page. If you are trying to
     get started before we manage to fix everything, get in touch with us directly - we'll help you set up everything you

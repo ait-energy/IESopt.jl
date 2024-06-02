@@ -84,7 +84,7 @@ The following set of extensions may be helpful, either for development or docume
 - [Julia](https://marketplace.visualstudio.com/items?itemName=julialang.language-julia)
 - [Live Preview](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server)
 - [Markdown Julia](https://marketplace.visualstudio.com/items?itemName=colinfang.markdown-julia)
-- [Markdown Preview Github Styling](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-preview-github-styles)
+- [Markdown Preview GitHub Styling](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-preview-github-styles)
 - [markdownlint](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
 - [Rainbow CSV](https://marketplace.visualstudio.com/items?itemName=mechatroner.rainbow-csv)
 
