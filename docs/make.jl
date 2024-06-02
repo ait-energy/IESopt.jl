@@ -1,23 +1,49 @@
+const is_local_draft = "running_local_liveserver" in ARGS
+const running_in_ci = haskey(ENV, "CI") || haskey(ENV, "GITHUB_ACTIONS")
+
+if is_local_draft
+    try
+        import Revise
+        Revise.revise()
+    catch
+        @warn "Building documentation without Revise support. If you want to automatically refresh docstrings from withing IESopt.jl, you need Revise installed."
+    end
+end
+
 using IESopt
 using Documenter
 
-# DocMeta.setdocmeta!(IESopt, :DocTestSetup, :(using IESopt); recursive=true)
+# Set up, and generate everything as needed.
+include("generate.jl")
 
+# Build documentation.
 makedocs(;
-    modules=[IESopt],
+    sitename="-- IESopt --",
     authors="Stefan Strömer (@sstroemer), Daniel Schwabeneder (@daschw), and contributors",
-    sitename="IESopt.jl",
     format=Documenter.HTML(;
         canonical="https://ait-energy.github.io/IESopt.jl",
         edit_link="dev",
-        assets=String[],
+        prettyurls=true,
+        collapselevel=2,
+        mathengine=Documenter.MathJax2(),
+        highlights=["yaml", "python"],
+        assets=[
+            asset("assets/base_template.css"; class=:css, islocal=true),
+        ],
+        size_threshold=300_000,
+        size_threshold_warn=200_000,
     ),
-    pages=[
-        "Home" => "index.md",
-    ],
+    pages=_PAGES,
+    doctest = false,
+    pagesonly = true,
+    warnonly = true,
+    draft = is_local_draft,
 )
 
-deploydocs(;
-    repo="github.com/ait-energy/IESopt.jl",
-    devbranch="dev",
-)
+# Deploy documentation, if we are not running locally.
+if !is_local_draft
+    deploydocs(;
+        repo="github.com/ait-energy/IESopt.jl",
+        devbranch="dev",
+    )
+end
