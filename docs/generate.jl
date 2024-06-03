@@ -21,6 +21,16 @@ examples_files = [
     file in readdir(normpath(@__DIR__, "src", "pages", "user_guide", "examples")) if endswith(file, ".md")
 ]
 
+# Scan publication and project references.
+_REF_PUBL = [
+    joinpath("pages", "references", "publications", "entries", f) for
+    f in readdir(normpath(@__DIR__, "src", "pages", "references", "publications", "entries"))
+]
+_REF_PROJ = [
+    joinpath("pages", "references", "projects", "entries", f) for
+    f in readdir(normpath(@__DIR__, "src", "pages", "references", "projects", "entries"))
+]
+
 _PAGES = _build_page_paths(
     [
         "Home" => "index",
@@ -33,11 +43,19 @@ _PAGES = _build_page_paths(
             "Examples" => [], # TODO: examples_files,
         ],
         "Manual" => ["yaml", "core_components", "templates", "api"],
+        "References" => ["Publications" => ["index", "__placeholder__"], "Projects" => ["index", "__placeholder__"]],
         "Developer Documentation" => ["dev_docs"],
         "Changelog" => ["changelog"],
     ];
     parent="pages",
 )
+
+# Manually add in publication and project references.
+_references = first(p for p in _PAGES if p.first == "References").second
+pop!(_references[1].second)
+pop!(_references[2].second)
+append!(_references[1].second, _REF_PUBL)
+append!(_references[2].second, _REF_PROJ)
 
 # Create `changelog.md` from `CHANGELOG.md`.
 include("changelog.jl")

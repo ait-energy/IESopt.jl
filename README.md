@@ -27,7 +27,9 @@ systems.
 
 ## Background
 
-TODO
+IESopt has been in development at AIT since 2021, and was moved to GitHub in June, 2024, based on a cleaned version with
+slightly more than 1000 commits. Check out the [references](https://ait-energy.github.io/IESopt.jl/dev/pages/references/publications/)
+for a more detailed overview about publications and projects, where IESopt has been used.
 
 ## Install
 
