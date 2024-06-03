@@ -10,11 +10,19 @@
 [![Coverage](https://codecov.io/gh/ait-energy/IESopt.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/ait-energy/IESopt.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
+> Note: We are currently moving from our internal version control to GitHub. Missing contents will be added during the
+> upcoming days ...
+
 **IESopt** (_Integrated Energy System Optimization_) is a modeling and optimization framework for integrated energy
 systems.
 
-> Note: We are currently moving from our internal version control to GitHub. Missing contents will be added during the
-> upcoming days ...
+It is developed and maintained at the **Center for Energy** at
+[AIT Austrian Institute of Technology GmbH](https://www.ait.ac.at/). The framework is designed to support the
+optimization of energy systems that are characterized by a high degree of integration between different energy carriers
+and sectors. It focuses on offering a modular and adaptable tool for modelers, that does not compromise on performance,
+while still being user-friendly. This is enabled by reducing energy system assets to abstract building blocks, that are
+supported by specialized implementation, and can be combined into complex systems without the need of a detailed
+understanding of mathematical modeling or proficiency in any coding-language.
 
 ## Table of Contents
 
@@ -28,13 +36,20 @@ systems.
 ## Background
 
 IESopt has been in development at AIT since 2021, and was moved to GitHub in June, 2024, based on a cleaned version with
-slightly more than 1000 commits. Check out the [references](https://ait-energy.github.io/IESopt.jl/dev/pages/references/publications/)
-for a more detailed overview about publications and projects, where IESopt has been used.
+slightly more than 1000 commits. IESopt has been applied in a variety of projects, ranging from small-scale energy
+system optimization, to large-scale models spanning multiple sectors and regions. Check out the
+[list of references](https://ait-energy.github.io/IESopt.jl/dev/pages/references/) for more information.
 
 ## Install
 
 Make sure to check out the detailed [installation guides](https://ait-energy.github.io/IESopt.jl/dev/#Installation)
-in the documentation, both for Python and Julia.
+in the documentation, both for Python and Julia. Depending on your use-case, and choice of programming language / setup,
+there are different ways to get started. If you are experienced with Julia, and want to interact with the core model
+itself, then using `IESopt.jl` directly will suit you best. If you are looking for a more user-friendly interaction, or
+are new to energy system modeling and/or coding at all, you might want to check out the Python wrapper
+[iesopt-py](https://github.com/ait-energy/iesopt-py).
+
+> If you are not 110% sure where to start... start here: [iesopt](https://github.com/ait-energy/iesopt-py)
 
 ### Quick setup for Julia
 
