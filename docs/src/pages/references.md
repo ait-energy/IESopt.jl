@@ -1,8 +1,8 @@
 # Overview
 
 This maintains a list of publications (journals, conferences, ...) where IESopt was applied as part of the modeling
-approach. Entries are in alphabetical order. If you want to contribute a new publication, please follow the instructions
-in the [Contributing](#contributing) section.
+approach. Entries are in alphabetical order. If you want to contribute a new publication or project, please follow the
+instructions in the [Contributing](#contributing) section.
 
 ## Publications
 
