@@ -33,19 +33,68 @@ for a more detailed overview about publications and projects, where IESopt has b
 
 ## Install
 
-TODO: Document how to install the package.
+Make sure to check out the detailed [installation guides](https://ait-energy.github.io/IESopt.jl/stable/pages/tutorials/setup/)
+in the documentation, both for Python and Julia.
+
+### Quick setup for Julia
+
+In an open REPL, type `]` to enter the package mode, make sure that your environment is
+activated (e.g., do `activate .`), then add the package with the following command:
+
+```bash
+(your-env) pkg> add IESopt
+```
+
+### Quick setup for Python
+
+Head over to [iesopt-py](https://github.com/ait-energy/iesopt-py) and follow the instructions there, or - if you already
+have a working Python environment - install the package, e.g., via `poetry`:
+
+```bash
+poetry add iesopt-py
+```
 
 ## Usage
 
-TODO: Document how to use the package.
+IESopt requires a configured model to run. You can start with the extensive [first model tutorial](https://ait-energy.github.io/IESopt.jl/previews/PR3/pages/tutorials/first_model/), or checkout [IESoptLib](https://github.com/ait-energy/IESoptLib.jl) which
+includes many more examples.
+
+### Basic usage
+
+The basic workflow to get results from a model, defined by a top-level configuration file `config.iesopt.yaml`, is as
+follows:
+
+1. Parse, generate, and build the model from `config.iesopt.yaml`.
+2. Optimize the model (the chose solver is specified in `config.iesopt.yaml`).
+3. Get the results from the model.
+
+Steps 1. and 2. can be combined in a single call, which the convenience function `run(...)` provides.
+
+#### Julia
+
+```julia
+using IESopt
+
+model = IESopt.run("config.iesopt.yaml")
+results = model.ext[:iesopt].results
+```
+
+#### Python
+
+```python
+import iesopt
+
+model = iesopt.run("config.iesopt.yaml")
+df_results = model.results.to_pandas()
+```
 
 ## API
 
 TODO: Document the API of the package.
 
-### Python
-
 ### Julia
+
+### Python
 
 ## Contributing
 
