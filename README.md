@@ -33,7 +33,7 @@ for a more detailed overview about publications and projects, where IESopt has b
 
 ## Install
 
-Make sure to check out the detailed [installation guides](https://ait-energy.github.io/IESopt.jl/dev/pages/tutorials/setup/)
+Make sure to check out the detailed [installation guides](https://ait-energy.github.io/IESopt.jl/dev/#Installation)
 in the documentation, both for Python and Julia.
 
 ### Quick setup for Julia
@@ -91,7 +91,8 @@ df_results = model.results.to_pandas()
 ## API
 
 Check out the full [API reference](https://ait-energy.github.io/IESopt.jl/dev/pages/manual/api/) in the
-documentation.
+documentation, and most importantly the [YAML reference](https://ait-energy.github.io/IESopt.jl/dev/pages/manual/yaml/),
+that documents how the required model configuration files should be structured.
 
 ### Basic API
 
