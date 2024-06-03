@@ -1,4 +1,4 @@
-# Integrated Energy System Optimization (IESopt.jl)
+# IESopt: Integrated Energy System Optimization
 
 [![License](https://img.shields.io/github/license/ait-energy/IESopt.jl)](LICENSE)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://ait-energy.github.io/IESopt.jl/dev/)
