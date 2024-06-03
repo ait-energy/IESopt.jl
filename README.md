@@ -33,7 +33,7 @@ for a more detailed overview about publications and projects, where IESopt has b
 
 ## Install
 
-Make sure to check out the detailed [installation guides](https://ait-energy.github.io/IESopt.jl/stable/pages/tutorials/setup/)
+Make sure to check out the detailed [installation guides](https://ait-energy.github.io/IESopt.jl/dev/pages/tutorials/setup/)
 in the documentation, both for Python and Julia.
 
 ### Quick setup for Julia
@@ -56,7 +56,7 @@ poetry add iesopt-py
 
 ## Usage
 
-IESopt requires a configured model to run. You can start with the extensive [first model tutorial](https://ait-energy.github.io/IESopt.jl/previews/PR3/pages/tutorials/first_model/), or checkout [IESoptLib](https://github.com/ait-energy/IESoptLib.jl) which
+IESopt requires a configured model to run. You can start with the extensive [first model tutorial](https://ait-energy.github.io/IESopt.jl/dev/pages/tutorials/first_model/), or checkout [IESoptLib](https://github.com/ait-energy/IESoptLib.jl) which
 includes many more examples.
 
 ### Basic usage
@@ -70,7 +70,7 @@ follows:
 
 Steps 1. and 2. can be combined in a single call, which the convenience function `run(...)` provides.
 
-#### Julia
+#### Using Julia
 
 ```julia
 using IESopt
@@ -79,7 +79,7 @@ model = IESopt.run("config.iesopt.yaml")
 results = model.ext[:iesopt].results
 ```
 
-#### Python
+#### Using Python
 
 ```python
 import iesopt
@@ -90,18 +90,42 @@ df_results = model.results.to_pandas()
 
 ## API
 
-TODO: Document the API of the package.
+Check out the full [API reference](https://ait-energy.github.io/IESopt.jl/dev/pages/manual/api/) in the
+documentation.
 
-### Julia
+### Basic API
 
-### Python
+A short overview is given below.
+
+#### Julia API
+
+```julia
+"""Builds and returns a model using the IESopt framework."""
+IESopt.generate!(filename::String)
+
+"""Optimize the given model, optionally saving model results to disk."""
+IESopt.optimize!(model::JuMP.Model; save_results::Bool=true, kwargs...)
+
+"""Build, optimize, and return a model, in a single call."""
+IESopt.run(filename::String; verbosity=nothing, kwargs...)
+
+"""Get the component with the name `component_name` from the `model`."""
+IESopt.component(model::JuMP.Model, component_name::String)
+
+"""Compute the Irreducible Infeasible Set (IIS) of the model."""
+IESopt.compute_IIS(model::JuMP.Model; filename::String = "")
+```
+
+### Python API
+
+To be added.
 
 ## Contributing
 
 [![Code Style](https://img.shields.io/badge/code_style-custom-blue?style=flat&logo=julia&logoColor=white)](.JuliaFormatter.toml)
 [![Readme Style](https://img.shields.io/badge/readme_style-standard-lime?style=flat&logo=julia&logoColor=white)](https://github.com/RichardLitt/standard-readme)
 
-PRs accepted.
+PRs accepted. Checkout the [developer documentation](https://ait-energy.github.io/IESopt.jl/dev/pages/dev_docs/).
 
 ## License
 
