@@ -1,5 +1,7 @@
 const is_local_draft = "running_local_liveserver" in ARGS
 const running_in_ci = haskey(ENV, "CI") || haskey(ENV, "GITHUB_ACTIONS")
+const PATH_DOCS_SRC = normpath(@__DIR__, "src")
+const PATH_DOCS_PAGES = normpath(PATH_DOCS_SRC, "pages")
 
 if is_local_draft
     try
@@ -33,6 +35,7 @@ makedocs(;
         size_threshold=300_000,
         size_threshold_warn=200_000,
     ),
+    # modules=[IESopt],
     pages=_PAGES,
     doctest = false,
     pagesonly = true,
