@@ -7,7 +7,7 @@ function create_changelog()
 
     # Write the changelog.
     open(joinpath(PATH_DOCS, "src", "pages", "changelog.md"), "w") do f
-        write(f, changelog)
+        return write(f, changelog)
     end
 end
 
