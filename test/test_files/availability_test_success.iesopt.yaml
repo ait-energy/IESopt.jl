@@ -1,0 +1,45 @@
+config:
+  optimization:
+    problem_type: MILP
+    snapshots:
+      count: 4
+    solver:
+      name: highs
+
+carriers:
+  electricity: {}
+  gas: {}
+
+components:
+  elec:
+    type: Node
+    carrier: electricity
+
+  gas:
+    type: Node
+    carrier: gas
+
+  plant_gas:
+    type: Unit
+    inputs: {gas: gas}
+    outputs: {electricity: elec}
+    conversion: 1 gas -> 1 electricity
+    conversion_at_min: 1 gas -> 0.5 electricity
+    capacity: 500 out:electricity
+    unit_commitment: binary
+    startup_cost: 1000
+    min_conversion: 0.2
+    availability: [1000, 250, 50, 1000]
+    adapt_min_to_availability: true
+
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: elec
+    value: [0, 250, 50, 110]
+
+  buy_gas:
+    type: Profile
+    carrier: gas
+    node_to: gas
+    mode: create

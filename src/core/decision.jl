@@ -1,0 +1,159 @@
+"""
+A `Decision` represents a basic decision variable in the model that can be used as input for various other core
+component's settings, as well as have associated costs.
+"""
+@kwdef struct Decision <: _CoreComponent
+    # [Core] ===========================================================================================================
+    model::JuMP.Model
+    init_state::Ref{Symbol} = Ref(:empty)
+    constraint_safety::Bool
+    constraint_safety_cost::_ScalarInput
+
+    # [Mandatory] ======================================================================================================
+    name::_String
+
+    # [Optional] =======================================================================================================
+    config::Dict{String, Any} = Dict()
+    ext::Dict{String, Any} = Dict()
+    addon::Union{String, Nothing} = nothing
+    conditional::Bool = false
+
+    raw"""```{"mandatory": "no", "values": "numeric", "default": "`0`"}```
+    Minimum size of the decision (considered for each "unit" if count allows multiple "units").
+    """
+    lb::_OptionalScalarInput = 0
+    ub::_OptionalScalarInput = nothing
+    fixed_value::_OptionalScalarInput = nothing
+    cost::_OptionalScalarInput = nothing
+    fixed_cost::_OptionalScalarInput = nothing
+
+    mode::Symbol = :linear
+    sos::Vector{Dict{String, Float64}} = Vector()
+
+    # [Internal] =======================================================================================================
+    # -
+
+    # [External] =======================================================================================================
+    # -
+
+    # [Optimization Container] =========================================================================================
+    _ccoc = _CoreComponentOptContainer()
+end
+
+_result_fields(::Decision) = (:name, :mode)
+
+function _prepare!(decision::Decision)
+    return true
+end
+
+function _isvalid(decision::Decision)
+    model = decision.model
+
+    if (decision.mode in [:binary, :integer, :sos1, :sos2]) && !_is_milp(model)
+        @critical "Model config only allows LP but MILP is required" decision = decision.name mode = decision.mode
+    end
+
+    if !isnothing(decision.fixed_cost) && !_is_milp(model)
+        @critical "Model config only allows LP but MILP is required for modelling fixed costs" decision = decision.name mode =
+            decision.mode
+    end
+
+    if (decision.mode === :binary) && !isnothing(decision.ub) && decision.ub != 1.0
+        @critical "Binary variables with `ub != 1` are not possible" decision = decision.name ub = decision.ub
+    end
+
+    if (decision.mode in [:sos1, :sos2]) && !isnothing(decision.cost)
+        @critical "SOS1/SOS2 Decisions should not have a `cost` parameter" decision = decision.name mode = decision.mode
+    end
+
+    if (decision.mode != :fixed) && !isnothing(decision.fixed_value)
+        @critical "Decisions that are not fixed can not have a pre-set value" decision = decision.name
+    end
+
+    if !isnothing(decision.fixed_cost) && isnothing(decision.ub) && !(decision.mode in [:sos1, :sos2])
+        @critical "Decisions with fixed costs require a defined upper bound" decision = decision.name
+    end
+
+    return true
+end
+
+function _result(decision::Decision, mode::String, field::String; result::Int=1)
+    if !(field in ["value", "size", "count"])
+        @error "Decision cannot extract field" decision = decision.name field = field
+        return nothing
+    end
+
+    if mode == "dual"
+        if decision.mode != :fixed
+            @error "Extracting <dual> of non-fixed Decisions is currently not supported" decision = decision.name
+            return nothing
+        else
+            # todo: JuMP dual result fix
+            if result != 1
+                @error "Duals are currently only available for the first result (this is a limitation of the JuMP interface)"
+            end
+            return "Decision.fixed_value.dual", JuMP.reduced_cost(decision.var.value)
+        end
+    end
+
+    if mode != "value"
+        @error "Decision cannot apply mode to extraction of field" decision = decision.name mode = mode
+        return nothing
+    end
+
+    if field in ["size", "count"]
+        @error "`decision:size` and `decision:count` are deprecated and most likely do not work as exepected; please change to extracting `decision:value`" decision =
+            decision.name mode = mode
+    end
+
+    if field == "value"
+        return "Decision.value", JuMP.value.(_value(decision); result=result)
+    elseif field == "size"
+        return "Decision.size", JuMP.value.(_size(decision); result=result)
+    elseif field == "count"
+        return "Decision.count", JuMP.value.(_count(decision); result=result)
+    end
+
+    @error "Unknown result extraction" decision = decision.name mode = mode field = field
+    return nothing
+end
+
+include("decision/con_fixed.jl")
+include("decision/con_sos_value.jl")
+include("decision/con_sos1.jl")
+include("decision/con_sos2.jl")
+include("decision/obj_fixed.jl")
+include("decision/obj_sos.jl")
+include("decision/obj_value.jl")
+include("decision/var_fixed.jl")
+include("decision/var_sos.jl")
+include("decision/var_value.jl")
+
+function _construct_variables!(decision::Decision)
+    @profile decision.model _decision_var_fixed!(decision)
+    @profile decision.model _decision_var_sos!(decision)
+    @profile decision.model _decision_var_value!(decision)
+    return nothing
+end
+
+function _construct_constraints!(decision::Decision)
+    @profile decision.model _decision_con_fixed!(decision)
+    @profile decision.model _decision_con_sos_value!(decision)
+    @profile decision.model _decision_con_sos1!(decision)
+    return _decision_con_sos2!(decision)
+end
+
+function _construct_objective!(decision::Decision)
+    @profile decision.model _decision_obj_fixed!(decision)
+    @profile decision.model _decision_obj_sos!(decision)
+    @profile decision.model _decision_obj_value!(decision)
+    return nothing
+end
+
+_value(decision::Decision) = decision.var.value
+_count(decision::Decision) = decision.var.value
+_size(decision::Decision) = decision.var.value
+
+_value(decision::Decision, t::_ID) = _value(decision)
+_count(decision::Decision, t::_ID) = _count(decision)
+_size(decision::Decision, t::_ID) = _size(decision)

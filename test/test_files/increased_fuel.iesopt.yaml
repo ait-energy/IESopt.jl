@@ -1,0 +1,61 @@
+config:
+  optimization:
+    problem_type: MILP
+    snapshots:
+      count: 4
+    solver:
+      name: highs
+
+carriers:
+  electricity: {}
+  water: {}
+  hydrogen: {}
+  heat: {}
+
+components:
+  elec:
+    type: Node
+    carrier: electricity
+
+  h2:
+    type: Node
+    carrier: hydrogen
+
+  water:
+    type: Node
+    carrier: water
+
+  heat:
+    type: Node
+    carrier: heat
+    has_state: true
+    state_cyclic: geq
+    state_ub: 10000
+  
+  electrolyser:
+    type: Unit
+    inputs: {electricity: elec, water: water}
+    outputs: {hydrogen: h2, heat: heat}
+    conversion: 1 electricity + 2 water -> 2 hydrogen + 1 heat
+    capacity: 10 out:hydrogen
+    min_conversion: 0.5
+    conversion_at_min: 1 electricity + 1 water -> 1 hydrogen + 2 heat
+    unit_commitment: binary
+
+  demand:
+    type: Profile
+    carrier: hydrogen
+    node_from: h2
+    value: [5, 5, 7.5, 10]
+  
+  buy_elec:
+    type: Profile
+    carrier: electricity
+    node_to: elec
+    mode: create
+  
+  buy_water:
+    type: Profile
+    carrier: water
+    node_to: water
+    mode: create

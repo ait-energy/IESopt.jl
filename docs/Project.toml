@@ -1,5 +1,4 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 IESopt = "ed3f0a38-8ad9-4cf8-877e-929e8d190fe9"
-IESoptLib = "b98f706d-40ec-4ce6-a66c-1c6e71d3cef6"
 LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"

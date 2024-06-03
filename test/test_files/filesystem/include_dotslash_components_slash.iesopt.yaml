@@ -1,0 +1,16 @@
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 1
+    solver:
+      name: highs
+  paths:
+    templates: ./components/
+
+carriers:
+  c: {}
+
+components:
+  test:
+    type: TestComp

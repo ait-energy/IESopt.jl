@@ -44,6 +44,13 @@ makedocs(;
 if !is_local_draft
     deploydocs(;
         repo="github.com/ait-energy/IESopt.jl",
-        devbranch="dev",
+        push_preview=true,      # previews for PRs (not from forks)
+        versions = [
+            "stable" => "v^",   # "stable" => latest version
+            "v#.#",             # include all minor versions
+            "dev" => "dev",
+            # "v#.#.#",         # use this to include all released versions
+            # "v1.1.6",         # use this to include a specific version
+        ]
     )
 end

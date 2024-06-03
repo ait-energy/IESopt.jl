@@ -1,0 +1,23 @@
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 1
+    solver:
+      name: highs
+
+carriers:
+  electricity: {}
+  gas: {}
+
+components:
+  node:
+    type: Node
+    carrier: electricity
+  
+  plant_gas:
+    type: Unit
+    inputs: {gas: node}
+    outputs: {electricity: node}
+    conversion: 1 gas -> 1 electricity
+    capacity: 10 out:electricity
