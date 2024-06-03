@@ -1,0 +1,10 @@
+config:
+  optimization:
+    problem_type: NLP
+    snapshots:
+      count: 1
+    solver:
+      name: highs
+
+carriers: {}
+components: {}
