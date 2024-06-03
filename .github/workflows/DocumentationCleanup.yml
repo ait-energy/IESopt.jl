@@ -1,7 +1,7 @@
 # See: https://documenter.juliadocs.org/stable/man/hosting/#Cleaning-up-gh-pages
 # for more information on why and how to use this workflow.
 
-name: DocPreviewCleanup
+name: DocumenationCleanup
 
 on:
   pull_request:
