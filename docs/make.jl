@@ -29,18 +29,16 @@ makedocs(;
         collapselevel=2,
         mathengine=Documenter.MathJax2(),
         highlights=["yaml", "python"],
-        assets=[
-            asset("assets/base_template.css"; class=:css, islocal=true),
-        ],
+        assets=[asset("assets/base_template.css"; class=:css, islocal=true)],
         size_threshold=300_000,
         size_threshold_warn=200_000,
     ),
     # modules=[IESopt],
     pages=_PAGES,
-    doctest = false,
-    pagesonly = true,
-    warnonly = true,
-    draft = is_local_draft,
+    doctest=false,
+    pagesonly=true,
+    warnonly=true,
+    draft=is_local_draft,
 )
 
 # Deploy documentation, if we are not running locally.
@@ -48,12 +46,12 @@ if !is_local_draft
     deploydocs(;
         repo="github.com/ait-energy/IESopt.jl",
         push_preview=true,      # previews for PRs (not from forks)
-        versions = [
+        versions=[
             "stable" => "v^",   # "stable" => latest version
             "v#.#",             # include all minor versions
             "dev" => "dev",
             # "v#.#.#",         # use this to include all released versions
             # "v1.1.6",         # use this to include a specific version
-        ]
+        ],
     )
 end

@@ -15,23 +15,26 @@ examples_files = [
 ]
 
 _PAGES = Pair["Home" => "index.md"]
-append!(_PAGES, _build_page_paths(
-    [
-        "Tutorials" => ["setup", "first_model", "next_steps", "results"],
-        "User Guide" => [
-            "general",
-            "Sectors" => ["electricity", "heat", "gas"],
-            "solvers",
-            "Custom Functionality" => ["templates", "addons"],
-            "Examples" => [], # TODO: examples_files,
-        ],
-        "Manual" => ["yaml", "core_components", "templates", "api"],
-        "References" => "references",
-        "Developer Documentation" => "dev_docs",
-        "Changelog" => "changelog",
-    ];
-    parent="pages",
-))
+append!(
+    _PAGES,
+    _build_page_paths(
+        [
+            "Tutorials" => ["setup", "first_model", "next_steps", "results"],
+            "User Guide" => [
+                "general",
+                "Sectors" => ["electricity", "heat", "gas"],
+                "solvers",
+                "Custom Functionality" => ["templates", "addons"],
+                "Examples" => [], # TODO: examples_files,
+            ],
+            "Manual" => ["yaml", "core_components", "templates", "api"],
+            "References" => "references",
+            "Developer Documentation" => "dev_docs",
+            "Changelog" => "changelog",
+        ];
+        parent="pages",
+    ),
+)
 
 # Create `changelog.md` from `CHANGELOG.md`.
 include("changelog.jl")
