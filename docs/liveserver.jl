@@ -8,7 +8,10 @@ const LS_PATH_DOCS = joinpath(LS_PATH_ROOT, "docs")
 
 # Make sure `docs` environment is set up properly.
 import Pkg
+Pkg.resolve()
+Pkg.instantiate()
 Pkg.activate(@__DIR__)
+Pkg.resolve()
 Pkg.instantiate()
 
 # Communicate with `make.jl` that we are running in live mode, so that we can load `Revise` there.
