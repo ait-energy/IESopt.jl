@@ -19,7 +19,7 @@ append!(
     _PAGES,
     _build_page_paths(
         [
-            "Tutorials" => ["setup", "first_model", "next_steps", "results"],
+            "Tutorials" => ["setup", "first_model", "next_steps", "results", "templates"],
             "User Guide" => [
                 "general",
                 "Sectors" => ["electricity", "heat", "gas"],
