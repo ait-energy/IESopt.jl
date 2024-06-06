@@ -16,6 +16,10 @@ const PATH_CURRENT = pwd()
         # JET.test_package(IESopt; target_defined_modules = true)
     end
 
+    @testset "Unit tests (IESopt.jl)" begin
+        include("src/unit_tests.jl")
+    end
+
     @testset "Basic (IESopt.jl)" begin
         include("src/basic.jl")
     end
