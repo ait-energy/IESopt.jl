@@ -192,12 +192,16 @@ function _flatten_model!(model::JuMP.Model, description::Dict{String, Any})
             continue
         end
 
-        if description[cname]["type"] == "Expression"
+        type = description[cname]["type"]
+
+        if type == "Expression"
             @critical "The `Expression` Core Component is deprecated" component = cname
         end
 
         # Skip core components.
-        (description[cname]["type"] in ["Node", "Connection", "Profile", "Unit", "Decision"]) && continue
+        (type in ["Node", "Connection", "Profile", "Unit", "Decision"]) && continue
+
+        _is_valid_template_name(type) || @error "Invalid type of `Template` (check documentation)" type
 
         # Try parsing it.
         new_components = _parse_noncore!(model, description, cname)
@@ -506,6 +510,8 @@ function _parse_components_csv!(
         # todo: this is probably super inefficient
         for row in eachrow(df)
             name = row.name
+            _is_valid_component_name(name) || @error "Invalid name for component (check documentation)" name
+
             if haskey(description, name)
                 @critical "Duplicate component entry detected" file component = name
             end
