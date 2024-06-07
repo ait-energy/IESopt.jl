@@ -1,4 +1,4 @@
-# Creating Templates
+# Templates: Part I
 
 Templates are a powerful feature of IESopt that allow you to define new types of "components" by yourself. This makes
 use of the existing `CoreComponent`s, and combines them in multiple ways, which allows for a high degree of flexibility
@@ -55,7 +55,7 @@ component:
   type: Unit
   inputs: {electricity: <electricity_from>, heat: <heat_from>}
   outputs: {heat: <heat_to>}
-  conversion: 1 electricity + (1 - <cop>) heat -> <cop> heat
+  conversion: 1 electricity + (<cop> - 1) heat -> <cop> heat
   capacity: <p_nom> in:electricity
 ```
 
@@ -95,9 +95,9 @@ clear, or transparent. Before we continue, we will fill in the mandatory documen
 that by adding the following information directly at the beginning of the template file, right before the `parameters`:
 
 ```yaml
-# # Heat Pump
+# # Custom Heat Pump
 
-# A heat pump that consumes electricity and heat, and produces heat.
+# A (custom) heat pump that consumes electricity and heat, and produces heat.
 
 # ## Parameters
 # - `p_nom`: The nominal power (electricity) of the heat pump.
@@ -133,7 +133,7 @@ Let's continue with accounting for different configurations. We will cover the f
 2. Extending the template to allow for sizing the heat pump (an investment decision)
 3. Handling more complex COP configurations
 
-### Optional parameter
+### Optional parameter and sizing decision
 
 While there are multiple ways to make a parameter optional, we will make use of the most powerful one, so that you are
 able to apply it for your models as well. For that, we will add "complex" functionalities to the template, which is done
@@ -279,7 +279,7 @@ So ... a lot of changes. Let's go through them step by step:
     underscores (but are not allowed to end in an `_`). They can further contain `.`, but this is "dangerous" and an
     expert feature, that you should not use unless you know what it does, and why you need it.
 
-Onto the actual functionality. Let's add the `prepare` function, and add additional validation code:
+Onto the actual functionality. Let's add the `prepare` function, and some additional validation code:
 
 ```yaml
 functions:
@@ -289,10 +289,156 @@ functions:
     # Check if `p_nom_max` is either `nothing` or at least `p_nom`.
     @check isnothing(get("p_nom_max")) || (get("p_nom_max") isa Number && get("p_nom_max") >= get("p_nom"))
   prepare: |
-    # Determine if investment should be enabled.
+    # Determine if investment should be enabled, and set the parameter (used to enable `decision`).
+    invest = !isnothing(get("p_nom_max")) && get("p_nom_max") > get("p_nom")
+    set("_invest", invest)
 
+    if invest
+        # Set the capacity to the size of the decision variable.
+        set("_capacity", "<self>.decision:value")
+    else
+        # Set the capacity to the value of `p_nom`.
+        set("_capacity", get("p_nom"))
+    end
+
+    # Prepare some helper variables to make the code afterwards more readable.
+    elec_from = get("electricity_from")
+    heat_from = get("heat_from")
+    cop = get("cop")
+
+    # Handle the optional `heat_from` parameter.
+    if isnothing(heat_from)
+        # If `heat_from` is not specified, we just use electricity as input.
+        set("_inputs", "{electricity: $(elec_from)}")
+        set("_conversion", "1 electricity -> $(cop) heat")
+    else
+        # If `heat_from` is specified, we now have to account for two inputs.
+        set("_inputs", "{electricity: $(elec_from), heat: $(heat_from)}")
+        set("_conversion", "1 electricity + $(cop - 1) heat -> $(cop) heat")
+    end
 ```
+
+Once again, let's go through this step by step:
+
+To be added.
+
+### Complex COP configurations
+
+To be added.
+
+## The `finalize` function
+
+To be added.
 
 ## Finalizing the docstring
 
 To be added.
+
+## Conclusion
+
+To be added.
+
+!!! details "Complete template YAML"
+    ```yaml
+    # # Custom Heat Pump
+
+    # A (custom) heat pump that consumes electricity and heat, and produces heat.
+
+    # ## Parameters
+    # - `p_nom`: The nominal power (electricity) of the heat pump.
+    # - `electricity_from`: The `Node` that this heat pump is connected to for electricity input.
+    # - `heat_from`: The `Node` that this heat pump is connected to for heat input.
+    # - `heat_to`: The `Node` that this heat pump is connected to for heat output.
+    # - `cop`: The coefficient of performance of the heat pump.
+
+    # ## Components
+    # _to be added_
+
+    # ## Usage
+    # _to be added_
+
+    # ## Details
+    # _to be added_
+
+    parameters:
+      p_nom: null
+      p_nom_max: null
+      electricity_from: null
+      heat_from: null
+      heat_to: null
+      cop: null
+      _inputs: null
+      _conversion: null
+      _capacity: null
+      _invest: null
+    
+    components:
+      unit:
+        type: Unit
+        inputs: <_inputs>
+        outputs: {heat: <heat_to>}
+        conversion: <_conversion>
+        capacity: <_capacity> in:electricity
+        
+      decision:
+        type: Decision
+        enabled: <_invest>
+        lb: <p_nom>
+        ub: <p_nom_max>
+
+    functions:
+      validate: |
+        # Check if `p_nom` is non-negative.
+        @check get("p_nom") isa Number
+        @check get("p_nom") >= 0
+
+        # Check if the `Node` parameters are `String`s, where `heat_from` may also be `nothing`.
+        @check get("electricity_from") isa String
+        @check get("heat_from") isa String || isnothing(get("heat_from"))
+        @check get("heat_to") isa String
+
+        # Check if `cop` is positive.
+        @check get("cop") isa Number
+        @check get("cop") > 0
+
+        # Check if `p_nom_max` is either `nothing` or at least `p_nom`.
+        @check isnothing(get("p_nom_max")) || (get("p_nom_max") isa Number && get("p_nom_max") >= get("p_nom"))
+      prepare: |
+        # Determine if investment should be enabled, and set the parameter (used to enable `decision`).
+        invest = !isnothing(get("p_nom_max")) && get("p_nom_max") > get("p_nom")
+        set("_invest", invest)
+
+        if invest
+            # Set the capacity to the size of the decision variable.
+            set("_capacity", "<self>.decision:value")
+        else
+            # Set the capacity to the value of `p_nom`.
+            set("_capacity", get("p_nom"))
+        end
+
+        # Prepare some helper variables to make the code afterwards more readable.
+        elec_from = get("electricity_from")
+        heat_from = get("heat_from")
+        cop = get("cop")
+
+        # Handle the optional `heat_from` parameter.
+        if isnothing(heat_from)
+            # If `heat_from` is not specified, we just use electricity as input.
+            set("_inputs", "{electricity: $(elec_from)}")
+            set("_conversion", "1 electricity -> $(cop) heat")
+        else
+            # If `heat_from` is specified, we now have to account for two inputs.
+            set("_inputs", "{electricity: $(elec_from), heat: $(heat_from)}")
+            set("_conversion", "1 electricity + $(cop - 1) heat -> $(cop) heat")
+        end
+    ```
+
+## Next steps
+
+While the above template is already quite powerful, it can become hard to maintain and understand if it grows too large.
+In the next tutorial, we will cover how to separate the `functions` part of the template into a separate file, and later
+will see how this approach can then be extended even further (a concept that we call `Addon`s), which allows
+intercepting steps of the model build process.
+
+But ... before we go there, let's start "small". Check out the section [Templates: Part II](@ref), where we walk
+through the process of "out-sourcing" the `functions` part of the template.
