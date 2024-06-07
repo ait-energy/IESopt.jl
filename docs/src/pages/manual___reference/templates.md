@@ -1,3 +1,3 @@
-# Template Reference
+# Templates
 
 To be added (explanation).

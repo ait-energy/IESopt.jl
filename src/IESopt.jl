@@ -12,15 +12,8 @@ using PrecompileTools: @setup_workload, @compile_workload
 _is_precompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
 # Setup `IESoptLib.jl`, if available.
-const Library = try
-    Base.require(IESopt, :IESoptLib)
-catch
-    if _is_precompiling()
-    else
-        @warn "`IESoptLib` is not installed; install it manually if you want to use its functionality."
-    end
-    nothing
-end
+import IESoptLib
+const Library = IESoptLib
 
 # Constant paths that might be used somewhere.
 const _dummy_path = normpath(@__DIR__, "utils", "dummy")

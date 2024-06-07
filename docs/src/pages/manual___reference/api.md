@@ -1,4 +1,4 @@
-# API Reference
+# API
 
 This contains the following raw documentation entries:
 

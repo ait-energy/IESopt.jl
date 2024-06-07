@@ -19,15 +19,18 @@ append!(
     _PAGES,
     _build_page_paths(
         [
-            "Tutorials" => ["setup", "first_model", "next_steps", "results"],
+            "Tutorials" => [
+                "setup", "first_model", "next_steps", "results",
+                "Creating new components" => ["index", "templates_1", "templates_2"],
+            ],
             "User Guide" => [
                 "general",
                 "Sectors" => ["electricity", "heat", "gas"],
                 "solvers",
-                "Custom Functionality" => ["templates", "addons"],
+                "Custom functionality" => ["templates", "addons"],
                 "Examples" => [], # TODO: examples_files,
             ],
-            "Manual" => ["yaml", "core_components", "templates", "api"],
+            "Manual / Reference" => ["yaml", "core_components", "templates", "api"],
             "References" => "references",
             "Developer Documentation" => "dev_docs",
             "Changelog" => "changelog",

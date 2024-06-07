@@ -362,3 +362,6 @@ function _profiling_format_top(model::JuMP.Model, n::Int64=5; mode::Symbol=:time
         for it in data
     )
 end
+
+_is_valid_template_name(s::String) = !isnothing(match(r"""^[A-Z][A-Za-z]+$""", s))
+_is_valid_component_name(s::String) = !isnothing(match(r"""^[a-z][a-z_.0-9]*[a-z0-9]$""", s))
