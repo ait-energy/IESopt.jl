@@ -81,7 +81,7 @@ function pack(file::String; out::String="", method::Symbol=:auto, include_result
             elseif endswith(filename, ".iesopt.param.yaml")
                 push!(files, relpath(normpath(root, filename), root_path))
                 push!(info["files"]["parameters"], relpath(normpath(root, filename), root_path))
-            elseif endswith(filename, ".mfres.jld2") && include_results
+            elseif endswith(filename, ".iesopt.result.jld2") && include_results
                 push!(files, relpath(normpath(root, filename), root_path))
                 push!(info["files"]["results"], relpath(normpath(root, filename), root_path))
             else

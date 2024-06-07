@@ -62,7 +62,8 @@ function _save_results(model::JuMP.Model)
     # TODO: support multiple results (from MOA)
 
     # Make sure the path is valid.
-    filepath = normpath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).mfres.jld2")
+    filepath =
+        normpath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).iesopt.result.jld2")
     mkpath(dirname(filepath))
 
     # Write results.
