@@ -12,8 +12,8 @@ using PrecompileTools: @setup_workload, @compile_workload
 _is_precompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
 # Setup `IESoptLib.jl`, if available.
-import IESoptLib
-const Library = IESoptLib
+_load_IESoptLib(::Any) = nothing
+const Library = _load_IESoptLib(true)
 
 # Constant paths that might be used somewhere.
 const _dummy_path = normpath(@__DIR__, "utils", "dummy")
@@ -386,23 +386,28 @@ function _attach_optimizer(model::JuMP.Model)
         @critical "Can't determine proper solver" solver
     end
 
-    try
-        Base.require(IESopt, Symbol(solver))
-    catch
-        @error "It seems the requested solver is not installed; trying to install and precompile it" solver
+    solver_module = (
         try
-            Pkg.add(solver)
-            Base.require(IESopt, Symbol(solver))
+            @info "Trying to activate solver extension" solver
+            Base.retry_load_extensions()
+            opt_ext = Base.get_extension(@__MODULE__, Symbol("OptExt$(solver)"))
+            _get_solver_module(opt_ext.OptType())
         catch
-            @critical "Could not install the requested solver" solver
+            @error "It seems the requested solver is not installed; trying to install and precompile it" solver
+            try
+                Pkg.add(solver)
+                @info "Trying again to activate solver extension" solver
+                Base.retry_load_extensions()
+                opt_ext = Base.get_extension(@__MODULE__, Symbol("OptExt$(solver)"))
+                _get_solver_module(opt_ext.OptType())
+            catch
+                @critical "Could not install the requested solver" solver
+            end
+            @critical "Solver installed, but can not proceed from here; please execute your code again"
         end
-        @critical "Solver installed, but can not proceed from here; please execute your code again"
-    end
+    )
 
-    # withpkg(f, pkgid::Base.PkgId) = Base.invokelatest(f, IESopt.require(pkgid))
-
-    # withpkg(Base.PkgId(Pkg.Types.Context().env.project.deps[solver], solver)) do s
-    let s = getfield(IESopt, Symbol(solver))
+    let s = solver_module
         if !_is_multiobjective(model)
             if _iesopt_config(model).optimization.solver.mode == "direct"
                 @critical "Automatic direct mode is currently not supported"

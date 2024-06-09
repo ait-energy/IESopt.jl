@@ -2,7 +2,7 @@
 
 julia_version = "1.10.3"
 manifest_format = "2.0"
-project_hash = "0f16b3954517e2989a6dcca15fd8260750ad1699"
+project_hash = "9607dd83595c424ac800baa2c8a1382aa8a1b1e7"
 
 [[deps.Aqua]]
 deps = ["Compat", "Pkg", "Test"]
@@ -118,6 +118,23 @@ version = "0.10.36"
 
     [deps.ForwardDiff.weakdeps]
     StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[[deps.HiGHS]]
+deps = ["HiGHS_jll", "MathOptInterface", "PrecompileTools", "SparseArrays"]
+git-tree-sha1 = "a216e32299172b83abfe699604584f413ffbb045"
+uuid = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
+version = "1.9.0"
+
+[[deps.HiGHS_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
+git-tree-sha1 = "9a550d55c49334beb538c5ad9504f07fc29a13dc"
+uuid = "8fd58aa0-07eb-5a78-9b36-339c94fd15ea"
+version = "1.7.0+0"
+
+[[deps.IESoptLib]]
+git-tree-sha1 = "495ca907bf5587464b386b573828db8d5d3aa885"
+uuid = "b98f706d-40ec-4ce6-a66c-1c6e71d3cef6"
+version = "0.1.0"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
