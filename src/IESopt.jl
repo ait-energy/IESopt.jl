@@ -418,7 +418,7 @@ function _attach_optimizer(model::JuMP.Model)
                 Pkg.add(solver)
                 Pkg.resolve()
                 @info "Trying to import solver interface" solver
-                Main.eval(Meta.parse("import $(solver)"))                
+                Main.eval(Meta.parse("import $(solver)"))
             catch
                 @critical "Failed to setup solver interface; please install it manually" solver
             end
@@ -434,9 +434,9 @@ function _attach_optimizer(model::JuMP.Model)
             JuMP.set_optimizer(model, () -> IESopt.MOA.Optimizer(HiGHS.Optimizer))
         else
             JuMP.set_optimizer(model, HiGHS.Optimizer)
-        end    
+        end
     end
- 
+
     if _is_multiobjective(model)
         moa_mode = _iesopt_config(model).optimization.multiobjective.mode
         @info "Setting MOA mode" mode = moa_mode
