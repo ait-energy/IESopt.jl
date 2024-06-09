@@ -11,9 +11,10 @@ using PrecompileTools: @setup_workload, @compile_workload
 
 _is_precompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
-# Setup `IESoptLib.jl`, if available.
-_load_IESoptLib(::Any) = nothing
-const Library = _load_IESoptLib(true)
+# Setup `IESoptLib.jl` and `HiGHS.jl`.
+import IESoptLib
+const Library = IESoptLib
+import HiGHS
 
 # Constant paths that might be used somewhere.
 const _dummy_path = normpath(@__DIR__, "utils", "dummy")
@@ -280,7 +281,17 @@ Keyword arguments are passed to the [`generate!`](@ref) function.
 """
 function run(filename::String; verbosity=nothing, kwargs...)
     model = generate!(filename; verbosity=verbosity, kwargs...)
-    optimize!(model)
+    if haskey(model.ext, :_iesopt_failed_generate)
+        @error "Errors in model generation; skipping optimization"
+        delete!(model.ext, :_iesopt_failed_generate)
+        return model
+    end
+
+    try
+        optimize!(model)
+    catch
+        @error "Errors in model optimization"
+    end
 
     return model
 end
@@ -309,6 +320,7 @@ that do not support bridges). Returns the model for convenience, even though it 
 function generate!(model::JuMP.Model, filename::String; verbosity=nothing, kwargs...)
     local stats_parse, stats_build, stats_total
 
+    success = true
     try
         # Validate before parsing.
         !validate(filename) && return nothing
@@ -355,6 +367,7 @@ function generate!(model::JuMP.Model, filename::String; verbosity=nothing, kwarg
         end
 
         @error "Error(s) during model generation" debug number_of_errors = length(curr_ex) _exceptions...
+        success = false
     else
         with_logger(_iesopt(model).logger) do
             @info "Finished model generation" times =
@@ -362,8 +375,13 @@ function generate!(model::JuMP.Model, filename::String; verbosity=nothing, kwarg
         end
     end
 
+    if !success
+        model.ext[:_iesopt_failed_generate] = true
+    end
     return model
 end
+
+_setoptnow(model::JuMP.Model, ::Val{:none}, moa::Bool) = @critical "This code should never be reached"
 
 function _attach_optimizer(model::JuMP.Model)
     @info "Setting up Optimizer"
@@ -386,47 +404,69 @@ function _attach_optimizer(model::JuMP.Model)
         @critical "Can't determine proper solver" solver
     end
 
-    solver_module = (
+    if _iesopt_config(model).optimization.solver.mode == "direct"
+        @critical "Automatic direct mode is currently not supported"
+    end
+
+    if solver != "HiGHS"
         try
-            @info "Trying to activate solver extension" solver
-            Base.retry_load_extensions()
-            opt_ext = Base.get_extension(@__MODULE__, Symbol("OptExt$(solver)"))
-            _get_solver_module(opt_ext.OptType())
+            @info "Trying to import solver interface" solver
+            Main.eval(Meta.parse("import $(solver)"))
         catch
-            @error "It seems the requested solver is not installed; trying to install and precompile it" solver
+            @info "Solver interface could not be imported; trying to install and precompile it" solver
             try
                 Pkg.add(solver)
-                @info "Trying again to activate solver extension" solver
-                Base.retry_load_extensions()
-                opt_ext = Base.get_extension(@__MODULE__, Symbol("OptExt$(solver)"))
-                _get_solver_module(opt_ext.OptType())
+                Pkg.resolve()
+                @info "Trying to import solver interface" solver
+                Main.eval(Meta.parse("import $(solver)"))                
             catch
-                @critical "Could not install the requested solver" solver
+                @critical "Failed to setup solver interface; please install it manually" solver
             end
-            @critical "Solver installed, but can not proceed from here; please execute your code again"
+            @error "Solver interface installed, but you need to manually reload; please execute your code again"
+            rethrow(ErrorException("Please execute your code again"))
         end
-    )
 
-    let s = solver_module
-        if !_is_multiobjective(model)
-            if _iesopt_config(model).optimization.solver.mode == "direct"
-                @critical "Automatic direct mode is currently not supported"
-                # todo: we can use an "isempty" function that ignores :ext to check for an empty model,
-                #       then create a new one and copy over the :ext dict
-            else
-                @info "Activating solver" solver
-                JuMP.set_optimizer(model, s.Optimizer)
-            end
+        sym_solver = Symbol(solver)
+        Base.retry_load_extensions()
+        Base.invokelatest(_setoptnow, model, Val{sym_solver}(), false)
+    else
+        if _is_multiobjective(model)
+            JuMP.set_optimizer(model, () -> IESopt.MOA.Optimizer(HiGHS.Optimizer))
         else
-            if _iesopt_config(model).optimization.solver.mode == "direct"
-                @critical "Multi-objective optimization currently does not support direct mode"
-            else
-                @info "Activating solver in multi-objective mode" solver
-                JuMP.set_optimizer(model, () -> MOA.Optimizer(s.Optimizer))
+            JuMP.set_optimizer(model, HiGHS.Optimizer)
+        end    
+    end
+ 
+    if _is_multiobjective(model)
+        moa_mode = _iesopt_config(model).optimization.multiobjective.mode
+        @info "Setting MOA mode" mode = moa_mode
+        JuMP.set_attribute(model, MOA.Algorithm(), eval(Meta.parse("MOA.$moa_mode()")))
+    end
 
-                moa_mode = _iesopt_config(model).optimization.multiobjective.mode
-                @info "Setting MOA mode" mode = moa_mode
-                JuMP.set_attribute(model, MOA.Algorithm(), eval(Meta.parse("MOA.$moa_mode()")))
+    if false
+        println("solver_module: ", solver_module)
+
+        let s = solver_module
+            if !_is_multiobjective(model)
+                if _iesopt_config(model).optimization.solver.mode == "direct"
+                    @critical "Automatic direct mode is currently not supported"
+                    # todo: we can use an "isempty" function that ignores :ext to check for an empty model,
+                    #       then create a new one and copy over the :ext dict
+                else
+                    @info "Activating solver" solver
+                    JuMP.set_optimizer(model, s)
+                end
+            else
+                if _iesopt_config(model).optimization.solver.mode == "direct"
+                    @critical "Multi-objective optimization currently does not support direct mode"
+                else
+                    @info "Activating solver in multi-objective mode" solver
+                    JuMP.set_optimizer(model, () -> MOA.Optimizer(s.Optimizer))
+
+                    moa_mode = _iesopt_config(model).optimization.multiobjective.mode
+                    @info "Setting MOA mode" mode = moa_mode
+                    JuMP.set_attribute(model, MOA.Algorithm(), eval(Meta.parse("MOA.$moa_mode()")))
+                end
             end
         end
     end
