@@ -6,20 +6,9 @@ macro critical(msg, args...)
     end)
 end
 
-function _try_loading_solver()
-    _try_import(solver::String) = IESopt.eval(Meta.parse("""try; import $(solver); true; catch; false; end;"""))
-    active = join([s for s in _ALL_SOLVER_INTERFACES if _try_import(s)], ", ")
-
-    if _is_precompiling()
-    else
-        @info "Activating solver interfaces" active
-    end
-
-    return active
+function _get_solver_module(solver::Any)
+    @critical "No solver extension prepared" solver
 end
-
-# Immediately try to load solver interfaces.
-const ACTIVE_SOLVER_INTERFACES = _try_loading_solver()
 
 include("general.jl")
 include("logging.jl")

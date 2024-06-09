@@ -1,3 +1,4 @@
+import HiGHS
 using IESopt, Suppressor
 using Test, Aqua, JET
 import JuMP

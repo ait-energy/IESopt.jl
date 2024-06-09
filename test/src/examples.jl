@@ -1,5 +1,3 @@
-const HiGHS = IESopt.HiGHS
-
 function _test_example_default_solver(filename::String; obj::Float64, verbosity::Union{Bool, String}=false, kwargs...)
     @testset "$(split(filename, ".")[1])" begin
         model = @suppress generate!(joinpath(PATH_EXAMPLES, filename); verbosity=verbosity, kwargs...)
