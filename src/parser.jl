@@ -20,8 +20,6 @@ function _parse_model!(model::JuMP.Model, filename::String, global_parameters::D
             @info "Global parameters loaded" Dict(Symbol(k) => v for (k, v) in _iesopt(model).input.parameters)...
         end
 
-        @warn "You are using a version >= 0.6.0, which is not stable due to heavy refactoring; consider using 0.5.2"
-
         # Pre-load all registered files.
         merge!(_iesopt(model).input.files, @profile _parse_inputfiles(model, _iesopt_config(model).files.entries))
         if !isempty(_iesopt(model).input.files)

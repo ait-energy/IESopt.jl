@@ -1,11 +1,14 @@
 module OptExtGurobi
 
-import IESopt, Gurobi
+import IESopt, Gurobi, JuMP
 
-struct OptType end
-
-function IESopt._get_solver_module(::OptType)
-    return Gurobi
+function IESopt._setoptnow(model::JuMP.Model, ::Val{:Gurobi}, moa::Bool)
+    if moa
+        JuMP.set_optimizer(model, () -> IESopt.MOA.Optimizer(Gurobi.Optimizer))
+    else
+        JuMP.set_optimizer(model, Gurobi.Optimizer)
+    end
+    return nothing
 end
 
 end

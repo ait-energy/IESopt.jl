@@ -1,11 +1,14 @@
 module OptExtCbc
 
-import IESopt, Cbc
+import IESopt, Cbc, JuMP
 
-struct OptType end
-
-function IESopt._get_solver_module(::OptType)
-    return Cbc
+function IESopt._setoptnow(model::JuMP.Model, ::Val{:Cbc}, moa::Bool)
+    if moa
+        JuMP.set_optimizer(model, () -> IESopt.MOA.Optimizer(Cbc.Optimizer))
+    else
+        JuMP.set_optimizer(model, Cbc.Optimizer)
+    end
+    return nothing
 end
 
 end

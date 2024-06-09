@@ -1,11 +1,14 @@
 module OptExtIpopt
 
-import IESopt, Ipopt
+import IESopt, Ipopt, JuMP
 
-struct OptType end
-
-function IESopt._get_solver_module(::OptType)
-    return Ipopt
+function IESopt._setoptnow(model::JuMP.Model, ::Val{:Ipopt}, moa::Bool)
+    if moa
+        JuMP.set_optimizer(model, () -> IESopt.MOA.Optimizer(Ipopt.Optimizer))
+    else
+        JuMP.set_optimizer(model, Ipopt.Optimizer)
+    end
+    return nothing
 end
 
 end

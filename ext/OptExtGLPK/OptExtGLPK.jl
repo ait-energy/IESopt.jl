@@ -1,11 +1,14 @@
 module OptExtGLPK
 
-import IESopt, GLPK
+import IESopt, GLPK, JuMP
 
-struct OptType end
-
-function IESopt._get_solver_module(::OptType)
-    return GLPK
+function IESopt._setoptnow(model::JuMP.Model, ::Val{:GLPK}, moa::Bool)
+    if moa
+        JuMP.set_optimizer(model, () -> IESopt.MOA.Optimizer(GLPK.Optimizer))
+    else
+        JuMP.set_optimizer(model, GLPK.Optimizer)
+    end
+    return nothing
 end
 
 end
