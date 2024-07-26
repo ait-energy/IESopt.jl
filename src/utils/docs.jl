@@ -10,14 +10,14 @@ function _parse_field_docstring(docstring::String)
     descr = replace(strip(str_descr), "\n" => " ")
 
     # Return specs (in correct order) and description.
-    return ([specs[s] for s in ["mandatory", "values", "default"]]..., descr)
+    return ([specs[s] for s in ["mandatory", "values", "unit", "default"]]..., descr)
 end
 
 function _docs_struct_to_table(datatype::Type)
     # Start table with proper header.
     table_rows = [
-        "| Name | Mandatory | Values | Default | Description |",
-        "|:-----|:----------|:-------|:--------|:------------|",
+        "| Name | Mandatory | Values | Unit | Default | Description |",
+        "|:-----|:----------|:-------|:-----|:--------|:------------|",
     ]
 
     # Get proper binding from module, error if structure is unexpected.
