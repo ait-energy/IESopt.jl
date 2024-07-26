@@ -2,6 +2,43 @@
 A `Profile` allows representing "model boundaries" - parts of initial problem that are not endogenously modelled - with
 a support for time series data. Examples are hydro reservoir inflows, electricity demand, importing gas, and so on.
 Besides modelling fixed profiles, they also allow different ways to modify the value endogenously.
+
+!!! details "Basic Examples"
+    A `Profile` that depicts a fixed electricity demand:
+    ```yaml
+    demand_XY:
+      type: Profile
+      carrier: electricity
+      node_from: grid
+      value: demand_XY@input_file
+    ```
+    A `Profile` that handles cost of fuel:
+    ```yaml
+    fuel_gas:
+      type: Profile
+      carrier: gas
+      node_to: country_gas_grid
+      mode: create
+      cost: 100.0
+    ```
+    A `Profile` that handles CO2 emission costs:
+    ```yaml
+    co2_cost:
+      type: Profile
+      carrier: co2
+      node_from: total_co2
+      mode: destroy
+      cost: 150.0
+    ```
+    A `Profile` that handles selling electricity:
+    ```yaml
+    sell_electricity:
+      type: Profile
+      carrier: electricity
+      node_from: internal_grid_node
+      mode: destroy
+      cost: -30.0
+    ```
 """
 @kwdef struct Profile <: _CoreComponent
     # [Core] ===========================================================================================================
@@ -12,8 +49,9 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
 
     # [Mandatory] ======================================================================================================
     name::_String
-    raw"""```{"mandatory": "yes", "values": "string", "default": "-"}```
-    `Carrier` of this `Profile`.
+
+    raw"""```{"mandatory": "yes", "values": "string", "unit": "-", "default": "-"}```
+    `Carrier` of this `Profile`. Must match the `Carrier` of the `Node` that this connects to.
     """
     carrier::Carrier
 
@@ -23,13 +61,47 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
     addon::Union{String, Nothing} = nothing
     conditional::Bool = false
 
+    raw"""```{"mandatory": "no", "values": "numeric, `col@file`", "unit": "power", "default": "-"}```
+    The concrete value of this `Profile` - either static or as time series. Only applicable if `mode: fixed`.
+    """
     value::_OptionalExpression = nothing
+
+    raw"""```{"mandatory": "no", "values": "string", "unit": "-", "default": "-"}```
+    Name of the `Node` that this `Profile` draws energy from. Exactly one of `node_from` and `node_to` must be set.
+    """
     node_from::Union{_String, Nothing} = nothing
+
+    raw"""```{"mandatory": "no", "values": "string", "unit": "-", "default": "-"}```
+    Name of the `Node` that this `Profile` feeds energy to. Exactly one of `node_from` and `node_to` must be set.
+    """
     node_to::Union{_String, Nothing} = nothing
 
+    raw"""```{"mandatory": "no", "values": "-", "unit": "-", "default": "`fixed`"}```
+    The mode of operation of this `Profile`. `fixed` uses the supplied `value`, `ranged` allows ranging between `lb` and
+    `ub`, while `create` (must specify `node_to`) and `destroy` (must specify `node_from`) handle arbitrary energy flows
+    that are bounded from below by `0`. Use `fixed` if you want to fix the value of the `Profile` to a specific value,
+    e.g., a given energy demand. Use `create` to "import" energy into the model, e.g., from a not explicitly modelled
+    gas market, indcucing a certain `cost` for buying that energy. Use `destroy` to "export" energy from the model,
+    e.g., to handle CO2 going into the atmosphere (which may be taxed, etc., by the `cost` of this `Profile`). Use
+    `ranged` if you need more fine grained control over the value of the `Profile`, than what `create` and `destroy`
+    allow (e.g., a grid limited energy supplier).
+    """
     mode::Symbol = :fixed
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "power", "default": "``-\\infty``"}```
+    The lower bound of the range of this `Profile` (must be used together with `mode: ranged`).
+    """
     lb::_OptionalExpression = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "power", "default": "``+\\infty``"}```
+    The upper bound of the range of this `Profile` (must be used together with `mode: ranged`).
+    """
     ub::_OptionalExpression = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary per energy", "default": "`0`"}```
+    Cost per unit of energy that this `Profile` injects or withdraws from a `Node`. Refer to the basic examples to see
+    how this can be combined with `mode` for different use cases.
+    """
     cost::_OptionalExpression = nothing
 
     allow_deviation::Symbol = :off
