@@ -31,7 +31,7 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
 
     # [Mandatory] ======================================================================================================
     name::_String
-    raw"""```{"mandatory": "yes", "values": "string", "default": "-"}```
+    raw"""```{"mandatory": "yes", "values": "string", "unit": "-", "default": "-"}```
     `Carrier` of this `Node`. All connecting components need to respect that.
     """
     carrier::Carrier
@@ -42,23 +42,23 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
     addon::Union{String, Nothing} = nothing
     conditional::Bool = false
 
-    raw"""```{"mandatory": "no", "values": "`true` or `false`", "default": "`false`"}```
+    raw"""```{"mandatory": "no", "values": "`true`, `false`", "unit": "-", "default": "`false`"}```
     If `true`, the `Node` is considered to have an internal state ("stateful `Node`"). This allows it to act as energy
     storage. Connect `Connection`s or `Unit`s to it, acting as charger/discharger.
     """
     has_state::Bool = false
 
-    raw"""```{"mandatory": "no", "values": "numeric", "default": "``-\\infty``"}```
+    raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "energy", "default": "``-\\infty``"}```
     Lower bound of the internal state, requires `has_state = true`.
     """
     state_lb::_OptionalExpression = nothing
 
-    raw"""```{"mandatory": "no", "values": "numeric", "default": "``+\\infty``"}```
+    raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "energy", "default": "``+\\infty``"}```
     Upper bound of the internal state, requires `has_state = true`.
     """
     state_ub::_OptionalExpression = nothing
 
-    raw"""```{"mandatory": "no", "values": "`eq`, `geq`, or `disabled`", "default": "`eq`"}```
+    raw"""```{"mandatory": "no", "values": "`eq`, `geq`, or `disabled`", "unit": "-", "default": "`eq`"}```
     Controls how the state considers the boundary between last and first `Snapshot`. `disabled` disables cyclic
     behaviour of the state (see also `state_initial`), `eq` leads to the state at the end of the year being the initial
     state at the beginning of the year, while `geq` does the same while allowing the end-of-year state to be higher (=
@@ -66,33 +66,33 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
     """
     state_cyclic::Symbol = :eq
 
-    raw"""```{"mandatory": "no", "values": "numeric", "default": "-"}```
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "energy", "default": "-"}```
     Sets the initial state. Must be used in combination with `state_cyclic = disabled`.
     """
     state_initial::_OptionalScalarInput = nothing
 
-    raw"""```{"mandatory": "no", "values": "numeric", "default": "-"}```
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "energy", "default": "-"}```
     Sets the final state. Must be used in combination with `state_cyclic = disabled`.
     """
     state_final::_OptionalScalarInput = nothing
 
-    raw"""```{"mandatory": "no", "values": "numeric", "default": "`0`"}```
+    raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "0"}```
     Per `Snapshot` percentage loss of state (loosing 1% should be set as `0.01`).
     """
     state_percentage_loss::_OptionalScalarInput = nothing
 
-    raw"""```{"mandatory": "no", "values": "`enforce`, `destroy`, or `create`", "default": "`enforce`"}```
+    raw"""```{"mandatory": "no", "values": "`enforce`, `destroy`, or `create`", "unit": "-", "default": "`enforce`"}```
     Can only be used for `has_state = false`. `enforce` forces total injections to always be zero (similar to
     Kirchhoff's current law), `create` allows "supply < demand", `destroy` allows "supply > demand", at this `Node`.
     """
     nodal_balance::Symbol = :enforce
 
-    raw"""```{"mandatory": "no", "values": "integer", "default": "-"}```
+    raw"""```{"mandatory": "no", "values": "integer", "unit": "-", "default": "-"}```
     TODO.
     """
     sum_window_size::_OptionalScalarInput = nothing
 
-    raw"""```{"mandatory": "no", "values": "integer", "default": "`1`"}```
+    raw"""```{"mandatory": "no", "values": "integer", "unit": "-", "default": "`1`"}```
     TODO.
     """
     sum_window_step::_ScalarInput = 1

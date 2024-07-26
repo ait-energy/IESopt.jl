@@ -11,17 +11,15 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     # [Mandatory] ======================================================================================================
     name::_String
 
-    raw"""```{"mandatory": "yes", "values": "string", "default": "-"}```
+    raw"""```{"mandatory": "yes", "values": "string", "unit": "-", "default": "-"}```
     This `Connection` models a flow from `node_from` to `node_to` (both are `Node`s).
     """
     node_from::Union{_String, Nothing} = nothing
 
-    raw"""```{"mandatory": "yes", "values": "string", "default": "-"}```
+    raw"""```{"mandatory": "yes", "values": "string", "unit": "-", "default": "-"}```
     This `Connection` models a flow from `node_from` to `node_to` (both are `Node`s).
     """
     node_to::Union{_String, Nothing} = nothing
-
-    carrier::Carrier
 
     # [Optional] =======================================================================================================
     config::Dict{String, Any} = Dict()
@@ -29,11 +27,45 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     addon::Union{String, Nothing} = nothing
     conditional::Bool = false
 
+    raw"""```{"mandatory": "no", "values": "string", "unit": "-", "default": "-"}```
+    `Carrier` of this `Connection`. If not given, automatically picks the `carrier` of the `Node`s it connects. This
+    parameter is not necessary, and only exists to allow for a more explicit definition.
+    """
+    carrier::Carrier
+
+    raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "power", "default": "``+\\infty``"}```
+    The symmetric bound on this `Connection`'s flow. Results in `lb = -capacity` and `ub = capacity`. Must not be
+    specified if `lb`, `ub`, or both are explicitly stated.
+    """
     capacity::_OptionalExpression = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "power", "default": "``-\\infty``"}```
+    Lower bound of this `Connection`'s flow.
+    """
     lb::_OptionalExpression = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "power", "default": "``+\\infty``"}```
+    Upper bound of this `Connection`'s flow.
+    """
     ub::_OptionalExpression = nothing
 
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary (per energy)", "default": "-"}```
+    Cost of every unit of energy flow over this connection that is added to the model's objective function. Keep in mind
+    that negative flows will induce negative costs, which can be used to model revenues. Further, a bidirectional
+    `Connection` (if `lb < 0`, which is the default, or if `capacity` is used) with a positive `cost` will lead to
+    negative costs for the reverse flow. If you do not want this, split the `Connection` into two separate ones, each
+    being unidirectional (with `lb: 0`). Remember, that these can share the same "capacity" (which is then set as`ub`),
+    even when using `decision:value` or `col@file` as value.
+    """
     cost::_OptionalExpression = nothing
+
+    raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "0"}```
+    Fractional loss when transfering energy. This loss occurs "at the destination", which means that for a loss of 5%,
+    set as `loss: 0.05`, and considering a `Snapshot` where the `Connection` has a flow value of `100`, it will
+    "extract" `100` from `node_from` and "inject" `95` into `node_to`. Since the flow variable is given as power, this
+    would, e.g., translate to consuming 200 units of energy at `node_from` and injecting 190 units at `node_to`, if the
+    `Snapshot` duration is 2 hours.
+    """
     loss::_OptionalExpression = nothing
 
     # Energy Transfer Distribution Factors
