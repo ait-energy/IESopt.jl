@@ -102,14 +102,10 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
 
     @info "Preparing components"
 
-    # Place Decisions first, since those need to be built before everything else.
-    corder = Vector{_CoreComponent}(
-        collect(component for component in values(_iesopt(model).model.components) if component isa Decision),
-    )
-    append!(
-        corder,
-        collect(component for component in values(_iesopt(model).model.components) if !(component isa Decision)),
-    )
+    # Sort components by their build priority.
+    # For instance, Decisions with a default build priority of 1000 are built before all other components
+    # with a default build priority of 0
+    corder = sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)
 
     @info "Start creating JuMP model"
     components_with_addons = []

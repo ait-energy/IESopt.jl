@@ -107,6 +107,13 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
     allow_deviation::Symbol = :off
     cost_deviation::_OptionalScalarInput = nothing
 
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`0`"}```
+    Priority for the build order of components. Components with higher build_priority are built before.
+    This can be useful for addons, that connect multiple components and rely on specific components being initialized
+    before others.
+    """
+    build_priority::_OptionalScalarInput = nothing
+
     # [Internal] =======================================================================================================
     # -
 

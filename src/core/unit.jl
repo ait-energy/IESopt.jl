@@ -211,6 +211,13 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     """
     startup_cost::_OptionalScalarInput = nothing
 
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`0`"}```
+    Priority for the build order of components. Components with higher build_priority are built before.
+    This can be useful for addons, that connect multiple components and rely on specific components being initialized
+    before others.
+    """
+    build_priority::_OptionalScalarInput = nothing
+
     # [Internal] =======================================================================================================
     conversion_dict::Dict{Symbol, Dict{Carrier, _NumericalInput}} = Dict(:in => Dict(), :out => Dict())
     conversion_at_min_dict::Dict{Symbol, Dict{Carrier, _NumericalInput}} = Dict(:in => Dict(), :out => Dict())
