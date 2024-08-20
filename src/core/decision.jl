@@ -65,6 +65,13 @@ component's settings, as well as have associated costs.
     """
     sos::Vector{Dict{String, Float64}} = Vector()
 
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`1000`"}```
+    Priority for the build order of components. Components with higher build_priority are built before.
+    This can be useful for addons, that connect multiple components and rely on specific components being initialized
+    before others.
+    """
+    build_priority::_OptionalScalarInput = nothing
+
     # [Internal] =======================================================================================================
     # -
 
@@ -152,6 +159,8 @@ function _result(decision::Decision, mode::String, field::String; result::Int=1)
     @error "Unknown result extraction" decision = decision.name mode = mode field = field
     return nothing
 end
+
+_build_priority(decision::Decision) = _build_priority(decision.build_priority, 1000.0)
 
 include("decision/con_fixed.jl")
 include("decision/con_sos_value.jl")

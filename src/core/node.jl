@@ -102,6 +102,13 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
     # Powerflow
     pf_slack::Bool = false
 
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`0`"}```
+    Priority for the build order of components. Components with higher build_priority are built before.
+    This can be useful for addons, that connect multiple components and rely on specific components being initialized
+    before others.
+    """
+    build_priority::_OptionalScalarInput = nothing
+
     # [Internal] =======================================================================================================
     # -
 

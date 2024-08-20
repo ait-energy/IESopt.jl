@@ -79,6 +79,13 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     pf_R::_OptionalScalarInput = nothing
     pf_B::_OptionalScalarInput = nothing
 
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`0`"}```
+    Priority for the build order of components. Components with higher build_priority are built before.
+    This can be useful for addons, that connect multiple components and rely on specific components being initialized
+    before others.
+    """
+    build_priority::_OptionalScalarInput = nothing
+
     # [Internal] =======================================================================================================
     # -
 
