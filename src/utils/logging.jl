@@ -58,7 +58,7 @@ function _new_metafmt(level::LogLevel, _module, group, id, file, line)
         elseif depth[1] == "addons"
             depth_prefix = "addon ($(replace(depth[end], ".jl" => "")))"
         else
-            depth_prefix = "unknown ($(replace(depth[end], ".jl" => "")))"
+            depth_prefix = "? ($(replace(depth[end], ".jl" => "")))"
         end
     else
         depth = splitpath(file)

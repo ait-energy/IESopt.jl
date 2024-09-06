@@ -291,11 +291,12 @@ functions:
   prepare: |
     # Determine if investment should be enabled, and set the parameter (used to enable `decision`).
     invest = !isnothing(get("p_nom_max")) && get("p_nom_max") > get("p_nom")
-    set("_invest", invest)
+    self = get("self")
 
+    set("_invest", invest)
     if invest
         # Set the capacity to the size of the decision variable.
-        set("_capacity", "<self>.decision:value")
+        set("_capacity", "$(self).decision:value")
     else
         # Set the capacity to the value of `p_nom`.
         set("_capacity", get("p_nom"))
@@ -406,11 +407,12 @@ To be added.
       prepare: |
         # Determine if investment should be enabled, and set the parameter (used to enable `decision`).
         invest = !isnothing(get("p_nom_max")) && get("p_nom_max") > get("p_nom")
-        set("_invest", invest)
+        self = get("self")
 
+        set("_invest", invest)
         if invest
             # Set the capacity to the size of the decision variable.
-            set("_capacity", "<self>.decision:value")
+            set("_capacity", "$(self).decision:value")
         else
             # Set the capacity to the value of `p_nom`.
             set("_capacity", get("p_nom"))
