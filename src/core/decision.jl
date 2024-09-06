@@ -18,17 +18,59 @@ component's settings, as well as have associated costs.
     addon::Union{String, Nothing} = nothing
     conditional::Bool = false
 
-    raw"""```{"mandatory": "no", "values": "numeric", "default": "`0`"}```
-    Minimum size of the decision (considered for each "unit" if count allows multiple "units").
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`0`"}```
+    Minimum size of the decision value (considered for each "unit" if count allows multiple "units").
     """
     lb::_OptionalScalarInput = 0
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "``+\\infty``"}```
+    Maximum size of the decision value (considered for each "unit" if count allows multiple "units").
+    """
     ub::_OptionalScalarInput = nothing
-    fixed_value::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary (per value)", "default": "`0`"}```
+    Cost that the decision value induces, given as ``cost \cdot value``.
+    """
     cost::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "-"}```
+    If `mode: fixed`, this value is used as the fixed value of the decision. This can be useful if this `Decision` was
+    used in a previous optimization and its value should be fixed to that value in the next optimization (applying it
+    where ever it is used, instead of needing to find all usages). Furthermore, this allows extracting the dual value of
+    the constraint that fixes the value, assisting in approaches like Benders decomposition. Note that this does not
+    change the induced cost in any way.
+    """
+    fixed_value::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "-", "unit": "monetary", "default": "-"}```
+    This setting activates a "fixed cost" component for this decision variable, which requires that the model's problem
+    type allows for binary variables (e.g., `MILP`). This can be used to model fixed costs that are only incurred if the
+    decision variable is active (e.g., a fixed cost for an investment that is only incurred if the investment is made).
+    If the decision is `0`, no fixed costs have to be paid; however, if the decision is greater than `0`, the fixed cost
+    is incurred. Note that after deciding to activate the decision, the overall value is still determined in the usual
+    (continuous) way, incuring the (variable) `cost` as well. More complex cost functions can be modelled by switching
+    to mode `sos1` or `sos2` and using the `sos` parameter.
+    """
     fixed_cost::_OptionalScalarInput = nothing
 
+    raw"""```{"mandatory": "no", "values": "`linear`, `binary`, `integer`, `sos1`, `sos2`, `fixed`", "unit": "-", "default": "`linear`"}```
+    Type of the decision variable that is constructed. `linear` results in a continuous decision, `integer` results in a
+    integer variable, `binary` constrains it to be either `0` or `1`. `sos1` and `sos2` can be used to activate SOS1 or
+    SOS2 mode (used for piecewise linear costs). See `fixed_value` if setting this to `fixed`.
+    """
     mode::Symbol = :linear
+
+    raw"""```{"mandatory": "no", "values": "list", "unit": "-", "default": "-"}```
+    TODO (meanwhile, refer to the SOS or PiecewiseLinearCost example).
+    """
     sos::Vector{Dict{String, Float64}} = Vector()
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`1000`"}```
+    Priority for the build order of components. Components with higher build_priority are built before.
+    This can be useful for addons, that connect multiple components and rely on specific components being initialized
+    before others.
+    """
+    build_priority::_OptionalScalarInput = nothing
 
     # [Internal] =======================================================================================================
     # -
@@ -117,6 +159,8 @@ function _result(decision::Decision, mode::String, field::String; result::Int=1)
     @error "Unknown result extraction" decision = decision.name mode = mode field = field
     return nothing
 end
+
+_build_priority(decision::Decision) = _build_priority(decision.build_priority, 1000.0)
 
 include("decision/con_fixed.jl")
 include("decision/con_sos_value.jl")

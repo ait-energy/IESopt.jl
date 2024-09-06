@@ -178,6 +178,11 @@ _component_type(::Node) = :Node
 _component_type(::Profile) = :Profile
 _component_type(::Unit) = :Unit
 
+_build_priority(cc::_CoreComponent) = _build_priority(cc.build_priority, 0.0)
+_build_priority(::Nothing, default) = default
+_build_priority(priority::Real, ::T) where {T} = convert(T, priority)
+_build_priority(priority, ::Any) = @error "Unsupported build priority" priority
+
 function Base.getproperty(cc::_CoreComponent, field::Symbol)
     try
         (field == :var) && (return getfield(cc, :_ccoc).variables)

@@ -1,5 +1,35 @@
 """
 A `Unit` allows transforming one (or many) forms of energy into another one (or many), given some constraints and costs.
+
+!!! details "Basic Examples"
+    A `Unit` that represents a basic gas turbine:
+    ```yaml
+    gas_turbine:
+      type: Unit
+      inputs: {gas: gas_grid}
+      outputs: {electricity: node, co2: total_co2}
+      conversion: 1 gas -> 0.4 electricity + 0.2 co2
+      capacity: 10 out:electricity
+    ```
+    A `Unit` that represents a basic wind turbine:
+    ```yaml
+    wind_turbine:
+      type: Unit
+      outputs: {electricity: node}
+      conversion: ~ -> 1 electricity
+      capacity: 10 out:electricity
+      availability_factor: wind_factor@input_data
+      marginal_cost: 1.7 per out:electricity
+    ```
+    A `Unit` that represents a basic heat pump, utilizing a varying COP:
+    ```yaml
+    heatpump:
+      type: Unit
+      inputs: {electricity: grid}
+      outputs: {heat: heat_system}
+      conversion: 1 electricity -> cop@inputfile heat
+      capacity: 10 in:electricity
+    ```
 """
 @kwdef struct Unit <: _CoreComponent
     # [Core] ===========================================================================================================
@@ -11,7 +41,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     # [Mandatory] ======================================================================================================
     name::_String
 
-    raw"""```{"mandatory": "yes", "values": "string", "default": "-"}```
+    raw"""```{"mandatory": "yes", "values": "string", "unit": "-", "default": "-"}```
     The conversion expression describing how this `Unit` transforms energy. Specified in the form of "$\alpha \cdot
     carrier_1 + \beta \cdot carrier_2$ -> $\gamma \cdot carrier_3 + \delta \cdot carrier_4$". Coefficients allow simple
     numerical calculations, but are not allowed to include spaces (so e.g. `(1.0/9.0)` is valid). Coefficients are
@@ -20,12 +50,17 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     """
     conversion::_String
 
-    raw"""```{"mandatory": "yes", "values": "string", "default": "-"}```
+    raw"""```{"mandatory": "yes", "values": "value dir:carrier", "unit": "-", "default": "-"}```
     Maximum capacity of this `Unit`, to be given in the format `X in/out:carrier` where `X` is the amount, `in` or `out`
     (followed by `:`) specifies whether the limit is to be placed on the in- our output of this `Unit`, and `carrier`
     specifies the respective `Carrier`. Example: `100 in:electricity` (to limit the "input rating").
     """
     capacity::_Expression
+
+    raw"""```{"mandatory": "yes", "values": "dict", "unit": "-", "default": "-"}```
+    Dictionary specifying the output "ports" of this `Unit`. Refer to the basic examples for the general syntax.
+    """
+    outputs::Dict{Carrier, String} = Dict()
 
     # [Optional] =======================================================================================================
     config::Dict{String, Any} = Dict()
@@ -33,33 +68,155 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     addon::Union{String, Nothing} = nothing
     conditional::Bool = false
 
+    raw"""```{"mandatory": "no", "values": "dict", "unit": "-", "default": "-"}```
+    Dictionary specifying the input "ports" of this `Unit`. If not specified (= no explicit input), the `conversion` has
+    to follow the form of `conversion: ~ -> ...`, indicating an "open" input. This may, e.g., be used for renewable
+    energy sources, where the primary energy input (e.g., solar) is not explicitly modeled. 
+    """
     inputs::Dict{Carrier, String} = Dict()
-    outputs::Dict{Carrier, String} = Dict()
 
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "power", "default": "``+\\infty``"}```
+    Time series (or fixed value) that limits the available capacity. If, e.g., `capacity: 100 out:electricity` and
+    `availability: 70`, the available capacity will only be `50 electricity`. Can be used to model non-availability of
+    power plants, e.g., due to maintenance. For time-varying availability of intermittent generators (e.g., wind), it's
+    recommended (most of the time) to use `availability_factor` instead.
+    """
     availability::_OptionalExpression = nothing
+
+    raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "`1`"}```
+    Similar to `availability`, but given as factor of `capacity` instead. If, e.g., `capacity: 100 out:electricity` and
+    `availability_factor: 0.7`, the available capacity will only be `70 electricity`. This is especially useful for
+    intermittent generators, where the availability is not a fixed value, but depends on the weather, and can be passed,
+    e.g., by setting `availability_factor: wind@input_data_file`.
+    """
     availability_factor::_OptionalExpression = nothing
+
+    raw"""```{"mandatory": "no", "values": "`true`, `false`", "unit": "-", "default": "`false`"}```
+    If `true`, the minimal partial load will be influenced by the availability. Example: Consider a `Unit` with
+    `capacity: 100 out:electricity`, a `min_conversion` of `0.4`, and an `availability_factor` of `0.5`. This entails
+    having `50 electricity` available, while the minimal partial load is `40 electricity`. This results in the `Unit` at
+    best operating only closely above the minimal partial load. Furthermore, an `availability_factor` below `0.4` would
+    result in no feasible generation, besides shutting the `Unit` off. While this might be the intended mode of
+    operation in many use cases, `adapt_min_to_availability` can change this: If set to `true`, this dynamically changes
+    the minimal partial load. In the previous example, that means `(100 * 0.5) * 0.4 = 20 electricity` (the 50% minimum
+    load are now based on the available 40), changing the overall behaviour (including efficiencies) as well as leading
+    to feasible generations even when the `availability_factor` is below `0.4`.
+    """
     adapt_min_to_availability::Bool = false
 
+    raw"""```{"mandatory": "no", "values": "`value per dir:carrier`", "unit": "monetary per energy", "default": "`0`"}```
+    Marginal cost of the consumption/generation of one unit of energy of the specified carrier. Has to be given in the
+    format `value per dir:carrier`, e.g. `3.5 per out:electricity` for a marginal cost of 3.5 monetary units per unit of
+    electricity generated.
+    """
     marginal_cost::_OptionalExpression = nothing
 
+    raw"""```{"mandatory": "no", "values": "`true`, `false`", "unit": "-", "default": "`false`"}```
+    Enables calculation of upward ramps. Ramping is based on the carrier specified in `capacity`.
+    """
     enable_ramp_up::Bool = false
+
+    raw"""```{"mandatory": "no", "values": "`true`, `false`", "unit": "-", "default": "`false`"}```
+    Enables calculation of downward ramps. Ramping is based on the carrier specified in `capacity`.
+    """
     enable_ramp_down::Bool = false
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary per power", "default": "`0`"}```
+    Sets the cost of ramping up (increasing in-/output) by 1 unit of the capacity carrier.
+    """
     ramp_up_cost::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary per power", "default": "`0`"}```
+    Sets the cost of ramping down (decreasing in-/output) by 1 unit of the capacity carrier.
+    """
     ramp_down_cost::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "`1`"}```
+    Limits the allowed ramping up based on this factor of the total capacity. If `capacity: 100 in:electricity` with
+    `ramp_up_limit: 0.2`, this limits the total increase of usage of electricity (on the input) to 20 units (power) per
+    hour. For example, starting at an input of 35, after one hour the input has to be lesser than or equal to 55. If a
+    `Snapshot`'s duration is set to, e.g., two hours, this would allow a total increase of 40 units.
+    """
     ramp_up_limit::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "`1`"}```
+    Limits the allowed ramping down based on this factor of the total capacity. See `ramp_up_limit`.
+    """
     ramp_down_limit::_OptionalScalarInput = nothing
 
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "hours", "default": "`0`"}```
+    Minimum on-time of the `Unit`. If set, the `Unit` has to be on for at least this amount of time, after turning on.
+    It is highly recommended to only use this with `unit_commitment: binary`, unless you know why it's fine to use with
+    another mode.
+    """
     min_on_time::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "hours", "default": "`0`"}```
+    Minimum off-time of the `Unit`. If set, the `Unit` has to be off for at least this amount of time, after turning
+    off. It is highly recommended to only use this with `unit_commitment: binary`, unless you know why it's fine to use
+    with another mode. 
+    """
     min_off_time::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "hours", "default": "`0`"}```
+    Time that this `Unit` has already been running before the optimization starts. Can be used in combination with
+    `min_on_time`.
+    """
     on_time_before::_ScalarInput = 0
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "hours", "default": "`0`"}```
+    Time that this `Unit` has already been off before the optimization starts. Can be used in combination with
+    `min_off_time`.
+    """
     off_time_before::_ScalarInput = 0
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`1`"}```
+    Number of `Unit`s that should be considered to have been running before the optimization starts. Can be used in
+    combination with `on_time_before`, especially for `unit_count` greater than 1.
+    """
     is_on_before::_Bound = 1        # todo: why is this a bound (and not _OptionalScalarInput)
 
+    raw"""```{"mandatory": "no", "values": "`off`, `linear`, `binary`, `integer`", "unit": "-", "default": "`off`"}```
+    Controls how the unit commitment of this `Unit` is handled. `linear` results in the ability to startup parts of the
+    unit (so `0.314159` is a feasible amount of "turned on unit"), while `binary` restricts the `Unit` to either be on
+    (converting the `conversion_at_min` + possible additional conversion above that minimum) or off (converting
+    nothing); `integer` is needed to consider `binary` unit commitment for `Unit`s with more than 1 "grouped unit" (see
+    `unit_count`).
+    """
     unit_commitment::Symbol = :off
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`1`"}```
+    Number of units aggregated in this `Unit`. Besides interacting with the mode of `unit_commitment`, this mainly is
+    responsible for scaling the output (e.g. grouping 47 of the same wind turbine, ...).
+    """
     unit_count::_OptionalExpression  # default=1 is enforced in `parser.jl`
+
+    raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "-"}```
+    If `unit_commitment` is not set to `off`, this specifies the percentage that is considered to be the minimal
+    feasible partial load this `Unit` can operate at. Operating below that setpoint is not allowed, at that point the
+    `conversion_at_min` coefficients are used, and above that they are scaled to result in `conversion` when running at
+    full capacity.
+    """
     min_conversion::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "string", "unit": "-", "default": "-"}```
+    The conversion expression while running on the minimal partial load. Only applicable if `unit_commitment` is not
+    `off` and `min_conversion` is explicitly set. Follows the same form as `conversion`.
+    """
     conversion_at_min::_OptionalString = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary per start", "default": "`0`"}```
+    Costs per startup (also applicable if startups are not binary or integer). This is necessary to allow
+    `conversion_at_min` to have (at least partially) the effect that one expects, if `unit_commitment: linear`.
+    """
     startup_cost::_OptionalScalarInput = nothing
+
+    raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`0`"}```
+    Priority for the build order of components. Components with higher build_priority are built before.
+    This can be useful for addons, that connect multiple components and rely on specific components being initialized
+    before others.
+    """
+    build_priority::_OptionalScalarInput = nothing
 
     # [Internal] =======================================================================================================
     conversion_dict::Dict{Symbol, Dict{Carrier, _NumericalInput}} = Dict(:in => Dict(), :out => Dict())
