@@ -56,10 +56,12 @@ function _attach_logger!(model::JuMP.Model)
     else
         log_file = "$(_iesopt_config(model).names.scenario).log"
         log_path = normpath(mkpath(_iesopt_config(model).paths.results), log_file)
-        if isfile(log_path)
-            @error "Log file already exists, and we do not know whether the file"
+        try
+            _iesopt(model).logger = LoggingExtras.TeeLogger(logger, FileLogger(log_path))
+        catch
+            @error "Could not create file logger, falling back to console logger only"
+            _iesopt(model).logger = logger
         end
-        _iesopt(model).logger = LoggingExtras.TeeLogger(logger, FileLogger(log_path))
     end
 end
 
