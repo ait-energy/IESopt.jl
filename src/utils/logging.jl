@@ -14,6 +14,26 @@ Logging.shouldlog(filelogger::FileLogger, arg...) = true
 Logging.min_enabled_level(filelogger::FileLogger) = Logging.Info
 Logging.catch_exceptions(filelogger::FileLogger) = Logging.catch_exceptions(filelogger.logger)
 
+function save_close_filelogger(model::JuMP.Model)
+    try
+        if _iesopt(model).logger isa LoggingExtras.TeeLogger
+            tl = _iesopt(model).logger
+            if length(tl.loggers) == 2
+                if tl.loggers[2] isa IESopt.FileLogger
+                    if isopen(tl.loggers[2].logger.stream)
+                        @info "Savely closing the file logger's iostream"
+                        close(tl.loggers[2].logger.stream)
+                    end
+                end
+            end
+        end
+    catch
+        # TODO: maybe we can do something here?
+    end
+
+    return nothing
+end
+
 function _attach_logger!(model::JuMP.Model)
     verbosity = _iesopt_config(model).verbosity
 
@@ -36,7 +56,16 @@ function _attach_logger!(model::JuMP.Model)
     else
         log_file = "$(_iesopt_config(model).names.scenario).log"
         log_path = normpath(mkpath(_iesopt_config(model).paths.results), log_file)
-        _iesopt(model).logger = LoggingExtras.TeeLogger(logger, FileLogger(log_path))
+        try
+            _iesopt(model).logger = LoggingExtras.TeeLogger(logger, FileLogger(log_path))
+        catch
+            @error (
+                "Could not create file logger, falling back to console logger only; if this happened after a " *
+                "previous model run, consider calling `save_close_filelogger(model)` after you are done with your " *
+                "previous model - before re-generating a new one - to properly release the log file handle"
+            )
+            _iesopt(model).logger = logger
+        end
     end
 end
 

@@ -3,6 +3,7 @@ function _test_example_default_solver(filename::String; obj::Float64, verbosity:
         model = @suppress generate!(joinpath(PATH_EXAMPLES, filename); verbosity=verbosity, kwargs...)
         @suppress optimize!(model)
         @test JuMP.objective_value(model) ≈ obj atol = 0.1
+        IESopt.save_close_filelogger(model)
     end
 end
 
@@ -38,6 +39,7 @@ _test_example_default_solver("44_lossy_connections.iesopt.yaml"; obj=1233.75)
     optimize!(model)
     @test JuMP.value(model.ext[:iesopt].model.objectives["total_cost"].expr) ≈ 2975.0 atol = 0.05
     @test sum(JuMP.value.(values(model.ext[:iesopt].aux.constraint_safety_expressions))) ≈ 1
+    IESopt.save_close_filelogger(model)
 end
 
 # NOTE: This example fails because it tries to read two snapshots from a CSV file containing only one row.
@@ -62,6 +64,7 @@ end
         JuMP.value.(component(model, "create_gas").exp.value) .==
         [9.375, 18.75, 22.5, 25.0, 25.0, 25.0, 12.5, 15.0, 25.0],
     )
+    IESopt.save_close_filelogger(model)
 end
 
 # model = JuMP.direct_model(HiGHS.Optimizer())
@@ -76,6 +79,7 @@ end
     @test all(JuMP.value.(component(model, "buy").exp.value) .≈ [10.0, 6.0, 6.0, 0.0, 7.0, 4.0])
     obj_val_example_22 = JuMP.objective_value(model)
     _test_example_default_solver("23_snapshots_from_csv.iesopt.yaml"; obj=obj_val_example_22)
+    IESopt.save_close_filelogger(model)
 end
 
 # model = generate!(joinpath(dir, "24_linearized_optimal_powerflow.iesopt.yaml"); verbosity=false)
@@ -106,6 +110,7 @@ end
     @test JuMP.objective_value(model) ≈ -10.0
     @test JuMP.value.(IESopt.component(model, "buy_id").exp.value) == [1, 0, 1, 0]
     @test JuMP.value.(IESopt.component(model, "sell_id").exp.value) == [0, 1, 0, 1]
+    IESopt.save_close_filelogger(model)
 end
 
 # Disabled, because Benders needs to modify Decisions (which is currently not possible due to immutability).
@@ -129,6 +134,7 @@ end
     @test JuMP.objective_value(model) ≈ 44376.75 atol = 0.01
     @test sum(IESopt.extract_result(model, "plant_gas", "in:gas"; mode="value")) ≈ 986.15 atol = 0.01
     @test sum(IESopt.extract_result(model, "electrolysis", "in:electricity"; mode="value")) ≈ 758.58 atol = 0.01
+    IESopt.save_close_filelogger(model)
 end
 
 @testset "47_disable_components" begin
@@ -155,6 +161,11 @@ end
     @test JuMP.objective_value(model_coupled) <=
           JuMP.objective_value(model_AT_DE) + JuMP.objective_value(model_CH) <=
           JuMP.objective_value(model_individual)
+    
+    IESopt.save_close_filelogger(model_coupled)
+    IESopt.save_close_filelogger(model_individual)
+    IESopt.save_close_filelogger(model_AT_DE)
+    IESopt.save_close_filelogger(model_CH)
 end
 
 # Clean up output files after testing is done.
