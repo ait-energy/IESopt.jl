@@ -562,17 +562,21 @@ function _optimize!(model::JuMP.Model; kwargs...)
     # Logging solver output.
     if _iesopt_config(model).optimization.solver.log
         # todo: replace this with a more general approach
-        log_file = abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).solverlog")
-        rm(log_file; force=true)
-        if JuMP.solver_name(model) == "Gurobi"
-            @info "Logging solver output" log_file
-            JuMP.set_attribute(model, "LogFile", log_file)
-        elseif JuMP.solver_name(model) == "HiGHS"
-            @info "Logging solver output" log_file
-            JuMP.set_attribute(model, "log_file", log_file)
-        else
-            # todo: support MOA here
-            @error "Logging solver output is currently only supported for Gurobi and HiGHS"
+        try
+            log_file = abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).solverlog")
+            rm(log_file; force=true)
+            if JuMP.solver_name(model) == "Gurobi"
+                @info "Logging solver output" log_file
+                JuMP.set_attribute(model, "LogFile", log_file)
+            elseif JuMP.solver_name(model) == "HiGHS"
+                @info "Logging solver output" log_file
+                JuMP.set_attribute(model, "log_file", log_file)
+            else
+                # todo: support MOA here
+                @error "Logging solver output is currently only supported for Gurobi and HiGHS"
+            end
+        catch
+            @error "Failed to setup solver log file"
         end
     end
 
