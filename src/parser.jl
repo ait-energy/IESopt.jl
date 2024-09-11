@@ -55,7 +55,7 @@ function _parse_model!(model::JuMP.Model, filename::String, global_parameters::D
         # Construct the objectives container & add all registered objectives.
         for (name, terms) in _iesopt_config(model).optimization.objective.functions
             _iesopt(model).model.objectives[name] =
-                (terms=Set{JuMP.AffExpr}(), expr=JuMP.AffExpr(0.0), constants=Vector{Float64}())
+                (terms=Set{Union{JuMP.AffExpr, JuMP.VariableRef}}(), expr=JuMP.AffExpr(0.0), constants=Vector{Float64}())
             _iesopt(model).aux._obj_terms[name] = terms
         end
 
