@@ -59,7 +59,11 @@ function _attach_logger!(model::JuMP.Model)
         try
             _iesopt(model).logger = LoggingExtras.TeeLogger(logger, FileLogger(log_path))
         catch
-            @error "Could not create file logger, falling back to console logger only"
+            @error (
+                "Could not create file logger, falling back to console logger only; if this happened after a " *
+                "previous model run, consider calling `save_close_filelogger(model)` after you are done with your " *
+                "previous model - before re-generating a new one - to properly release the log file handle"
+            )
             _iesopt(model).logger = logger
         end
     end
