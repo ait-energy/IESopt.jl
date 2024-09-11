@@ -31,11 +31,13 @@ end
             model = JuMP.Model()
             IESopt.generate!(model, joinpath(PATH_TESTFILES, "filesystem", fn); verbosity=false)
             @test haskey(model.ext[:iesopt].input.noncore[:templates], "TestComp")
+            IESopt.save_close_filelogger(model)
 
             # relative path
             cd(PATH_TESTFILES)
             model = JuMP.Model()
             IESopt.generate!(model, joinpath("filesystem", fn); verbosity=false)
+            IESopt.save_close_filelogger(model)
 
             # filename only
             @test haskey(model.ext[:iesopt].input.noncore[:templates], "TestComp")
@@ -44,6 +46,7 @@ end
             IESopt.generate!(model, fn; verbosity=false)
             @test haskey(model.ext[:iesopt].input.noncore[:templates], "TestComp")
             cd(PATH_CURRENT)
+            IESopt.save_close_filelogger(model)
         end
     end
 end
