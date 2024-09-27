@@ -83,11 +83,14 @@ function _ConfigSnapshots(config::Dict{String, Any})
         @warn "Detected precompilation... limiting Snapshot count" original = config["count"] new = count
     end
 
+    weight_config = get(config, "weights", nothing)
+    weights = weight_config isa Real ? float(weight_config) : weight_config
+
     return _ConfigSnapshots(
         count,
         get(config, "offset", 0),
         get(config, "names", nothing),
-        get(config, "weights", nothing),
+        weights,
         get(config, "representatives", nothing),
         get(config, "aggregate", nothing),
     )
