@@ -116,14 +116,18 @@ function _node_con_nodalbalance!(node::Node)
             node.con.nodalbalance = @constraint(
                 model,
                 [t = _iesopt(model).model.T],
-                node.exp.injection[t] == 0,
+                _weight(model, t) * node.exp.injection[t] == 0,
                 base_name = _base_name(node, "nodalbalance"),
                 container = Array
             )
         else
             # Create all representatives.
             _repr = Dict(
-                t => @constraint(model, node.exp.injection[t] == 0, base_name = _base_name(node, "nodalbalance[$(t)]")) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                t => @constraint(
+                    model,
+                    _weight(model, t) * node.exp.injection[t] == 0,
+                    base_name = _base_name(node, "nodalbalance[$(t)]")
+                ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
@@ -137,14 +141,18 @@ function _node_con_nodalbalance!(node::Node)
             node.con.nodalbalance = @constraint(
                 model,
                 [t = _iesopt(model).model.T],
-                node.exp.injection[t] <= 0,
+                _weight(model, t) * node.exp.injection[t] <= 0,
                 base_name = _base_name(node, "nodalbalance"),
                 container = Array
             )
         else
             # Create all representatives.
             _repr = Dict(
-                t => @constraint(model, node.exp.injection[t] <= 0, base_name = _base_name(node, "nodalbalance[$(t)]")) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                t => @constraint(
+                    model,
+                    _weight(model, t) * node.exp.injection[t] <= 0,
+                    base_name = _base_name(node, "nodalbalance[$(t)]")
+                ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
@@ -158,14 +166,18 @@ function _node_con_nodalbalance!(node::Node)
             node.con.nodalbalance = @constraint(
                 model,
                 [t = _iesopt(model).model.T],
-                node.exp.injection[t] >= 0,
+                _weight(model, t) * node.exp.injection[t] >= 0,
                 base_name = _base_name(node, "nodalbalance"),
                 container = Array
             )
         else
             # Create all representatives.
             _repr = Dict(
-                t => @constraint(model, node.exp.injection[t] >= 0, base_name = _base_name(node, "nodalbalance[$(t)]")) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                t => @constraint(
+                    model,
+                    _weight(model, t) * node.exp.injection[t] >= 0,
+                    base_name = _base_name(node, "nodalbalance[$(t)]")
+                ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
@@ -180,7 +192,7 @@ function _node_con_nodalbalance!(node::Node)
         node.con.nodalbalance = @constraint(
             model,
             [t0 = begin_steps],
-            sum(node.exp.injection[t] for t in t0:(t0 - 1 + node.sum_window_size)) == 0,
+            sum(_weight(model, t) * node.exp.injection[t] for t in t0:(t0 - 1 + node.sum_window_size)) == 0,
             base_name = _base_name(node, "nodalbalance"),
             container = Array
         )
