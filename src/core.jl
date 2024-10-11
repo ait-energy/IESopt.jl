@@ -101,6 +101,7 @@ include("core/node.jl")
 include("core/profile.jl")
 include("core/snapshot.jl")
 include("core/unit.jl")
+include("core/virtual.jl")
 
 # Finalize the docstrings of the core components.
 _finalize_docstring(Connection)
@@ -108,6 +109,7 @@ _finalize_docstring(Decision)
 _finalize_docstring(Node)
 _finalize_docstring(Profile)
 _finalize_docstring(Unit)
+_finalize_docstring(Virtual)
 
 function Base.show(io::IO, cc::_CoreComponent)
     str_show = """An $(typeof(cc)):"""
