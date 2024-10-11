@@ -110,7 +110,7 @@ _finalize_docstring(Profile)
 _finalize_docstring(Unit)
 
 function Base.show(io::IO, cc::_CoreComponent)
-    str_show = """An $(typeof(cc)): '$(cc.name)'"""
+    str_show = """An $(typeof(cc)):"""
     
     fields = _result_fields(cc)
     for field in fields[1:(end-1)]
