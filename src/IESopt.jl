@@ -299,9 +299,9 @@ Builds and returns a model using the IESopt framework.
 
 This loads the configuration file specified by `filename`. Requires full specification of the `solver` entry in config.
 """
-function generate!(filename::String; verbosity=nothing, kwargs...)
+function generate!(filename::String; kwargs...)
     model = JuMP.Model()
-    return generate!(model, filename; verbosity=verbosity, kwargs...)
+    return generate!(model, filename; kwargs...)
 end
 
 """
@@ -313,7 +313,7 @@ This loads the configuration file specified by `filename`. Be careful when creat
 in the provided examples, as this can conflict with IESopt internals (especially for model/optimizer combinations
 that do not support bridges). Returns the model for convenience, even though it is modified in place.
 """
-function generate!(model::JuMP.Model, filename::String; verbosity=nothing, kwargs...)
+function generate!(model::JuMP.Model, filename::String; kwargs...)
     local stats_parse, stats_build, stats_total
 
     success = true
@@ -323,7 +323,7 @@ function generate!(model::JuMP.Model, filename::String; verbosity=nothing, kwarg
 
         # Parse & build the model.
         stats_total = @timed begin
-            stats_parse = @timed parse!(model, filename; verbosity, kwargs...)
+            stats_parse = @timed parse!(model, filename; kwargs...)
             !stats_parse.value && return nothing
             if JuMP.mode(model) != JuMP.DIRECT && JuMP.MOIU.state(JuMP.backend(model)) == JuMP.MOIU.NO_OPTIMIZER
                 with_logger(_iesopt(model).logger) do
@@ -499,16 +499,20 @@ function _attach_optimizer(model::JuMP.Model)
     return nothing
 end
 
-function parse!(model::JuMP.Model, filename::String; verbosity=nothing, kwargs...)
+function parse!(model::JuMP.Model, filename::String; kwargs...)
     if !endswith(filename, ".iesopt.yaml")
         @critical "Model entry config files need to respect the `.iesopt.yaml` file extension" filename
     end
 
-    # convert to `Pairs` with `Symbol` keys to `Dict{String, Any}`
-    global_parameters = Dict{String, Any}(String(k) => v for (k, v) in kwargs)
+    # Get all parameters that were passed directly from the caller.
+    global_parameters = Dict{String, Any}(string(k) => v for (k, v) in kwargs)
+
+    # Extract IESopt-internal arguments from `kwargs`.
+    model.ext[:_iesopt_verbosity] = pop!(global_parameters, "verbosity", nothing)
+    model.ext[:_iesopt_force_reload] = pop!(global_parameters, "force_reload", true)
 
     # Load the model specified by `filename`.
-    _parse_model!(model, filename, global_parameters; verbosity) || (@critical "Error while parsing model" filename)
+    _parse_model!(model, filename, global_parameters) || (@critical "Error while parsing model" filename)
 
     return true
 end
