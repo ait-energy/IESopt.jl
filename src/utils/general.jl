@@ -183,7 +183,7 @@ function _load_or_retrieve_addon_file(filename::String; reload::Bool)
         @error "The loaded code did not return a valid module; make sure the file only contains a single module definition that wraps all your code"
     catch e
         @error "An error occured while trying to load an addon file" addon_file_name = filename
-        @error e.error.msg
+        @error string(e.error)
         @error "The error seems to have occured here" file = e.file line = e.line
     end
 
