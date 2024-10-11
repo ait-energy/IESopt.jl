@@ -173,11 +173,6 @@ function _construct_constraints!(::_CoreComponent) end
 function _after_construct_constraints!(::_CoreComponent) end
 function _construct_objective!(::_CoreComponent) end
 
-function filter_component(model::JuMP.Model, tags::Vector{String})
-    @error "Filtering based on tags has been deprecated"
-    return nothing
-end
-
 function _result_fields(component::_CoreComponent)
     @error "_result_fields(...) not implemented" component = component.name
     return nothing
