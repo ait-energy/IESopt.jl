@@ -699,14 +699,14 @@ end
 function _components_tagged(model::JuMP.Model, tag::String)
     cnames = get(_iesopt(model).model.tags, tag, String[])
     isempty(cnames) && return _CoreComponent[]
-    return component.(model, cnames)::Vector{<:_CoreComponent}
+    return get_component.(model, cnames)::Vector{<:_CoreComponent}
 end
 
 function _components_tagged(model::JuMP.Model, tags::Vector{String})
     cnames = [get(_iesopt(model).model.tags, tag, String[]) for tag in tags]
     cnames = intersect(cnames...)
     isempty(cnames) && return _CoreComponent[]
-    return component.(model, cnames)::Vector{<:_CoreComponent}
+    return get_component.(model, cnames)::Vector{<:_CoreComponent}
 end
 
 function extract_result(model::JuMP.Model, component_name::String, field::String; mode::String)
