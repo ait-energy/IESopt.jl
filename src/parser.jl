@@ -1,7 +1,6 @@
-function _parse_model!(model::JuMP.Model, filename::String, global_parameters::Dict; verbosity=nothing)
+function _parse_model!(model::JuMP.Model, filename::String, global_parameters::Dict)
     filename = normpath(filename)
     model.ext[:_iesopt_wd] = dirname(filename)
-    model.ext[:_iesopt_verbosity] = verbosity
     model.ext[:iesopt] = _IESoptData(YAML.load_file(filename; dicttype=Dict{String, Any}))
 
     # Parse the overall global configuration (e.g., replacing parameters).
