@@ -32,8 +32,8 @@ generate!(
     build_cost1=500.0,
     build_cost2=5000.0,
 )
-JuMP.fix.(component(model, "inflow").var.aux_value, _inflow; force=true);
-JuMP.fix.(component(model, "demand").var.aux_value, _demand; force=true);
+JuMP.fix.(get_component(model, "inflow").var.aux_value, _inflow; force=true);
+JuMP.fix.(get_component(model, "demand").var.aux_value, _demand; force=true);
 true_cost = []
 for t in 1:365
     append!(true_cost, [_cost[t * 24 * 4] for _ in 1:(24 * 4)])
@@ -42,7 +42,7 @@ objs = _iesopt(model).model.objectives
 JuMP.@objective(
     model,
     Min,
-    sum(component(model, "thermal").var.aux_value[t] * true_cost[t] for t in 1:(8760 * 4)) +
+    sum(get_component(model, "thermal").var.aux_value[t] * true_cost[t] for t in 1:(8760 * 4)) +
     objs["build1_value"].func +
     objs["build2_value"].func
 );
@@ -69,19 +69,19 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=365, sense=:Min, lower_bound=0.0, o
 
     JuMP.@constraint(model, x_storage.in <= x_storage_cap.in)
     JuMP.@constraint(model, x_storage.out <= x_storage_cap.in)
-    # JuMP.@constraint(model, component(model, "reservoir").var.state[1] <= x_storage_cap.in)
+    # JuMP.@constraint(model, get_component(model, "reservoir").var.state[1] <= x_storage_cap.in)
 
-    JuMP.@constraint(model, component(model, "reservoir").var.state[1] == x_storage.in)
+    JuMP.@constraint(model, get_component(model, "reservoir").var.state[1] == x_storage.in)
     JuMP.@constraint(
         model,
-        -JuMP.constraint_object(component(model, "reservoir").con.last_state_lb).func == x_storage.out
+        -JuMP.constraint_object(get_component(model, "reservoir").con.last_state_lb).func == x_storage.out
     )
 
     if t == 1
         JuMP.@constraint(
             model,
             x_storage_cap.out ==
-            x_storage_cap.in + component(model, "build1").var.value + component(model, "build2").var.value
+            x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
         )
     else
         JuMP.@constraint(model, x_storage_cap.out == x_storage_cap.in)
@@ -93,8 +93,8 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=365, sense=:Min, lower_bound=0.0, o
         return
     end
 
-    JuMP.fix.(component(model, "inflow").var.aux_value, _inflow[((t - 1) * 24 * 4 + 1):(t * 24 * 4)]; force=true)
-    JuMP.fix.(component(model, "demand").var.aux_value, _demand[((t - 1) * 24 * 4 + 1):(t * 24 * 4)]; force=true)
+    JuMP.fix.(get_component(model, "inflow").var.aux_value, _inflow[((t - 1) * 24 * 4 + 1):(t * 24 * 4)]; force=true)
+    JuMP.fix.(get_component(model, "demand").var.aux_value, _demand[((t - 1) * 24 * 4 + 1):(t * 24 * 4)]; force=true)
     objs = _iesopt(model).model.objectives
 
     if t == 1
@@ -119,8 +119,9 @@ simulations = SDDP.simulate(
     custom_recorders=Dict{Symbol, Function}(
         :build =>
             (model::JuMP.Model) ->
-                JuMP.value(component(model, "build1").var.value) + JuMP.value(component(model, "build2").var.value),
-        :thermal => (model::JuMP.Model) -> JuMP.value(component(model, "thermal").var.aux_value[1]),
+                JuMP.value(get_component(model, "build1").var.value) +
+                JuMP.value(get_component(model, "build2").var.value),
+        :thermal => (model::JuMP.Model) -> JuMP.value(get_component(model, "thermal").var.aux_value[1]),
     ),
 )
 
@@ -162,18 +163,18 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
 
     JuMP.@constraint(model, x_storage.in <= x_storage_cap.in)
     JuMP.@constraint(model, x_storage.out <= x_storage_cap.in)
-    # JuMP.@constraint(model, component(model, "reservoir").var.state[1] <= x_storage_cap.in)
+    # JuMP.@constraint(model, get_component(model, "reservoir").var.state[1] <= x_storage_cap.in)
 
-    JuMP.@constraint(model, component(model, "reservoir").var.state[1] == x_storage.in)
+    JuMP.@constraint(model, get_component(model, "reservoir").var.state[1] == x_storage.in)
     JuMP.@constraint(
         model,
-        -JuMP.constraint_object(component(model, "reservoir").con.last_state_lb).func == x_storage.out
+        -JuMP.constraint_object(get_component(model, "reservoir").con.last_state_lb).func == x_storage.out
     )
 
     JuMP.@constraint(
         model,
         x_storage_cap.out ==
-        x_storage_cap.in + component(model, "build1").var.value + component(model, "build2").var.value
+        x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
     )
 
     _z = 0
@@ -182,7 +183,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
         JuMP.@constraint(model, x_storage.out + _z >= 5)
     end
 
-    v = JuMP.fix_value(component(model, "inflow").var.aux_value[1])
+    v = JuMP.fix_value(get_component(model, "inflow").var.aux_value[1])
     objs = _iesopt(model).model.objectives
 
     Ω = [1.0]
@@ -208,8 +209,9 @@ simulations = SDDP.simulate(
     custom_recorders=Dict{Symbol, Function}(
         :build =>
             (model::JuMP.Model) ->
-                JuMP.value(component(model, "build1").var.value) + JuMP.value(component(model, "build2").var.value),
-        :thermal => (model::JuMP.Model) -> JuMP.value(component(model, "thermal").var.aux_value[1]),
+                JuMP.value(get_component(model, "build1").var.value) +
+                JuMP.value(get_component(model, "build2").var.value),
+        :thermal => (model::JuMP.Model) -> JuMP.value(get_component(model, "thermal").var.aux_value[1]),
     ),
 )
 
@@ -247,18 +249,18 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
 
     JuMP.@constraint(model, x_storage.in <= x_storage_cap.in)
     JuMP.@constraint(model, x_storage.out <= x_storage_cap.in)
-    # JuMP.@constraint(model, component(model, "reservoir").var.state[1] <= x_storage_cap.in)
+    # JuMP.@constraint(model, get_component(model, "reservoir").var.state[1] <= x_storage_cap.in)
 
-    JuMP.@constraint(model, component(model, "reservoir").var.state[1] == x_storage.in)
+    JuMP.@constraint(model, get_component(model, "reservoir").var.state[1] == x_storage.in)
     JuMP.@constraint(
         model,
-        -JuMP.constraint_object(component(model, "reservoir").con.last_state_lb).func == x_storage.out
+        -JuMP.constraint_object(get_component(model, "reservoir").con.last_state_lb).func == x_storage.out
     )
 
     JuMP.@constraint(
         model,
         x_storage_cap.out ==
-        x_storage_cap.in + component(model, "build1").var.value + component(model, "build2").var.value
+        x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
     )
 
     _z = 0
@@ -267,7 +269,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
         JuMP.@constraint(model, x_storage.out + _z >= 5)
     end
 
-    v = JuMP.fix_value(component(model, "inflow").var.aux_value[1])
+    v = JuMP.fix_value(get_component(model, "inflow").var.aux_value[1])
     objs = _iesopt(model).model.objectives
 
     lower = -convert(Int64, floor(t / 5.0 * 2500))
@@ -277,7 +279,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
     P = [1.0 / length(Ω) for i in 1:length(Ω)]
 
     SDDP.parameterize(model, Ω, P) do ω
-        # JuMP.fix(component(model, "inflow").var.aux_value[1], max(0., v + ω.inflow); force=true)
+        # JuMP.fix(get_component(model, "inflow").var.aux_value[1], max(0., v + ω.inflow); force=true)
         # SDDP.@stageobjective(model, objs["thermal"].func + _z * 1e4)
         SDDP.@stageobjective(
             model,
@@ -300,8 +302,9 @@ simulations = SDDP.simulate(
     custom_recorders=Dict{Symbol, Function}(
         :build =>
             (model::JuMP.Model) ->
-                JuMP.value(component(model, "build1").var.value) + JuMP.value(component(model, "build2").var.value),
-        :thermal => (model::JuMP.Model) -> JuMP.value(component(model, "thermal").var.aux_value[1]),
+                JuMP.value(get_component(model, "build1").var.value) +
+                JuMP.value(get_component(model, "build2").var.value),
+        :thermal => (model::JuMP.Model) -> JuMP.value(get_component(model, "thermal").var.aux_value[1]),
     ),
 )
 
@@ -333,10 +336,10 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=52, sense=:Min, lower_bound=0.0, op
         parametric=true,
     )
 
-    JuMP.@constraint(model, component(model, "reservoir").var.state[1] == x_storage.in)
+    JuMP.@constraint(model, get_component(model, "reservoir").var.state[1] == x_storage.in)
     JuMP.@constraint(
         model,
-        -JuMP.constraint_object(component(model, "reservoir").con.last_state_lb).func == x_storage.out
+        -JuMP.constraint_object(get_component(model, "reservoir").con.last_state_lb).func == x_storage.out
     )
 
     _z = 0
@@ -345,7 +348,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=52, sense=:Min, lower_bound=0.0, op
         JuMP.@constraint(model, x_storage.out + _z >= 300)
     end
 
-    v = JuMP.fix_value(component(model, "inflow").var.aux_value[1])
+    v = JuMP.fix_value(get_component(model, "inflow").var.aux_value[1])
     objs = _iesopt(model).model.objectives
 
     Ω = [
@@ -358,7 +361,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=52, sense=:Min, lower_bound=0.0, op
     P /= sum(P)
 
     SDDP.parameterize(model, Ω, P) do ω
-        JuMP.fix(component(model, "inflow").var.aux_value[1], max(0.0, v + ω.inflow); force=true)
+        JuMP.fix(get_component(model, "inflow").var.aux_value[1], max(0.0, v + ω.inflow); force=true)
         SDDP.@stageobjective(model, ω.fuel_multiplier * objs["thermal"].func + _z * 1e4)
         return
     end
@@ -406,8 +409,8 @@ simulations = SDDP.simulate(
     50,
     [:x_storage];
     custom_recorders=Dict{Symbol, Function}(
-        :thermal => (model::JuMP.Model) -> JuMP.value(component(model, "thermal").var.aux_value[1]),
-        :spillage => (model::JuMP.Model) -> JuMP.value(component(model, "spill").var.aux_value[1]),
+        :thermal => (model::JuMP.Model) -> JuMP.value(get_component(model, "thermal").var.aux_value[1]),
+        :spillage => (model::JuMP.Model) -> JuMP.value(get_component(model, "spill").var.aux_value[1]),
     ),
 )
 

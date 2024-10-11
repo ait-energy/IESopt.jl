@@ -46,7 +46,7 @@ function Base.getproperty(cc::Virtual, field::Symbol)
         # See if we may be trying to find a component that is "inside" this Virtual?
         cname = "$(getfield(cc, :name)).$field"
         model = getfield(cc, :model)
-        haskey(_iesopt(model).model.components, cname) && return component(model, cname)
+        haskey(_iesopt(model).model.components, cname) && return get_component(model, cname)
 
         return getfield(cc, field)
     catch e

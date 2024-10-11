@@ -181,7 +181,7 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
                 push!(obj.constants, term)
             else
                 comp, proptype, prop = rsplit(term, "."; limit=3)
-                field = getproperty(getproperty(component(model, comp), Symbol(proptype)), Symbol(prop))
+                field = getproperty(getproperty(get_component(model, comp), Symbol(proptype)), Symbol(prop))
                 if field isa Vector
                     push!(obj.terms, sum(field))
                 else
@@ -674,11 +674,11 @@ function compute_IIS(model::JuMP.Model; filename::String="")
 end
 
 """
-    function component(model::JuMP.Model, component_name::String)
+    function get_component(model::JuMP.Model, component_name::String)
 
 Get the component `component_name` from `model`.
 """
-function component(model::JuMP.Model, component_name::AbstractString)
+function get_component(model::JuMP.Model, component_name::AbstractString)
     if !haskey(_iesopt(model).model.components, component_name)
         st = stacktrace()
         trigger = length(st) > 0 ? st[1] : nothing
@@ -710,7 +710,7 @@ function _components_tagged(model::JuMP.Model, tags::Vector{String})
 end
 
 function extract_result(model::JuMP.Model, component_name::String, field::String; mode::String)
-    return _result(component(model, component_name), mode, field)[2]
+    return _result(get_component(model, component_name), mode, field)[2]
 end
 
 """

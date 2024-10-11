@@ -291,7 +291,7 @@ function _conv_S2NI(model::JuMP.Model, str::AbstractString)
     if isnothing(findfirst("@", str))
         # Check if this is a link to an Expression.
         if haskey(_iesopt(model).model.components, str)
-            component = component(model, str)
+            component = get_component(model, str)
             error(
                 "You ended up in an outdated part of IESopt, which should not have happened. Please report this error including the model you are trying to run.",
             )
@@ -325,7 +325,7 @@ function _presolve(model::JuMP.Model, data::_AbstractAffExpr)
     return _PresolvedAffExpr(
         data.constant,
         [
-            (coeff=coeff, var=_PresolvedVarRef(component(model, var.comp_name), getfield(IESopt, var.field))) for
+            (coeff=coeff, var=_PresolvedVarRef(get_component(model, var.comp_name), getfield(IESopt, var.field))) for
             (coeff, var) in data.variables
         ],
     )

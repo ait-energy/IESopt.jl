@@ -139,11 +139,11 @@ function _finalize(e::_Expression)
     # Add all `Decision`s to the inner expression.
     for (coeff, cname, field) in e.decisions
         if field == "value"
-            var = _value(component(model, cname))
+            var = _value(get_component(model, cname))
         elseif field == "size"
-            var = _size(component(model, cname))
+            var = _size(get_component(model, cname))
         elseif field == "count"
-            var = _count(component(model, cname))
+            var = _count(get_component(model, cname))
         else
             @critical "Wrong Decision accessor in unnamed expression" coeff decision = cname accessor = field
         end

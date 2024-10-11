@@ -53,15 +53,15 @@ end
     model = generate!(joinpath(PATH_EXAMPLES, "20_chp.iesopt.yaml"); verbosity=false)
     optimize!(model)
     @test all(
-        JuMP.value.(component(model, "chp.power").exp.out_electricity) .==
+        JuMP.value.(get_component(model, "chp.power").exp.out_electricity) .==
         [2.75, 5.50, 7.00, 8.00, 9.00, 10.00, 5.00, 5.00, 9.00],
     )
     @test all(
-        JuMP.value.(component(model, "chp.heat").exp.out_heat) .==
+        JuMP.value.(get_component(model, "chp.heat").exp.out_heat) .==
         [5.00, 10.00, 10.00, 10.00, 5.00, 0.00, 0.00, 5.00, 5.00],
     )
     @test all(
-        JuMP.value.(component(model, "create_gas").exp.value) .==
+        JuMP.value.(get_component(model, "create_gas").exp.value) .==
         [9.375, 18.75, 22.5, 25.0, 25.0, 25.0, 12.5, 15.0, 25.0],
     )
     IESopt.save_close_filelogger(model)
@@ -76,7 +76,7 @@ end
 @testset "snapshots (22 and 23)" begin
     model = generate!(joinpath(PATH_EXAMPLES, "22_snapshot_weights.iesopt.yaml"); verbosity=false)
     optimize!(model)
-    @test all(JuMP.value.(component(model, "buy").exp.value) .≈ [10.0, 6.0, 6.0, 0.0, 7.0, 4.0])
+    @test all(JuMP.value.(get_component(model, "buy").exp.value) .≈ [10.0, 6.0, 6.0, 0.0, 7.0, 4.0])
     obj_val_example_22 = JuMP.objective_value(model)
     _test_example_default_solver("23_snapshots_from_csv.iesopt.yaml"; obj=obj_val_example_22)
     IESopt.save_close_filelogger(model)
@@ -108,8 +108,8 @@ end
     model = generate!(joinpath(PATH_EXAMPLES, "31_exclusive_operation.iesopt.yaml"); verbosity=false)
     optimize!(model)
     @test JuMP.objective_value(model) ≈ -10.0
-    @test JuMP.value.(IESopt.component(model, "buy_id").exp.value) == [1, 0, 1, 0]
-    @test JuMP.value.(IESopt.component(model, "sell_id").exp.value) == [0, 1, 0, 1]
+    @test JuMP.value.(IESopt.get_component(model, "buy_id").exp.value) == [1, 0, 1, 0]
+    @test JuMP.value.(IESopt.get_component(model, "sell_id").exp.value) == [0, 1, 0, 1]
     IESopt.save_close_filelogger(model)
 end
 
@@ -161,7 +161,7 @@ end
     @test JuMP.objective_value(model_coupled) <=
           JuMP.objective_value(model_AT_DE) + JuMP.objective_value(model_CH) <=
           JuMP.objective_value(model_individual)
-    
+
     IESopt.save_close_filelogger(model_coupled)
     IESopt.save_close_filelogger(model_individual)
     IESopt.save_close_filelogger(model_AT_DE)
