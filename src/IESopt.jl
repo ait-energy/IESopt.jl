@@ -5,9 +5,8 @@ A general purpose solver agnostic energy system optimization framework.
 """
 module IESopt
 
-# TODO: remove this, once the bug is fixed
 # See: https://discourse.julialang.org/t/base-docs-doc-failing-with-1-11-0/121187
-# This is a workaround for an issue introduced in Julia 1.11.0
+# This is a workaround for an issue introduced by Julia 1.11.0, and seems to now be necessary to use `Base.Docs`
 import REPL
 
 # Required for installing/loading solvers, and proper precompilation.
