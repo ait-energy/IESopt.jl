@@ -702,7 +702,7 @@ function component(model::JuMP.Model, component_name::AbstractString)
     return _iesopt(model).model.components[component_name]
 end
 
-function components(model::JuMP.Model; tagged::Union{Nothing, String, Vector{String}} = nothing)
+function get_components(model::JuMP.Model; tagged::Union{Nothing, String, Vector{String}} = nothing)
     !isnothing(tagged) && return _components_tagged(model, tagged)::Vector{<:_CoreComponent}
 
     return collect(values(_iesopt(model).model.components))::Vector{<:_CoreComponent}
