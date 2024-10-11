@@ -125,6 +125,71 @@ _get(x::AbstractVector{<:Number}, t::_ID) = x[t]
 _get(x::JuMP.AffExpr, t::_ID) = x
 _get(x::Vector{JuMP.AffExpr}, t::_ID) = x[t]
 
+function _mapexpr_addon(expr::Expr, reload::Bool)
+    if expr.head != :module
+        # First code is not a module definition.
+        error("Failed loading addon (ERROR_CODE 1); make sure the file only contains a single module definition that wraps all your code")
+    end
+
+    if length(expr.args) != 3
+        # Too many (or not enough) code blocks in the file.
+        error("Failed loading addon (ERROR_CODE 2); make sure the file only contains a single module definition that wraps all your code")
+    end
+
+    if expr.args[3].head != :block
+        # The actual stuff inside the module defintion is not a block.
+        error("Failed loading addon (ERROR_CODE 3); make sure the file only contains a single module definition that wraps all your code")
+    end
+
+    module_name = expr.args[2]
+
+    if reload
+        if (module_name in names(@__MODULE__; all=true)) || (module_name in names(Main; all=true))
+            @info "Replacing existing addon" addon = module_name
+        end
+
+        return nothing
+    end
+
+    if module_name in names(@__MODULE__; all=true)
+        # Addon already loaded in IESopt.
+        @info "Addon already loaded" addon = module_name
+        return Meta.parse(string(module_name))
+    end
+
+    if module_name in names(Main; all=true)
+        # Addon already loaded in Main.
+        @info "Addon already loaded in global Main" addon = module_name
+        return Meta.parse("Main.$(module_name)")
+    end
+
+    return nothing
+end
+
+function _load_or_retrieve_addon_file(filename::String; reload::Bool)
+    try
+        module_addon = include((e) -> _mapexpr_addon(e, reload), filename)
+
+        if module_addon isa Module
+            return module_addon
+        elseif isnothing(module_addon)
+            # We did not get a module back, but no error was generated. This means we are fine to just include the file.
+            # This `include(...)` could trigger a warning about reloading the module, which we now suppress.
+            module_addon = @suppress include(filename)
+            (module_addon isa Module) && return module_addon
+        end
+
+        @error "An error occured while trying to load an addon file" addon_file_name = filename
+        @error "The loaded code did not return a valid module; make sure the file only contains a single module definition that wraps all your code"
+    catch e
+        @error "An error occured while trying to load an addon file" addon_file_name = filename
+        @error e.error.msg
+        @error "The error seems to have occured here" file = e.file line = e.line
+    end
+
+    @critical "Error while loading addons, see above for details"
+end
+
 function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=DataFrames.DataFrame, slice::Bool=true)
     if endswith(filename, ".csv")
         path = path === :auto ? :files : path
@@ -136,12 +201,23 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
         filepath_local = abspath(getfield(_iesopt_config(model).paths, path), filename)
         filepath_core = abspath(core_addon_dir, filename)
 
+        # Before checking the file, let's see if it refers to an already loaded module instead.
+        # This requires you to pass the EXACT name of the module as addon name!
+        module_name = Symbol(basename(filename)[1:(end-3)])
+        if (module_name in names(Main; all=true))
+            @info "Addon already loaded in global Main" addon = module_name
+            if model.ext[:_iesopt_force_reload]
+                @warn "Cannot force reload an addon that is already loaded in Main, outside IESopt; ignoring reload, and re-using the existing module" module_name
+            end
+            return getfield(Main, module_name)
+        end
+
         if isfile(filepath_local)
-            @info "Trying to load local addon" filename source = filepath_local
-            return include(filepath_local)
+            @info "Trying to load addon from file (local)" filename source = filepath_local
+            return _load_or_retrieve_addon_file(filepath_local; reload=model.ext[:_iesopt_force_reload])
         elseif isfile(filepath_core)
-            @info "Trying to load core addon" filename source = filepath_core
-            return include(filepath_core)
+            @info "Trying to load addon from file (core)" filename source = filepath_core
+            return _load_or_retrieve_addon_file(filepath_core; reload=model.ext[:_iesopt_force_reload])
         else
             @critical "Failed to find addon location" filename filepath_local filepath_core
         end
