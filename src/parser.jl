@@ -204,10 +204,10 @@ function _flatten_model!(model::JuMP.Model, description::Dict{String, Any})
         _is_valid_template_name(type) || @error "Invalid type of `Template` (check documentation)" type
 
         # Remember its name and type properly, before that is lost due to flattening, by constructing a Virtual.
-        _iesopt(model).model.components[cname] = Virtual(model=model, name=cname, type=type)
+        _iesopt(model).model.components[cname] = Virtual(; model=model, name=cname, type=type)
 
         # Properly tag the new Virtual.
-        !haskey( _iesopt(model).model.tags, type) && ( _iesopt(model).model.tags[type] = Vector{String}())
+        !haskey(_iesopt(model).model.tags, type) && (_iesopt(model).model.tags[type] = Vector{String}())
         push!(_iesopt(model).model.tags[type], cname)
 
         # Try parsing it.

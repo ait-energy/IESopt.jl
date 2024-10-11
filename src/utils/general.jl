@@ -128,17 +128,23 @@ _get(x::Vector{JuMP.AffExpr}, t::_ID) = x[t]
 function _mapexpr_addon(expr::Expr, reload::Bool)
     if expr.head != :module
         # First code is not a module definition.
-        error("Failed loading addon (ERROR_CODE 1); make sure the file only contains a single module definition that wraps all your code")
+        error(
+            "Failed loading addon (ERROR_CODE 1); make sure the file only contains a single module definition that wraps all your code",
+        )
     end
 
     if length(expr.args) != 3
         # Too many (or not enough) code blocks in the file.
-        error("Failed loading addon (ERROR_CODE 2); make sure the file only contains a single module definition that wraps all your code")
+        error(
+            "Failed loading addon (ERROR_CODE 2); make sure the file only contains a single module definition that wraps all your code",
+        )
     end
 
     if expr.args[3].head != :block
         # The actual stuff inside the module defintion is not a block.
-        error("Failed loading addon (ERROR_CODE 3); make sure the file only contains a single module definition that wraps all your code")
+        error(
+            "Failed loading addon (ERROR_CODE 3); make sure the file only contains a single module definition that wraps all your code",
+        )
     end
 
     module_name = expr.args[2]
@@ -203,7 +209,7 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
 
         # Before checking the file, let's see if it refers to an already loaded module instead.
         # This requires you to pass the EXACT name of the module as addon name!
-        module_name = Symbol(basename(filename)[1:(end-3)])
+        module_name = Symbol(basename(filename)[1:(end - 3)])
         if (module_name in names(Main; all=true))
             @info "Addon already loaded in global Main" addon = module_name
             if model.ext[:_iesopt_force_reload]
