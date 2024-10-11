@@ -109,6 +109,18 @@ _finalize_docstring(Node)
 _finalize_docstring(Profile)
 _finalize_docstring(Unit)
 
+function Base.show(io::IO, cc::_CoreComponent)
+    str_show = """An $(typeof(cc)): '$(cc.name)'"""
+    
+    fields = _result_fields(cc)
+    for field in fields[1:(end-1)]
+        str_show *= "\n├ $field: $(getfield(cc, field))"
+    end
+    str_show *= "\n└ $(fields[end]): $(getfield(cc, fields[end]))"
+    
+    return print(io, str_show)
+end
+
 # Here, empty implementations are done to ensure every core component type implements all necessary functionality, even
 # if it does not care about that. Make sure to implement them, in order to actually use them.
 _check(cc::_CoreComponent) = !cc.conditional
@@ -302,6 +314,8 @@ mutable struct _IESoptModelData
 
     snapshots::Dict{_ID, Snapshot}
     carriers::Dict{String, Carrier}
+
+    tags::Dict{String, Vector{String}}
 end
 
 mutable struct _IESoptAuxiliaryData
@@ -354,6 +368,7 @@ function _IESoptModelData()
         Dict{String, NamedTuple{(:terms, :expr), Tuple{Set{JuMP.AffExpr}, JuMP.AffExpr}}}(),
         Dict{_ID, Snapshot}(),
         Dict{String, Carrier}(),
+        Dict{String, Vector{String}}(),
     )
 end
 
