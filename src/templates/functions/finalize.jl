@@ -68,8 +68,8 @@ function _build_template_function_finalize(template::CoreTemplate)
 
                 get_ts(s::String) = _get_timeseries_safe(s, __parameters__, __model__)
                 access(sub) =
-                    sub == "self" ? component(__model__, __component__) :
-                    component(__model__, "$(__component__).$(sub)")
+                    sub == "self" ? get_component(__model__, __component__) :
+                    get_component(__model__, "$(__component__).$(sub)")
 
                 try
                     $code_ex

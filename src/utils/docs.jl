@@ -57,7 +57,7 @@ function _docs_docstr_to_admonition(f::Function)
         Access this $(obj_longtype) by using:
         ```julia
         # Julia
-        component(model, "your_$(obj_cc)").$(obj_type).$(obj_name)
+        get_component(model, "your_$(obj_cc)").$(obj_type).$(obj_name)
         ```
         ```python
         # Python
