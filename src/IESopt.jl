@@ -108,7 +108,8 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
 
     # Sort components by their build priority.
     # For instance, Decisions with a default build priority of 1000 are built before all other components
-    # with a default build priority of 0
+    # with a default build priority of 0.
+    # Components with a negative build priority are not built at all.
     corder = sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)
 
     @info "Start creating JuMP model"
@@ -120,30 +121,33 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
             mapfun=foreach,
             progress=Progress(length(corder); enabled=_iesopt_config(model).progress, desc="$(Symbol(f)) ..."),
         ) do component
-            _iesopt(model).debug = component.name
-            f(component)
+            if _build_priority(component) >= 0
+                _iesopt(model).debug = component.name
+                f(component)
 
-            if f == _setup!
-                !isnothing(component.addon) && push!(components_with_addons, component)
-            end
+                # TODO: remove this during addon refactoring
+                if f == _setup!
+                    # !isnothing(component.addon) && push!(components_with_addons, component)
+                end
 
-            if f == _construct_objective!
-                component.init_state[] = :initialized
+                if f == _construct_objective!
+                    component.init_state[] = :initialized
+                end
             end
         end
 
         # Call global addons
         if _has_addons(model)
             for (name, prop) in _iesopt(model).input.addons
-                (f == _setup!) && Base.invokelatest(prop.addon.setup!, model, prop.config["__settings__"])
+                (f == _setup!) && Base.invokelatest(prop.addon.setup!, model, prop.config)
                 (f == _construct_expressions!) &&
-                    Base.invokelatest(prop.addon.construct_expressions!, model, prop.config["__settings__"])
+                    Base.invokelatest(prop.addon.construct_expressions!, model, prop.config)
                 (f == _construct_variables!) &&
-                    Base.invokelatest(prop.addon.construct_variables!, model, prop.config["__settings__"])
+                    Base.invokelatest(prop.addon.construct_variables!, model, prop.config)
                 (f == _construct_constraints!) &&
-                    Base.invokelatest(prop.addon.construct_constraints!, model, prop.config["__settings__"])
+                    Base.invokelatest(prop.addon.construct_constraints!, model, prop.config)
                 (f == _construct_objective!) &&
-                    Base.invokelatest(prop.addon.construct_objective!, model, prop.config["__settings__"])
+                    Base.invokelatest(prop.addon.construct_objective!, model, prop.config)
             end
         end
 
@@ -243,8 +247,7 @@ function _prepare_model!(model::JuMP.Model)
     # Init global addons before preparing components
     if _has_addons(model)
         for (name, prop) in _iesopt(model).input.addons
-            prop.config["__settings__"] = Base.invokelatest(prop.addon.initialize!, model, prop.config)
-            if isnothing(prop.config["__settings__"])
+            if !Base.invokelatest(prop.addon.initialize!, model, prop.config)
                 @critical "Addon failed to set up" name
             end
         end
