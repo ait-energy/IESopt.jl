@@ -702,6 +702,25 @@ function component(model::JuMP.Model, component_name::AbstractString)
     return _iesopt(model).model.components[component_name]
 end
 
+function components(model::JuMP.Model; tagged::Union{Nothing, String, Vector{String}} = nothing)
+    !isnothing(tagged) && return _components_tagged(model, tagged)::Vector{<:_CoreComponent}
+
+    return collect(values(_iesopt(model).model.components))::Vector{<:_CoreComponent}
+end
+
+function _components_tagged(model::JuMP.Model, tag::String)
+    cnames = get(_iesopt(model).model.tags, tag, String[])
+    isempty(cnames) && return _CoreComponent[]
+    return component.(model, cnames)::Vector{<:_CoreComponent}
+end
+
+function _components_tagged(model::JuMP.Model, tags::Vector{String})
+    cnames = [get(_iesopt(model).model.tags, tag, String[]) for tag in tags]
+    cnames = intersect(cnames...)
+    isempty(cnames) && return _CoreComponent[]
+    return component.(model, cnames)::Vector{<:_CoreComponent}
+end
+
 function extract_result(model::JuMP.Model, component_name::String, field::String; mode::String)
     return _result(component(model, component_name), mode, field)[2]
 end
