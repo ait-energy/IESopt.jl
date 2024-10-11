@@ -113,7 +113,6 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
     corder = sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)
 
     @info "Start creating JuMP model"
-    components_with_addons = []
     for f in build_order
         # Construct all components, building them in the necessary order.
         progress_map(
@@ -125,11 +124,6 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
                 _iesopt(model).debug = component.name
                 f(component)
 
-                # TODO: remove this during addon refactoring
-                if f == _setup!
-                    # !isnothing(component.addon) && push!(components_with_addons, component)
-                end
-
                 if f == _construct_objective!
                     component.init_state[] = :initialized
                 end
@@ -138,16 +132,15 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
 
         # Call global addons
         if _has_addons(model)
+            addon_fi = Symbol(string(f)[2:end])
             for (name, prop) in _iesopt(model).input.addons
-                (f == _setup!) && Base.invokelatest(prop.addon.setup!, model, prop.config)
-                (f == _construct_expressions!) &&
-                    Base.invokelatest(prop.addon.construct_expressions!, model, prop.config)
-                (f == _construct_variables!) &&
-                    Base.invokelatest(prop.addon.construct_variables!, model, prop.config)
-                (f == _construct_constraints!) &&
-                    Base.invokelatest(prop.addon.construct_constraints!, model, prop.config)
-                (f == _construct_objective!) &&
-                    Base.invokelatest(prop.addon.construct_objective!, model, prop.config)
+                # Only execute a function if it exists.
+                if addon_fi in names(prop.addon; all = true)
+                    @info "Invoking addon" addon = name step = addon_fi
+                    if !Base.invokelatest(getfield(prop.addon, addon_fi), model, prop.config)
+                        @critical "Addon returned error" addon = name step = addon_fi
+                    end
+                end
             end
         end
 
@@ -159,14 +152,6 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
                 end
             end
         end
-    end
-
-    # Call relevant addons (if any).
-    for component in components_with_addons
-        # todo: check if `invokelatest` is the fastest method
-        # todo: check if there is something more performant to "dynamically load the code"
-        # todo: check the return value (false means errors!)
-        @profile model Base.invokelatest(_iesopt(model).input.files[component.addon].build, component)
     end
 
     # Call finalization functions of all Core Templates.
