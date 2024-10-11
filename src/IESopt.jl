@@ -135,7 +135,7 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
             addon_fi = Symbol(string(f)[2:end])
             for (name, prop) in _iesopt(model).input.addons
                 # Only execute a function if it exists.
-                if addon_fi in names(prop.addon; all = true)
+                if addon_fi in names(prop.addon; all=true)
                     @info "Invoking addon" addon = name step = addon_fi
                     if !Base.invokelatest(getfield(prop.addon, addon_fi), model, prop.config)
                         @critical "Addon returned error" addon = name step = addon_fi
@@ -690,7 +690,7 @@ function component(model::JuMP.Model, component_name::AbstractString)
     return _iesopt(model).model.components[component_name]
 end
 
-function get_components(model::JuMP.Model; tagged::Union{Nothing, String, Vector{String}} = nothing)
+function get_components(model::JuMP.Model; tagged::Union{Nothing, String, Vector{String}}=nothing)
     !isnothing(tagged) && return _components_tagged(model, tagged)::Vector{<:_CoreComponent}
 
     return collect(values(_iesopt(model).model.components))::Vector{<:_CoreComponent}

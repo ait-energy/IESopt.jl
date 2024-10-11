@@ -61,23 +61,27 @@ function _build_template_function_finalize(template::CoreTemplate)
 
     # Convert into a proper function.
     template.functions[:finalize] = @RuntimeGeneratedFunction(
-        :(function (__model__::JuMP.Model, __component__::String, __parameters__::Dict{String, Any})
-            MODEL = Utilities.ModelWrapper(__model__)
-            __template_name__ = $(template).name
+        :(
+            function (__model__::JuMP.Model, __component__::String, __parameters__::Dict{String, Any})
+                MODEL = Utilities.ModelWrapper(__model__)
+                __template_name__ = $(template).name
 
-            get_ts(s::String) = _get_timeseries_safe(s, __parameters__, __model__)
-            access(sub) = sub == "self" ? component(__model__, __component__) : component(__model__, "$(__component__).$(sub)")
+                get_ts(s::String) = _get_timeseries_safe(s, __parameters__, __model__)
+                access(sub) =
+                    sub == "self" ? component(__model__, __component__) :
+                    component(__model__, "$(__component__).$(sub)")
 
-            try
-                $code_ex
-            catch e
-                template = __template_name__
-                component = __component__
-                @error "Error while finalizing component" error = string(e) template component
-                rethrow(e)
+                try
+                    $code_ex
+                catch e
+                    template = __template_name__
+                    component = __component__
+                    @error "Error while finalizing component" error = string(e) template component
+                    rethrow(e)
+                end
+                return nothing
             end
-            return nothing
-        end)
+        )
     )
 
     return nothing

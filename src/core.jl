@@ -113,13 +113,13 @@ _finalize_docstring(Virtual)
 
 function Base.show(io::IO, cc::_CoreComponent)
     str_show = """An $(typeof(cc)):"""
-    
+
     fields = _result_fields(cc)
-    for field in fields[1:(end-1)]
+    for field in fields[1:(end - 1)]
         str_show *= "\n├ $field: $(getfield(cc, field))"
     end
     str_show *= "\n└ $(fields[end]): $(getfield(cc, fields[end]))"
-    
+
     return print(io, str_show)
 end
 
