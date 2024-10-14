@@ -64,6 +64,15 @@ function _parse_noncore_component!(
     _iesopt(model).results._templates[cname] =
         (finalize=template.functions[:finalize], parameters=parameters, items=Vector{Any}())
 
+    # Convert data types that do not "render" well to strings using JSON.
+    # Example:
+    # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
+    # which then messes with replacement in the YAML parsing.
+    for (k, v) in parameters
+        (v isa Dict) || continue
+        parameters[k] = JSON.json(v)
+    end
+
     # Construct the parsed core component with all parameter replacements.
     replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))
     if length(parameters) == 0
@@ -113,6 +122,8 @@ function _parse_container!(
     name::String,
     type::String,
 )::Vector{String}
+    # Main.@infiltrate type == "InvestableConversionTechnology"
+
     # Get template and file.
     template = _iesopt(model).input.noncore[:templates][type]
     parameters = copy(get(template.yaml, "parameters", Dict{String, Any}()))
@@ -178,6 +189,15 @@ function _parse_container!(
     # Add an entry for finalization.
     _iesopt(model).results._templates[name] =
         (finalize=template.functions[:finalize], parameters=parameters, items=Vector{Any}())
+
+    # Convert data types that do not "render" well to strings using JSON.
+    # Example:
+    # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
+    # which then messes with replacement in the YAML parsing.
+    for (k, v) in parameters
+        (v isa Dict) || continue
+        parameters[k] = JSON.json(v)
+    end
 
     # Construct the parsed container with all parameter replacements.
     replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))
