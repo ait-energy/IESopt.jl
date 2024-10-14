@@ -9,12 +9,12 @@ Wraps an IESopt.jl model to expose various easy access functions in `IESopt.Util
 - `yearspan::Float64`: The total timespan of the model, in years, based on `1 year = 8760 hours`.
 """
 struct ModelWrapper
-    model::JuMP.Model
+    iesopt_model::JuMP.Model
 end
 
 function Base.getproperty(mw::ModelWrapper, property::Symbol)
     if property == :model
-        return getfield(mw, :model)
+        return getfield(mw, :iesopt_model)
     elseif property == :timespan
         return sum(s.weight for s in values(IESopt._iesopt_model(mw.model).snapshots))
     elseif property == :yearspan
