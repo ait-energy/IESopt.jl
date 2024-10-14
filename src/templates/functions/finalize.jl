@@ -53,9 +53,6 @@ function _build_template_function_finalize(template::CoreTemplate)
     # Get code from "finalize" and remove trailing newline.
     code = chomp(template.yaml["functions"]["finalize"])
 
-    # Replace the `get` function (that would otherwise conflict with Julia's `get` function).
-    code = replace(code, r"""get\("([^"]+)"\)""" => s"""_get_parameter_safe("\1", __parameters__)""")
-
     # Parse the code into an expression.
     code_ex = Meta.parse("""begin\n$(code)\nend"""; filename="$(template.name).iesopt.template.yaml")
 
@@ -63,13 +60,16 @@ function _build_template_function_finalize(template::CoreTemplate)
     template.functions[:finalize] = @RuntimeGeneratedFunction(
         :(
             function (__model__::JuMP.Model, __component__::String, __parameters__::Dict{String, Any})
-                MODEL = Utilities.ModelWrapper(__model__)
+                __MODEL__ = Utilities.ModelWrapper(__model__)
                 __template_name__ = $(template).name
 
-                get_ts(s::String) = _get_timeseries_safe(s, __parameters__, __model__)
-                access(sub) =
-                    sub == "self" ? get_component(__model__, __component__) :
-                    get_component(__model__, "$(__component__).$(sub)")
+                this = (
+                    get = (s, args...) -> _get_parameter_safe(s, __parameters__, args...),
+                    get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __MODEL__.iesopt_model),
+                    self = _get_parameter_safe("self", "__parameters__"),
+                    access = (sub::String) -> sub == "self" ? get_component(__model__, __component__) : get_component(__model__, "$(__component__).$(sub)"),
+                    model = __MODEL__,
+                )
 
                 try
                     $code_ex

@@ -19,9 +19,9 @@ A struct to represent an IESopt.jl "Core Template".
     _status::Ref{Symbol}
 end
 
-function _get_parameter_safe(p::String, parameters::Dict{String, Any})
+function _get_parameter_safe(p::String, parameters::Dict{String, Any}, default::Any = nothing)
     haskey(parameters, p) || @critical "Trying to access (`get`) undefined parameter in `CoreTemplate`" parameter = p
-    return parameters[p]
+    return isnothing(default) ? parameters[p] : something(parameters[p], default)
 end
 
 function _set_parameter_safe(p::String, v::Any, parameters::Dict{String, Any})

@@ -66,19 +66,21 @@ function _build_template_function_validate(template::CoreTemplate)
     # Get code from "validate" and remove trailing newline.
     code = chomp(template.yaml["functions"]["validate"])
 
-    # Replace the `get` function (that would otherwise conflict with Julia's `get` function).
-    code = replace(code, r"""get\("([^"]+)"\)""" => s"""_get_parameter_safe("\1", __parameters__)""")
-
     # Parse the code into an expression.
     code_ex = Meta.parse("""begin\n$(code)\nend"""; filename="$(template.name).iesopt.template.yaml")
 
     # Convert into a proper function.
     template.functions[:validate] = @RuntimeGeneratedFunction(
         :(function (__parameters__::Dict{String, Any}, __component__::String)
-            MODEL = Utilities.ModelWrapper($(template).model)
+            __MODEL__ = Utilities.ModelWrapper($(template).model)
             __template_name__ = $(template).name
 
-            get_ts(s::String) = _get_timeseries_safe(s, __parameters__, MODEL.model)
+            this = (
+                get = (s, args...) -> _get_parameter_safe(s, __parameters__, args...),
+                get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __MODEL__.iesopt_model),
+                self = _get_parameter_safe("self", "__parameters__"),
+                model = __MODEL__,
+            )
 
             __valid__ = true
             try
