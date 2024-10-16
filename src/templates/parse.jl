@@ -57,8 +57,8 @@ function _parse_noncore_component!(
     end
 
     # Validate and then prepare.
-    template.functions[:validate](parameters, cname) || @critical "Template validation failed" component = cname
-    template.functions[:prepare](parameters, cname)
+    template.functions[:validate](model, parameters, cname) || @critical "Template validation failed" component = cname
+    template.functions[:prepare](model, parameters, cname)
 
     # Add an entry for finalization.
     _iesopt(model).results._templates[cname] =
@@ -122,8 +122,6 @@ function _parse_container!(
     name::String,
     type::String,
 )::Vector{String}
-    # Main.@infiltrate type == "InvestableConversionTechnology"
-
     # Get template and file.
     template = _iesopt(model).input.noncore[:templates][type]
     parameters = copy(get(template.yaml, "parameters", Dict{String, Any}()))
@@ -183,8 +181,8 @@ function _parse_container!(
     end
 
     # Validate and then prepare.
-    template.functions[:validate](parameters, name) || @critical "Template validation failed" component = name
-    template.functions[:prepare](parameters, name)
+    template.functions[:validate](model, parameters, name) || @critical "Template validation failed" component = name
+    template.functions[:prepare](model, parameters, name)
 
     # Add an entry for finalization.
     _iesopt(model).results._templates[name] =

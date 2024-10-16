@@ -59,7 +59,7 @@ end
 
 function _build_template_function_validate(template::CoreTemplate)
     if !haskey(template.yaml, "functions") || !haskey(template.yaml["functions"], "validate")
-        template.functions[:validate] = (::Dict{String, Any}, ::String) -> true
+        template.functions[:validate] = (::JuMP.Model, ::Dict{String, Any}, ::String) -> true
         return nothing
     end
 
@@ -71,15 +71,14 @@ function _build_template_function_validate(template::CoreTemplate)
 
     # Convert into a proper function.
     template.functions[:validate] = @RuntimeGeneratedFunction(
-        :(function (__parameters__::Dict{String, Any}, __component__::String)
-            __MODEL__ = Utilities.ModelWrapper($(template).model)
+        :(function (__model__::JuMP.Model, __parameters__::Dict{String, Any}, __component__::String)
             __template_name__ = $(template).name
 
             this = (
                 get = (s, args...) -> _get_parameter_safe(s, __parameters__, args...),
-                get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __MODEL__.iesopt_model),
+                get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __model__),
                 self = _get_parameter_safe("self", __parameters__, nothing),
-                model = __MODEL__,
+                model = Utilities.ModelWrapper(__model__),
             )
 
             __valid__ = true
