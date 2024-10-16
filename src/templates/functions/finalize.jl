@@ -66,7 +66,7 @@ function _build_template_function_finalize(template::CoreTemplate)
                 this = (
                     get = (s, args...) -> _get_parameter_safe(s, __parameters__, args...),
                     get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __MODEL__.iesopt_model),
-                    self = _get_parameter_safe("self", "__parameters__"),
+                    self = _get_parameter_safe("self", __parameters__, nothing),
                     access = (sub::String) -> sub == "self" ? get_component(__model__, __component__) : get_component(__model__, "$(__component__).$(sub)"),
                     model = __MODEL__,
                 )
