@@ -14,8 +14,8 @@ parameters:
 
 functions:
   validate: |
-    @check parameters["p"] isa Number
-    @check parameters["p"] > 0
+    @check this.get("p") isa Number
+    @check this.get("p") > 0
 ```
 
 See ["Template Validation"](@ref manual_templates_validation) in the documentation for more information.
