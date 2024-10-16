@@ -1,49 +1,3 @@
-"""
-    @add_result
-
-Add a custom result to the current model.
-
-# Example
-
-```yaml
-functions:
-  finalize: |
-    @add_result "setpoint" (
-        access("discharge").exp.out_electricity -
-        access("charge").exp.in_electricity
-    )
-```
-
-See ["Template Finalization"](@ref manual_templates_finalization) in the documentation for more information.
-
-!!! warning "Usage outside of Core Template finalization"
-    This requires `__component__`, and `MODEL` to be set outside of calling the macro.
-"""
-macro add_result(result_name, result_expr, args...)
-    if !isempty(args)
-        return esc(quote
-            @critical "`@add_result` got more than two arguments" component = __component__
-        end)
-    end
-
-    return esc(quote
-        try
-            local templates = _iesopt(MODEL.model).results._templates
-            push!(templates[__component__].items, (name=$result_name, expr=$result_expr))
-        catch e
-            local cname = $(:__component__)
-            rethrow(ErrorException("""Got unexpected error while finalizing a template instance.
-            ------------
-            > COMPONENT: $cname
-            > RESULT: $($result_name)
-            ------------
-            > ERROR: $e
-            ------------
-            """))
-        end
-    end)
-end
-
 function _build_template_function_finalize(template::CoreTemplate)
     if !haskey(template.yaml, "functions") || !haskey(template.yaml["functions"], "finalize")
         template.functions[:finalize] = (::JuMP.Model, ::String, ::Dict{String, Any}) -> nothing
@@ -69,7 +23,6 @@ function _build_template_function_finalize(template::CoreTemplate)
                     self = _get_parameter_safe("self", __parameters__, nothing),
                     access = (sub::String) -> sub == "self" ? get_component(__model__, __component__) : get_component(__model__, "$(__component__).$(sub)"),
                     model = Utilities.ModelWrapper(__model__),
-                    register = (n::String, e::Any) -> push!(__items__, (name=n, expr=e))
                 )
 
                 try
