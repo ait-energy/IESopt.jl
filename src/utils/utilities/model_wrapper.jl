@@ -15,7 +15,7 @@ end
 function Base.getproperty(mw::ModelWrapper, property::Symbol)
     _iesopt_model = getfield(mw, :_iesopt_model)
 
-    if property == :model
+    if property == :raw
         return _iesopt_model
     elseif property == :timespan
         return sum(s.weight for s in values(IESopt._iesopt_model(_iesopt_model).snapshots))
