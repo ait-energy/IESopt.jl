@@ -60,15 +60,16 @@ function _build_template_function_finalize(template::CoreTemplate)
     template.functions[:finalize] = @RuntimeGeneratedFunction(
         :(
             function (__model__::JuMP.Model, __component__::String, __parameters__::Dict{String, Any})
-                __MODEL__ = Utilities.ModelWrapper(__model__)
                 __template_name__ = $(template).name
+                __items__ = _iesopt(__model__).results._templates[__component__].items
 
                 this = (
                     get = (s, args...) -> _get_parameter_safe(s, __parameters__, args...),
-                    get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __MODEL__.iesopt_model),
+                    get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __model__),
                     self = _get_parameter_safe("self", __parameters__, nothing),
                     access = (sub::String) -> sub == "self" ? get_component(__model__, __component__) : get_component(__model__, "$(__component__).$(sub)"),
-                    model = __MODEL__,
+                    model = Utilities.ModelWrapper(__model__),
+                    register = (n::String, e::Any) -> push!(__items__, (name=n, expr=e))
                 )
 
                 try
