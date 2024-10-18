@@ -59,7 +59,7 @@ end
 
 function _build_template_function_validate(template::CoreTemplate)
     if !haskey(template.yaml, "functions") || !haskey(template.yaml["functions"], "validate")
-        template.functions[:validate] = (::JuMP.Model, ::Dict{String, Any}, ::String) -> true
+        template.functions[:validate] = (::Virtual) -> true
         return nothing
     end
 
@@ -71,22 +71,18 @@ function _build_template_function_validate(template::CoreTemplate)
 
     # Convert into a proper function.
     template.functions[:validate] = @RuntimeGeneratedFunction(
-        :(function (__model__::JuMP.Model, __parameters__::Dict{String, Any}, __component__::String)
+        :(function (__virtual__::Virtual)
             __template_name__ = $(template).name
-
-            this = (
-                get = (s, args...) -> _get_parameter_safe(s, __parameters__, args...),
-                get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __model__),
-                self = _get_parameter_safe("self", __parameters__, nothing),
-                model = Utilities.ModelWrapper(__model__),
-            )
+            __parameters__ = __virtual__._parameters
+            __model__ = __virtual__.model
+            this = __virtual__
 
             __valid__ = true
             try
                 $code_ex
             catch e
                 template = __template_name__
-                component = __component__
+                component = __virtual__.name
                 @error "Error while validating component" error = string(e) template component
                 rethrow(e)
             end
