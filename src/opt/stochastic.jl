@@ -169,10 +169,10 @@ function stochastic(
 
     @showprogress "Modifying sub models: " for sub in stochastic_data.subs
         for comp_name in stochastic_data.decisions
-            component(sub, comp_name).mode = :fixed
-            component(sub, comp_name).cost = nothing
-            component(sub, comp_name).fixed_cost = nothing
-            component(sub, comp_name).fixed_value = 0.0
+            get_component(sub, comp_name).mode = :fixed
+            get_component(sub, comp_name).cost = nothing
+            get_component(sub, comp_name).fixed_cost = nothing
+            get_component(sub, comp_name).fixed_value = 0.0
         end
     end
 
@@ -286,7 +286,7 @@ function _iterative_stochastic(stochastic_data::StochasticData)
         # Update the sub-problems.
         for sub in stochastic_data.subs
             for (comp_name, value) in current_decisions
-                JuMP.fix(component(sub, comp_name).var.value, value; force=true)
+                JuMP.fix(get_component(sub, comp_name).var.value, value; force=true)
             end
         end
 
@@ -339,7 +339,7 @@ function _iterative_stochastic(stochastic_data::StochasticData)
                 stochastic_data.main[:θ][i] >=
                 obj_subs[i] + sum(
                     extract_result(stochastic_data.subs[i], comp_name, "value"; mode="dual") *
-                    (component(stochastic_data.main, comp_name).var.value - value) for
+                    (get_component(stochastic_data.main, comp_name).var.value - value) for
                     (comp_name, value) in current_decisions
                 )
             )

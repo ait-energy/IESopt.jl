@@ -10,8 +10,6 @@ import ..IESopt: @critical
 import ArgCheck: @argcheck
 import JuMP
 
-include("model_wrapper.jl")
-
 """
     annuity(total::Number; lifetime::Number, rate::Float64, fraction::Float64)
 
@@ -68,6 +66,14 @@ function annuity(total::Number, lifetime::Number, rate::Number, fraction::Number
     reason = "`lifetime`, `rate`, and `fraction` must be passed as keyword arguments to `annuity(...)`"
     example = "`annuity($(total); lifetime=$(lifetime), rate=$(rate), fraction=$(fraction))`"
     @critical msg reason example
+end
+
+function timespan(model::JuMP.Model)::Float64
+    return sum(s.weight for s in values(IESopt._iesopt_model(model).snapshots))
+end
+
+function yearspan(model::JuMP.Model)::Float64
+    return timespan(model) / 8760.0
 end
 
 end

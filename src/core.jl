@@ -101,6 +101,7 @@ include("core/node.jl")
 include("core/profile.jl")
 include("core/snapshot.jl")
 include("core/unit.jl")
+include("core/virtual.jl")
 
 # Finalize the docstrings of the core components.
 _finalize_docstring(Connection)
@@ -108,6 +109,19 @@ _finalize_docstring(Decision)
 _finalize_docstring(Node)
 _finalize_docstring(Profile)
 _finalize_docstring(Unit)
+_finalize_docstring(Virtual)
+
+function Base.show(io::IO, cc::_CoreComponent)
+    str_show = """:: $(typeof(cc)) ::"""
+
+    fields = _result_fields(cc)
+    for field in fields[1:(end - 1)]
+        str_show *= "\n├ $field: $(getfield(cc, field))"
+    end
+    str_show *= "\n└ $(fields[end]): $(getfield(cc, fields[end]))"
+
+    return print(io, str_show)
+end
 
 # Here, empty implementations are done to ensure every core component type implements all necessary functionality, even
 # if it does not care about that. Make sure to implement them, in order to actually use them.
@@ -161,11 +175,6 @@ function _construct_constraints!(::_CoreComponent) end
 function _after_construct_constraints!(::_CoreComponent) end
 function _construct_objective!(::_CoreComponent) end
 
-function filter_component(model::JuMP.Model, tags::Vector{String})
-    @error "Filtering based on tags has been deprecated"
-    return nothing
-end
-
 function _result_fields(component::_CoreComponent)
     @error "_result_fields(...) not implemented" component = component.name
     return nothing
@@ -191,19 +200,21 @@ function Base.getproperty(cc::_CoreComponent, field::Symbol)
         (field == :obj) && (return getfield(cc, :_ccoc).objectives)
         return getfield(cc, field)
     catch e
-        @critical "Field not found in _CoreComponent" e
+        @error "Field not found in _CoreComponent" e
+        return nothing
     end
 end
 
 function Base.propertynames(cc::_CoreComponent)
-    return (propertynames(cc)..., :exp, :var, :con, :obj)
+    return (fieldnames(typeof(cc))..., :exp, :var, :con, :obj)
 end
 
 function Base.getproperty(ccocd::_CoreComponentOptContainerDict, field::Symbol)
     try
         return getfield(ccocd, :dict)[field]
     catch e
-        @critical "Field not found in _CoreComponentOptContainerDict" e
+        @error "Field not found in _CoreComponentOptContainerDict" e
+        return nothing
     end
 end
 
@@ -302,6 +313,8 @@ mutable struct _IESoptModelData
 
     snapshots::Dict{_ID, Snapshot}
     carriers::Dict{String, Carrier}
+
+    tags::Dict{String, Vector{String}}
 end
 
 mutable struct _IESoptAuxiliaryData
@@ -354,6 +367,7 @@ function _IESoptModelData()
         Dict{String, NamedTuple{(:terms, :expr), Tuple{Set{JuMP.AffExpr}, JuMP.AffExpr}}}(),
         Dict{_ID, Snapshot}(),
         Dict{String, Carrier}(),
+        Dict{String, Vector{String}}(),
     )
 end
 

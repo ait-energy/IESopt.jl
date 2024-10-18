@@ -1,7 +1,6 @@
-function _parse_model!(model::JuMP.Model, filename::String, global_parameters::Dict; verbosity=nothing)
+function _parse_model!(model::JuMP.Model, filename::String, global_parameters::Dict)
     filename = normpath(filename)
     model.ext[:_iesopt_wd] = dirname(filename)
-    model.ext[:_iesopt_verbosity] = verbosity
     model.ext[:iesopt] = _IESoptData(YAML.load_file(filename; dicttype=Dict{String, Any}))
 
     # Parse the overall global configuration (e.g., replacing parameters).
@@ -204,6 +203,13 @@ function _flatten_model!(model::JuMP.Model, description::Dict{String, Any})
 
         _is_valid_template_name(type) || @error "Invalid type of `Template` (check documentation)" type
 
+        # Remember its name and type properly, before that is lost due to flattening, by constructing a Virtual.
+        _iesopt(model).model.components[cname] = Virtual(; model=model, name=cname, type=type)
+
+        # Properly tag the new Virtual.
+        !haskey(_iesopt(model).model.tags, type) && (_iesopt(model).model.tags[type] = Vector{String}())
+        push!(_iesopt(model).model.tags[type], cname)
+
         # Try parsing it.
         new_components = _parse_noncore!(model, description, cname)
         toflatten = vcat(toflatten, new_components)
@@ -221,7 +227,11 @@ function _parse_components!(model::JuMP.Model, description::Dict{String, Any})
     @info "Parsing components from YAML" n_components = length(description)
 
     components = _iesopt(model).model.components
-    type_info = Dict(t => 0 for t in ["Connection", "Decision", "Node", "Profile", "Unit"])
+
+    model_tags = _iesopt(model).model.tags
+    for type in ["Connection", "Decision", "Node", "Profile", "Unit"]
+        model_tags[type] = Vector{String}()
+    end
 
     for (desc, prop) in description
         if _parse_bool(model, pop!(prop, "disabled", false)) || !_parse_bool(model, pop!(prop, "enabled", true))
@@ -229,11 +239,25 @@ function _parse_components!(model::JuMP.Model, description::Dict{String, Any})
         end
 
         type = pop!(prop, "type")
-        type_info[type] += 1
         name = desc
+
+        # Each component is tagged at least with its type.
+        push!(model_tags[type], name)
 
         # Place name of current attempted parse into `debug`.
         _iesopt(model).debug = name
+
+        # Extract tags, if there are any.
+        tags_prop = pop!(prop, "tags", String[])
+        tags = tags_prop isa String ? [tags_prop] : tags_prop
+        if !isempty(tags)
+            for tag in tags
+                if !haskey(model_tags, tag)
+                    model_tags[tag] = Vector{String}()
+                end
+                push!(model_tags[tag], name)
+            end
+        end
 
         # Calculate constraint safety settings. Those default to the model-wide settings.
         constraint_safety = pop!(prop, "constraint_safety", _iesopt_config(model).optimization.constraint_safety)
@@ -458,8 +482,8 @@ function _parse_components!(model::JuMP.Model, description::Dict{String, Any})
         end
     end
 
-    @info "Finished parsing components" n = length(components) connections = type_info["Connection"] decisions =
-        type_info["Decision"] nodes = type_info["Node"] profiles = type_info["Profile"] units = type_info["Unit"]
+    tag_info = [Symbol(tag) => length(model_tags[tag]) for tag in keys(model_tags)]
+    @info "Finished parsing a total of $(length(components)) components" tag_info...
 
     return _iesopt(model).debug = "parse complete"
 end
