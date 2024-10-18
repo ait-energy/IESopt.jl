@@ -200,19 +200,21 @@ function Base.getproperty(cc::_CoreComponent, field::Symbol)
         (field == :obj) && (return getfield(cc, :_ccoc).objectives)
         return getfield(cc, field)
     catch e
-        @critical "Field not found in _CoreComponent" e
+        @error "Field not found in _CoreComponent" e
+        return nothing
     end
 end
 
 function Base.propertynames(cc::_CoreComponent)
-    return (propertynames(cc)..., :exp, :var, :con, :obj)
+    return (fieldnames(typeof(cc))..., :exp, :var, :con, :obj)
 end
 
 function Base.getproperty(ccocd::_CoreComponentOptContainerDict, field::Symbol)
     try
         return getfield(ccocd, :dict)[field]
     catch e
-        @critical "Field not found in _CoreComponentOptContainerDict" e
+        @error "Field not found in _CoreComponentOptContainerDict" e
+        return nothing
     end
 end
 
