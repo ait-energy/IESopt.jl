@@ -56,13 +56,26 @@ function _parse_noncore_component!(
         parameters[k] = v
     end
 
+    # Write the final version of parameters into the Virtual.
+    virtual = _iesopt(model).model.components[cname]
+    merge!(virtual._parameters, parameters)
+
     # Validate and then prepare.
-    template.functions[:validate](model, parameters, cname) || @critical "Template validation failed" component = cname
-    template.functions[:prepare](model, parameters, cname)
+    template.functions[:validate](virtual) || @critical "Template validation failed" component = cname
+    template.functions[:prepare](virtual)
 
     # Add an entry for finalization.
     _iesopt(model).results._templates[cname] =
-        (finalize=template.functions[:finalize], parameters=parameters, items=Vector{Any}())
+        (finalize=template.functions[:finalize], virtual=virtual) # parameters=parameters, items=Vector{Any}())
+
+    # Convert data types that do not "render" well to strings using JSON.
+    # Example:
+    # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
+    # which then messes with replacement in the YAML parsing.
+
+    # This would result in modifying the original `parameters` dictionary, which is not desired.
+    # Therefore, we keep a copy (not a deep copy!) and modify that, only duplicating potential json-ed items.
+    parameters = copy(virtual._parameters)
 
     # Convert data types that do not "render" well to strings using JSON.
     # Example:
@@ -180,18 +193,27 @@ function _parse_container!(
         parameters[k] = v
     end
 
+    # Write the final version of parameters into the Virtual.
+    virtual = _iesopt(model).model.components[name]
+    merge!(virtual._parameters, parameters)
+
     # Validate and then prepare.
-    template.functions[:validate](model, parameters, name) || @critical "Template validation failed" component = name
-    template.functions[:prepare](model, parameters, name)
+    template.functions[:validate](virtual) || @critical "Template validation failed" component = name
+    template.functions[:prepare](virtual)
 
     # Add an entry for finalization.
     _iesopt(model).results._templates[name] =
-        (finalize=template.functions[:finalize], parameters=parameters, items=Vector{Any}())
+        (finalize=template.functions[:finalize], virtual=virtual) # parameters=parameters, items=Vector{Any}())
 
     # Convert data types that do not "render" well to strings using JSON.
     # Example:
     # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
     # which then messes with replacement in the YAML parsing.
+
+    # This would result in modifying the original `parameters` dictionary, which is not desired.
+    # Therefore, we keep a copy (not a deep copy!) and modify that, only duplicating potential json-ed items.
+    parameters = copy(virtual._parameters)
+
     for (k, v) in parameters
         (v isa Dict) || continue
         parameters[k] = JSON.json(v)

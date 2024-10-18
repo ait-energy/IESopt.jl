@@ -1,6 +1,6 @@
 function _build_template_function_finalize(template::CoreTemplate)
     if !haskey(template.yaml, "functions") || !haskey(template.yaml["functions"], "finalize")
-        template.functions[:finalize] = (::JuMP.Model, ::String, ::Dict{String, Any}) -> nothing
+        template.functions[:finalize] = (::Virtual) -> nothing
         return nothing
     end
 
@@ -13,23 +13,17 @@ function _build_template_function_finalize(template::CoreTemplate)
     # Convert into a proper function.
     template.functions[:finalize] = @RuntimeGeneratedFunction(
         :(
-            function (__model__::JuMP.Model, __component__::String, __parameters__::Dict{String, Any})
+            function (__virtual__::Virtual)
                 __template_name__ = $(template).name
-                __items__ = _iesopt(__model__).results._templates[__component__].items
-
-                this = (
-                    get = (s, args...) -> _get_parameter_safe(s, __parameters__, args...),
-                    get_ts = (s::String) -> _get_timeseries_safe(s, __parameters__, __model__),
-                    self = _get_parameter_safe("self", __parameters__, nothing),
-                    access = (sub::String) -> sub == "self" ? get_component(__model__, __component__) : get_component(__model__, "$(__component__).$(sub)"),
-                    model = Utilities.ModelWrapper(__model__),
-                )
+                __parameters__ = __virtual__._parameters
+                __model__ = __virtual__.model
+                this = __virtual__
 
                 try
                     $code_ex
                 catch e
                     template = __template_name__
-                    component = __component__
+                    component = __virtual__.name
                     @error "Error while finalizing component" error = string(e) template component
                     rethrow(e)
                 end

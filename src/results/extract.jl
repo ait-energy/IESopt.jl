@@ -59,12 +59,13 @@ function _extract_results(model::JuMP.Model)
 
     # Add results that were defined by Core Templates.
     for (component_name, entry) in _iesopt(model).results._templates
-        symbolized_parameters = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in entry.parameters)
-        for item in entry.items
-            _result = _CoreComponentResult(symbolized_parameters, _CoreComponentOptResultContainer())
-            setproperty!(getproperty(_result, :res), Symbol(item.name), JuMP.value.(item.expr))
-            result_components[component_name] = _result
-        end
+        symbolized_parameters = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in entry.virtual._parameters)
+        # TODO: extract user defined results (properly)
+        # for item in entry.items
+        #     _result = _CoreComponentResult(symbolized_parameters, _CoreComponentOptResultContainer())
+        #     setproperty!(getproperty(_result, :res), Symbol(item.name), JuMP.value.(item.expr))
+        #     result_components[component_name] = _result
+        # end
     end
 
     return nothing
