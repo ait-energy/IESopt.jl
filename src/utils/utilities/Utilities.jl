@@ -10,8 +10,6 @@ import ..IESopt: @critical
 import ArgCheck: @argcheck
 import JuMP
 
-include("model_wrapper.jl")
-
 """
     annuity(total::Number; lifetime::Number, rate::Float64, fraction::Float64)
 
