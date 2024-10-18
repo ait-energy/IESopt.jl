@@ -70,4 +70,12 @@ function annuity(total::Number, lifetime::Number, rate::Number, fraction::Number
     @critical msg reason example
 end
 
+function timespan(model::JuMP.Model)::Float64
+    return sum(s.weight for s in values(IESopt._iesopt_model(model).snapshots))
+end
+
+function yearspan(model::JuMP.Model)::Float64
+    return timespan(model) / 8760.0
+end
+
 end
