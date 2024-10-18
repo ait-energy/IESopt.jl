@@ -154,11 +154,12 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
         end
     end
 
-    # TODO: rework storage of Virtuals/templates/... since we can actually access them as first-class CoreComponents
-    #       without having to store them separately
-    # Call finalization functions of all Core Templates.
-    for (name, entry) in _iesopt(model).results._templates
-        entry.finalize(entry.virtual)
+    @info "Finalizing Virtuals"
+    for component in corder
+        component isa Virtual || continue
+        for i in reverse(eachindex(component._finalizers))
+            component._finalizers[i](component)
+        end
     end
 
     # Construct relevant ETDF constraints.
