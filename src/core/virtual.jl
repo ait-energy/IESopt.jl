@@ -17,6 +17,7 @@ might expect (and want) to be able to interact with "my_storage_foo". Since the 
 
     # [Internal] =======================================================================================================
     _parameters = Dict{String, Any}()
+    _finalizers::Vector{Base.Callable} = Base.Callable[]
 
     # [External] =======================================================================================================
     # -
