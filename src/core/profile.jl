@@ -130,10 +130,10 @@ function _prepare!(profile::Profile)
     model = profile.model
 
     # Extract the carrier from the connected nodes.
-    if !isnothing(profile.node_from) && (profile.carrier != component(model, profile.node_from).carrier)
+    if !isnothing(profile.node_from) && (profile.carrier != get_component(model, profile.node_from).carrier)
         @critical "Profile <carrier> mismatch" profile = profile.name node_from = profile.node_from
     end
-    if !isnothing(profile.node_to) && (profile.carrier != component(model, profile.node_to).carrier)
+    if !isnothing(profile.node_to) && (profile.carrier != get_component(model, profile.node_to).carrier)
         @critical "Profile <carrier> mismatch" profile = profile.name node_to = profile.node_to
     end
 

@@ -56,13 +56,38 @@ function _parse_noncore_component!(
         parameters[k] = v
     end
 
-    # Validate and then prepare.
-    template.functions[:validate](parameters, cname) || @critical "Template validation failed" component = cname
-    template.functions[:prepare](parameters, cname)
+    if haskey(template.yaml, "functions")
+        @warn "It is highly recommended NOT to use `functions` in single component templates that just \"rename\" another template" template = template.name maxlog = 1
 
-    # Add an entry for finalization.
-    _iesopt(model).results._templates[cname] =
-        (finalize=template.functions[:finalize], parameters=parameters, items=Vector{Any}())
+        # Write the final version of parameters into the Virtual.
+        virtual = _iesopt(model).model.components[cname]
+        merge!(virtual._parameters, parameters)
+
+        # Validate and then prepare.
+        template.functions[:validate](virtual) || @critical "Template validation failed" component = cname
+        template.functions[:prepare](virtual)
+
+        # Add an entry for finalization.
+        push!(virtual._finalizers, template.functions[:finalize])
+
+        # Convert data types that do not "render" well to strings using JSON.
+        # Example:
+        # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
+        # which then messes with replacement in the YAML parsing.
+
+        # This would result in modifying the original `parameters` dictionary, which is not desired.
+        # Therefore, we keep a copy (not a deep copy!) and modify that, only duplicating potential json-ed items.
+        parameters = copy(virtual._parameters)
+    end
+
+    # Convert data types that do not "render" well to strings using JSON.
+    # Example:
+    # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
+    # which then messes with replacement in the YAML parsing.
+    for (k, v) in parameters
+        (v isa Dict) || continue
+        parameters[k] = JSON.json(v)
+    end
 
     # Construct the parsed core component with all parameter replacements.
     replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))
@@ -171,13 +196,30 @@ function _parse_container!(
         parameters[k] = v
     end
 
+    # Write the final version of parameters into the Virtual.
+    virtual = _iesopt(model).model.components[name]
+    merge!(virtual._parameters, parameters)
+
     # Validate and then prepare.
-    template.functions[:validate](parameters, name) || @critical "Template validation failed" component = name
-    template.functions[:prepare](parameters, name)
+    template.functions[:validate](virtual) || @critical "Template validation failed" component = name
+    template.functions[:prepare](virtual)
 
     # Add an entry for finalization.
-    _iesopt(model).results._templates[name] =
-        (finalize=template.functions[:finalize], parameters=parameters, items=Vector{Any}())
+    push!(virtual._finalizers, template.functions[:finalize])
+
+    # Convert data types that do not "render" well to strings using JSON.
+    # Example:
+    # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
+    # which then messes with replacement in the YAML parsing.
+
+    # This would result in modifying the original `parameters` dictionary, which is not desired.
+    # Therefore, we keep a copy (not a deep copy!) and modify that, only duplicating potential json-ed items.
+    parameters = copy(virtual._parameters)
+
+    for (k, v) in parameters
+        (v isa Dict) || continue
+        parameters[k] = JSON.json(v)
+    end
 
     # Construct the parsed container with all parameter replacements.
     replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))

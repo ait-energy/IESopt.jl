@@ -5,6 +5,10 @@ A general purpose solver agnostic energy system optimization framework.
 """
 module IESopt
 
+# See: https://discourse.julialang.org/t/base-docs-doc-failing-with-1-11-0/121187
+# This is a workaround for an issue introduced by Julia 1.11.0, and seems to now be necessary to use `Base.Docs`
+import REPL
+
 # Required for installing/loading solvers, and proper precompilation.
 import Pkg
 using PrecompileTools: @setup_workload, @compile_workload
@@ -104,11 +108,11 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
 
     # Sort components by their build priority.
     # For instance, Decisions with a default build priority of 1000 are built before all other components
-    # with a default build priority of 0
+    # with a default build priority of 0.
+    # Components with a negative build priority are not built at all.
     corder = sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)
 
     @info "Start creating JuMP model"
-    components_with_addons = []
     for f in build_order
         # Construct all components, building them in the necessary order.
         progress_map(
@@ -116,30 +120,27 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
             mapfun=foreach,
             progress=Progress(length(corder); enabled=_iesopt_config(model).progress, desc="$(Symbol(f)) ..."),
         ) do component
-            _iesopt(model).debug = component.name
-            f(component)
+            if _build_priority(component) >= 0
+                _iesopt(model).debug = component.name
+                f(component)
 
-            if f == _setup!
-                !isnothing(component.addon) && push!(components_with_addons, component)
-            end
-
-            if f == _construct_objective!
-                component.init_state[] = :initialized
+                if f == _construct_objective!
+                    component.init_state[] = :initialized
+                end
             end
         end
 
         # Call global addons
         if _has_addons(model)
+            addon_fi = Symbol(string(f)[2:end])
             for (name, prop) in _iesopt(model).input.addons
-                (f == _setup!) && Base.invokelatest(prop.addon.setup!, model, prop.config["__settings__"])
-                (f == _construct_expressions!) &&
-                    Base.invokelatest(prop.addon.construct_expressions!, model, prop.config["__settings__"])
-                (f == _construct_variables!) &&
-                    Base.invokelatest(prop.addon.construct_variables!, model, prop.config["__settings__"])
-                (f == _construct_constraints!) &&
-                    Base.invokelatest(prop.addon.construct_constraints!, model, prop.config["__settings__"])
-                (f == _construct_objective!) &&
-                    Base.invokelatest(prop.addon.construct_objective!, model, prop.config["__settings__"])
+                # Only execute a function if it exists.
+                if addon_fi in names(prop.addon; all=true)
+                    @info "Invoking addon" addon = name step = addon_fi
+                    if !Base.invokelatest(getfield(prop.addon, addon_fi), model, prop.config)
+                        @critical "Addon returned error" addon = name step = addon_fi
+                    end
+                end
             end
         end
 
@@ -153,17 +154,12 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
         end
     end
 
-    # Call relevant addons (if any).
-    for component in components_with_addons
-        # todo: check if `invokelatest` is the fastest method
-        # todo: check if there is something more performant to "dynamically load the code"
-        # todo: check the return value (false means errors!)
-        @profile model Base.invokelatest(_iesopt(model).input.files[component.addon].build, component)
-    end
-
-    # Call finalization functions of all Core Templates.
-    for (name, entry) in _iesopt(model).results._templates
-        entry.finalize(model, name, entry.parameters)
+    @info "Finalizing Virtuals"
+    for component in corder
+        component isa Virtual || continue
+        for i in reverse(eachindex(component._finalizers))
+            component._finalizers[i](component)
+        end
     end
 
     # Construct relevant ETDF constraints.
@@ -188,7 +184,7 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
                 push!(obj.constants, term)
             else
                 comp, proptype, prop = rsplit(term, "."; limit=3)
-                field = getproperty(getproperty(component(model, comp), Symbol(proptype)), Symbol(prop))
+                field = getproperty(getproperty(get_component(model, comp), Symbol(proptype)), Symbol(prop))
                 if field isa Vector
                     push!(obj.terms, sum(field))
                 else
@@ -239,8 +235,7 @@ function _prepare_model!(model::JuMP.Model)
     # Init global addons before preparing components
     if _has_addons(model)
         for (name, prop) in _iesopt(model).input.addons
-            prop.config["__settings__"] = Base.invokelatest(prop.addon.initialize!, model, prop.config)
-            if isnothing(prop.config["__settings__"])
+            if !Base.invokelatest(prop.addon.initialize!, model, prop.config)
                 @critical "Addon failed to set up" name
             end
         end
@@ -299,9 +294,9 @@ Builds and returns a model using the IESopt framework.
 
 This loads the configuration file specified by `filename`. Requires full specification of the `solver` entry in config.
 """
-function generate!(filename::String; verbosity=nothing, kwargs...)
+function generate!(filename::String; kwargs...)
     model = JuMP.Model()
-    return generate!(model, filename; verbosity=verbosity, kwargs...)
+    return generate!(model, filename; kwargs...)
 end
 
 """
@@ -313,7 +308,7 @@ This loads the configuration file specified by `filename`. Be careful when creat
 in the provided examples, as this can conflict with IESopt internals (especially for model/optimizer combinations
 that do not support bridges). Returns the model for convenience, even though it is modified in place.
 """
-function generate!(model::JuMP.Model, filename::String; verbosity=nothing, kwargs...)
+function generate!(model::JuMP.Model, filename::String; kwargs...)
     local stats_parse, stats_build, stats_total
 
     success = true
@@ -323,7 +318,7 @@ function generate!(model::JuMP.Model, filename::String; verbosity=nothing, kwarg
 
         # Parse & build the model.
         stats_total = @timed begin
-            stats_parse = @timed parse!(model, filename; verbosity, kwargs...)
+            stats_parse = @timed parse!(model, filename; kwargs...)
             !stats_parse.value && return nothing
             if JuMP.mode(model) != JuMP.DIRECT && JuMP.MOIU.state(JuMP.backend(model)) == JuMP.MOIU.NO_OPTIMIZER
                 with_logger(_iesopt(model).logger) do
@@ -499,16 +494,20 @@ function _attach_optimizer(model::JuMP.Model)
     return nothing
 end
 
-function parse!(model::JuMP.Model, filename::String; verbosity=nothing, kwargs...)
+function parse!(model::JuMP.Model, filename::String; kwargs...)
     if !endswith(filename, ".iesopt.yaml")
         @critical "Model entry config files need to respect the `.iesopt.yaml` file extension" filename
     end
 
-    # convert to `Pairs` with `Symbol` keys to `Dict{String, Any}`
-    global_parameters = Dict{String, Any}(String(k) => v for (k, v) in kwargs)
+    # Get all parameters that were passed directly from the caller.
+    global_parameters = Dict{String, Any}(string(k) => v for (k, v) in kwargs)
+
+    # Extract IESopt-internal arguments from `kwargs`.
+    model.ext[:_iesopt_verbosity] = pop!(global_parameters, "verbosity", nothing)
+    model.ext[:_iesopt_force_reload] = pop!(global_parameters, "force_reload", true)
 
     # Load the model specified by `filename`.
-    _parse_model!(model, filename, global_parameters; verbosity) || (@critical "Error while parsing model" filename)
+    _parse_model!(model, filename, global_parameters) || (@critical "Error while parsing model" filename)
 
     return true
 end
@@ -678,11 +677,11 @@ function compute_IIS(model::JuMP.Model; filename::String="")
 end
 
 """
-    function component(model::JuMP.Model, component_name::String)
+    function get_component(model::JuMP.Model, component_name::String)
 
 Get the component `component_name` from `model`.
 """
-function component(model::JuMP.Model, component_name::AbstractString)
+function get_component(model::JuMP.Model, component_name::AbstractString)
     if !haskey(_iesopt(model).model.components, component_name)
         st = stacktrace()
         trigger = length(st) > 0 ? st[1] : nothing
@@ -694,8 +693,27 @@ function component(model::JuMP.Model, component_name::AbstractString)
     return _iesopt(model).model.components[component_name]
 end
 
+function get_components(model::JuMP.Model; tagged::Union{Nothing, String, Vector{String}}=nothing)
+    !isnothing(tagged) && return _components_tagged(model, tagged)::Vector{<:_CoreComponent}
+
+    return collect(values(_iesopt(model).model.components))::Vector{<:_CoreComponent}
+end
+
+function _components_tagged(model::JuMP.Model, tag::String)
+    cnames = get(_iesopt(model).model.tags, tag, String[])
+    isempty(cnames) && return _CoreComponent[]
+    return get_component.(model, cnames)::Vector{<:_CoreComponent}
+end
+
+function _components_tagged(model::JuMP.Model, tags::Vector{String})
+    cnames = [get(_iesopt(model).model.tags, tag, String[]) for tag in tags]
+    cnames = intersect(cnames...)
+    isempty(cnames) && return _CoreComponent[]
+    return get_component.(model, cnames)::Vector{<:_CoreComponent}
+end
+
 function extract_result(model::JuMP.Model, component_name::String, field::String; mode::String)
-    return _result(component(model, component_name), mode, field)[2]
+    return _result(get_component(model, component_name), mode, field)[2]
 end
 
 """
