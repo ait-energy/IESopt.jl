@@ -77,7 +77,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "power", "default": "``+\\infty``"}```
     Time series (or fixed value) that limits the available capacity. If, e.g., `capacity: 100 out:electricity` and
-    `availability: 70`, the available capacity will only be `50 electricity`. Can be used to model non-availability of
+    `availability: 70`, the available capacity will only be `70 electricity`. Can be used to model non-availability of
     power plants, e.g., due to maintenance. For time-varying availability of intermittent generators (e.g., wind), it's
     recommended (most of the time) to use `availability_factor` instead.
     """
