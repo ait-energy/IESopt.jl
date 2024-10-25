@@ -93,6 +93,8 @@ macro profile(arg1, arg2=nothing, arg3=nothing)
     end
 end
 
+include("templates/definition.jl")  # this is used in `virtual.jl` and needs to be included first
+
 include("core/carrier.jl")
 include("core/expression.jl")   # this needs to come before the core components using it
 include("core/connection.jl")

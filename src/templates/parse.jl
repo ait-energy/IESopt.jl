@@ -326,6 +326,14 @@ function _parse_noncore!(model::JuMP.Model, description::Dict{String, Any}, cnam
 
     type = pop!(description[cname], "type")
     template = _require_template(model, type)
+
+    # Remember its name and type properly, before that is lost due to flattening, by constructing a Virtual.
+    _iesopt(model).model.components[cname] = Virtual(; model, name=cname, type, _template=template)
+
+    # Properly tag the new Virtual.
+    !haskey(_iesopt(model).model.tags, type) && (_iesopt(model).model.tags[type] = Vector{String}())
+    push!(_iesopt(model).model.tags[type], cname)
+
     # if !haskey(_iesopt(model).input.noncore[:templates], type)
     #     valid_templates = [
     #         path for
