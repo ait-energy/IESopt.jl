@@ -64,7 +64,7 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`", "unit": "power", "default": "-"}```
     The concrete value of this `Profile` - either static or as time series. Only applicable if `mode: fixed`.
     """
-    value::_OptionalExpression = nothing
+    value::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "string", "unit": "-", "default": "-"}```
     Name of the `Node` that this `Profile` draws energy from. Exactly one of `node_from` and `node_to` must be set.
@@ -91,18 +91,18 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "power", "default": "``-\\infty``"}```
     The lower bound of the range of this `Profile` (must be used together with `mode: ranged`).
     """
-    lb::_OptionalExpression = nothing
+    lb::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "power", "default": "``+\\infty``"}```
     The upper bound of the range of this `Profile` (must be used together with `mode: ranged`).
     """
-    ub::_OptionalExpression = nothing
+    ub::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary per energy", "default": "`0`"}```
     Cost per unit of energy that this `Profile` injects or withdraws from a `Node`. Refer to the basic examples to see
     how this can be combined with `mode` for different use cases.
     """
-    cost::_OptionalExpression = nothing
+    cost::OptionalExpression = nothing
 
     allow_deviation::Symbol = :off
     cost_deviation::_OptionalScalarInput = nothing

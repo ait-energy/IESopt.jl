@@ -125,6 +125,15 @@ _get(x::AbstractVector{<:Number}, t::_ID) = x[t]
 _get(x::JuMP.AffExpr, t::_ID) = x
 _get(x::Vector{JuMP.AffExpr}, t::_ID) = x[t]
 
+# TODO: refactor everything to only use this single public function
+function get_value_at(@nospecialize(x::T), ::_ID) where {T <: Union{Nothing, Real, JuMP.VariableRef, JuMP.AffExpr}}
+    return x::T
+end
+
+function get_value_at(@nospecialize(x::Vector{T}), t::_ID) where {T <: Union{Real, JuMP.VariableRef, JuMP.AffExpr}}
+    return x[t]::T
+end
+
 function _mapexpr_addon(expr::Expr, reload::Bool)
     if expr.head != :module
         # First code is not a module definition.

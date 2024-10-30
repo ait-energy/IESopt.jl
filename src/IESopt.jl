@@ -44,6 +44,9 @@ import ArgCheck
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
+# Used to parse expressions from strings (over using `Meta.parse`).
+import JuliaSyntax
+
 # Required during the "build" step, showing progress.
 using ProgressMeter
 

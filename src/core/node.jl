@@ -51,12 +51,12 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "energy", "default": "``-\\infty``"}```
     Lower bound of the internal state, requires `has_state = true`.
     """
-    state_lb::_OptionalExpression = nothing
+    state_lb::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "energy", "default": "``+\\infty``"}```
     Upper bound of the internal state, requires `has_state = true`.
     """
-    state_ub::_OptionalExpression = nothing
+    state_ub::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "`eq`, `geq`, or `disabled`", "unit": "-", "default": "`eq`"}```
     Controls how the state considers the boundary between last and first `Snapshot`. `disabled` disables cyclic

@@ -37,17 +37,17 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     The symmetric bound on this `Connection`'s flow. Results in `lb = -capacity` and `ub = capacity`. Must not be
     specified if `lb`, `ub`, or both are explicitly stated.
     """
-    capacity::_OptionalExpression = nothing
+    capacity::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "power", "default": "``-\\infty``"}```
     Lower bound of this `Connection`'s flow.
     """
-    lb::_OptionalExpression = nothing
+    lb::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "power", "default": "``+\\infty``"}```
     Upper bound of this `Connection`'s flow.
     """
-    ub::_OptionalExpression = nothing
+    ub::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary (per energy)", "default": "-"}```
     Cost of every unit of energy flow over this connection that is added to the model's objective function. Keep in mind
@@ -57,7 +57,7 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     being unidirectional (with `lb: 0`). Remember, that these can share the same "capacity" (which is then set as`ub`),
     even when using `decision:value` or `col@file` as value.
     """
-    cost::_OptionalExpression = nothing
+    cost::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "0"}```
     Fractional loss when transfering energy. This loss occurs "at the destination", which means that for a loss of 5%,
@@ -66,7 +66,7 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     would, e.g., translate to consuming 200 units of energy at `node_from` and injecting 190 units at `node_to`, if the
     `Snapshot` duration is 2 hours.
     """
-    loss::_OptionalExpression = nothing
+    loss::OptionalExpression = nothing
 
     # Energy Transfer Distribution Factors
     etdf::Union{Dict{<:Union{_ID, _String}, <:Any}, _String, Nothing} = nothing

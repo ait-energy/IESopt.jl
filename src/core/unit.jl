@@ -55,7 +55,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     (followed by `:`) specifies whether the limit is to be placed on the in- our output of this `Unit`, and `carrier`
     specifies the respective `Carrier`. Example: `100 in:electricity` (to limit the "input rating").
     """
-    capacity::_Expression
+    capacity::Expression
 
     raw"""```{"mandatory": "yes", "values": "dict", "unit": "-", "default": "-"}```
     Dictionary specifying the output "ports" of this `Unit`. Refer to the basic examples for the general syntax.
@@ -81,7 +81,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     power plants, e.g., due to maintenance. For time-varying availability of intermittent generators (e.g., wind), it's
     recommended (most of the time) to use `availability_factor` instead.
     """
-    availability::_OptionalExpression = nothing
+    availability::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "`1`"}```
     Similar to `availability`, but given as factor of `capacity` instead. If, e.g., `capacity: 100 out:electricity` and
@@ -89,7 +89,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     intermittent generators, where the availability is not a fixed value, but depends on the weather, and can be passed,
     e.g., by setting `availability_factor: wind@input_data_file`.
     """
-    availability_factor::_OptionalExpression = nothing
+    availability_factor::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "`true`, `false`", "unit": "-", "default": "`false`"}```
     If `true`, the minimal partial load will be influenced by the availability. Example: Consider a `Unit` with
@@ -109,7 +109,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     format `value per dir:carrier`, e.g. `3.5 per out:electricity` for a marginal cost of 3.5 monetary units per unit of
     electricity generated.
     """
-    marginal_cost::_OptionalExpression = nothing
+    marginal_cost::OptionalExpression = nothing
 
     raw"""```{"mandatory": "no", "values": "`true`, `false`", "unit": "-", "default": "`false`"}```
     Enables calculation of upward ramps. Ramping is based on the carrier specified in `capacity`.
@@ -189,7 +189,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     Number of units aggregated in this `Unit`. Besides interacting with the mode of `unit_commitment`, this mainly is
     responsible for scaling the output (e.g. grouping 47 of the same wind turbine, ...).
     """
-    unit_count::_OptionalExpression  # default=1 is enforced in `parser.jl`
+    unit_count::OptionalExpression  # default=1 is enforced in `parser.jl`
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "-"}```
     If `unit_commitment` is not set to `off`, this specifies the percentage that is considered to be the minimal
@@ -459,48 +459,27 @@ function _construct_objective!(unit::Unit)
 end
 
 function _convert_unit_conversion_dict!(carriers::Dict{String, Carrier}, unit::Unit)
-    # Convert the mandatory conversion.
-    lhs, rhs = split(unit.conversion, "->")
-    lhs = split(lhs, "+")
-    rhs = split(rhs, "+")
-    for item in lhs
-        item = strip(item)
-        item == "~" && continue
-        mult, carrier_str = split(item, " ")
-        if !isnothing(findfirst('@', mult))
-            unit.conversion_dict[:in][carriers[carrier_str]] = _conv_S2NI(unit.model, mult) # todo ????
-        else
-            unit.conversion_dict[:in][carriers[carrier_str]] = _conv_S2NI(unit.model, mult) # todo ????
-        end
-    end
-    for item in rhs
-        item = strip(item)
-        item == "~" && continue
-        mult, carrier_str = split(item, " ")
-        if !isnothing(findfirst('@', mult))
-            unit.conversion_dict[:out][carriers[carrier_str]] = _conv_S2NI(unit.model, mult) # todo ????
-        else
-            unit.conversion_dict[:out][carriers[carrier_str]] = _conv_S2NI(unit.model, mult) # todo ????
+    parsed = _convert_to_conversion_expressions(unit.model, unit.conversion)::NamedTuple
+    for side in [:in, :out]
+        terms = getproperty(parsed, side)
+        isempty(terms) && continue
+        
+        for (carrier_str, expr) in terms
+            unit.conversion_dict[side][carriers[carrier_str]] = expr.value
         end
     end
 
     isnothing(unit.conversion_at_min) && return
 
     # Convert the optional "minconversion" conversion.
-    lhs, rhs = split(unit.conversion_at_min, "->")
-    lhs = split(lhs, "+")
-    rhs = split(rhs, "+")
-    for item in lhs
-        item = strip(item)
-        item == "~" && continue
-        mult, carrier_str = split(item, " ")
-        unit.conversion_at_min_dict[:in][carriers[carrier_str]] = _conv_S2NI(unit.model, mult)
-    end
-    for item in rhs
-        item = strip(item)
-        item == "~" && continue
-        mult, carrier_str = split(item, " ")
-        unit.conversion_at_min_dict[:out][carriers[carrier_str]] = _conv_S2NI(unit.model, mult)
+    parsed = _convert_to_conversion_expressions(unit.model, unit.conversion_at_min)::NamedTuple
+    for side in [:in, :out]
+        terms = getproperty(parsed, side)
+        isempty(terms) && continue
+        
+        for (carrier_str, expr) in terms
+            unit.conversion_at_min_dict[side][carriers[carrier_str]] = expr.value
+        end
     end
 
     return nothing
@@ -509,6 +488,10 @@ end
 function _normalize_conversion_expressions!(unit::Unit)
     # Normalize default conversion expression.
     norm = unit.conversion_dict[unit.capacity_carrier.inout][unit.capacity_carrier.carrier]
+    if any(norm .== 0)
+        @critical "Using a zero (0.0) efficiency in `conversion` is not allowed" unit = unit.name
+    end
+
     for dir in [:in, :out]
         for (carrier, val) in unit.conversion_dict[dir]
             unit.conversion_dict[dir][carrier] = val ./ norm
@@ -518,6 +501,10 @@ function _normalize_conversion_expressions!(unit::Unit)
     # Normalize min_conversion expression.
     if !isnothing(unit.conversion_at_min)
         norm = unit.conversion_at_min_dict[unit.capacity_carrier.inout][unit.capacity_carrier.carrier]
+        if any(norm .== 0)
+            @critical "Using a zero (0.0) efficiency in `conversion_at_min` is not allowed" unit = unit.name
+        end
+    
         for dir in [:in, :out]
             for (carrier, val) in unit.conversion_at_min_dict[dir]
                 unit.conversion_at_min_dict[dir][carrier] = val ./ norm

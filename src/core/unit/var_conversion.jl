@@ -117,6 +117,7 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict)
 
     _a = collect(_get(limits[:min], t) for t in _iesopt(model).model.T)
     _b = collect(_get(unit.capacity, t) for t in _iesopt(model).model.T)
+    # TODO: this should be avoidable by doing unit.var.conversion?
     _c::Vector{JuMP.VariableRef} = collect(unit_var_conversion[t] for t in _iesopt(model).model.T)
 
     _mode::Symbol, _term1::Vector{JuMP.AffExpr}, _term2::Vector{Float64} = (
