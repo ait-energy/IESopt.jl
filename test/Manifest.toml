@@ -1,14 +1,14 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.0"
+julia_version = "1.11.1"
 manifest_format = "2.0"
 project_hash = "9607dd83595c424ac800baa2c8a1382aa8a1b1e7"
 
 [[deps.Aqua]]
 deps = ["Compat", "Pkg", "Test"]
-git-tree-sha1 = "d7176e7d17632efea24843ce3e2cff7eb01bf956"
+git-tree-sha1 = "49b1d7a9870c87ba13dc63f8ccfcf578cb266f95"
 uuid = "4c88cf16-eb10-579e-8560-4a9242c79595"
-version = "0.8.8"
+version = "0.8.9"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -30,9 +30,9 @@ version = "1.5.0"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "9e2a6b69137e6969bab0152632dcb3bc108c8bdd"
+git-tree-sha1 = "8873e196c2eb87962a2048b3b8e08946535864a1"
 uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
-version = "1.0.8+1"
+version = "1.0.8+2"
 
 [[deps.CodeTracking]]
 deps = ["InteractiveUtils", "UUIDs"]
@@ -125,15 +125,15 @@ version = "0.10.36"
 
 [[deps.HiGHS]]
 deps = ["HiGHS_jll", "MathOptInterface", "PrecompileTools", "SparseArrays"]
-git-tree-sha1 = "3a7f13068f77fa54edd9589f762c600a22679bf7"
+git-tree-sha1 = "5fe8cdf06815d5b61f219d6871fc9a624111017d"
 uuid = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
-version = "1.9.3"
+version = "1.10.2"
 
 [[deps.HiGHS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "1f240e0fb1c4cdf39bca5d3881d1758263931ccb"
+git-tree-sha1 = "c12314e192631fc302078e27a06da5ab51770e3b"
 uuid = "8fd58aa0-07eb-5a78-9b36-339c94fd15ea"
-version = "1.7.2+0"
+version = "1.8.0+0"
 
 [[deps.IESoptLib]]
 git-tree-sha1 = "89c534fc5f2a9a7d2f3293a8106d2b63fdb8b487"
@@ -152,9 +152,9 @@ version = "0.2.2"
 
 [[deps.JET]]
 deps = ["CodeTracking", "InteractiveUtils", "JuliaInterpreter", "LoweredCodeUtils", "MacroTools", "Pkg", "PrecompileTools", "Preferences", "Test"]
-git-tree-sha1 = "db3d262aed9730b3670d54000f452f4cd839f185"
+git-tree-sha1 = "5c5ac91e775b585864015c5c1703cee283071a47"
 uuid = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
-version = "0.9.10"
+version = "0.9.12"
 
     [deps.JET.extensions]
     JETCthulhuExt = "Cthulhu"
@@ -166,9 +166,9 @@ version = "0.9.10"
 
 [[deps.JLLWrappers]]
 deps = ["Artifacts", "Preferences"]
-git-tree-sha1 = "f389674c99bfcde17dc57454011aa44d5a260a40"
+git-tree-sha1 = "be3dc50a92e5a386872a493a10050136d4703f9b"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
-version = "1.6.0"
+version = "1.6.1"
 
 [[deps.JSON]]
 deps = ["Dates", "Mmap", "Parsers", "Unicode"]
@@ -178,9 +178,9 @@ version = "0.21.4"
 
 [[deps.JuMP]]
 deps = ["LinearAlgebra", "MacroTools", "MathOptInterface", "MutableArithmetics", "OrderedCollections", "PrecompileTools", "Printf", "SparseArrays"]
-git-tree-sha1 = "c95f443d4641b128d626a429b51d5185050135b5"
+git-tree-sha1 = "c91f872c6150cf1471f9cb279f5e0dc09423bdcf"
 uuid = "4076af6c-e467-56ae-b986-b466b2749572"
-version = "1.23.2"
+version = "1.23.3"
 
     [deps.JuMP.extensions]
     JuMPDimensionalDataExt = "DimensionalData"
@@ -250,9 +250,9 @@ version = "1.11.0"
 
 [[deps.LoweredCodeUtils]]
 deps = ["JuliaInterpreter"]
-git-tree-sha1 = "96d2a4a668f5c098fb8a26ce7da53cde3e462a80"
+git-tree-sha1 = "260dc274c1bc2cb839e758588c63d9c8b5e639d1"
 uuid = "6f1432cf-f94c-5a45-995e-cdbf5db27b0b"
-version = "3.0.3"
+version = "3.0.5"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -267,9 +267,9 @@ version = "1.11.0"
 
 [[deps.MathOptInterface]]
 deps = ["BenchmarkTools", "CodecBzip2", "CodecZlib", "DataStructures", "ForwardDiff", "JSON", "LinearAlgebra", "MutableArithmetics", "NaNMath", "OrderedCollections", "PrecompileTools", "Printf", "SparseArrays", "SpecialFunctions", "Test", "Unicode"]
-git-tree-sha1 = "5b246fca5420ae176d65ed43a2d0ee5897775216"
+git-tree-sha1 = "9a9905be768c496fb2f2c5fe34e2c9fe44b86e7a"
 uuid = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
-version = "1.31.2"
+version = "1.33.0"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -286,9 +286,9 @@ version = "2023.12.12"
 
 [[deps.MutableArithmetics]]
 deps = ["LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "3eba928678787843e504c153a9b8e80d7d73ab17"
+git-tree-sha1 = "90077f1e79de8c9c7c8a90644494411111f4e07b"
 uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
-version = "1.5.0"
+version = "1.5.2"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
