@@ -1,3 +1,0 @@
-# General
-
-To be added.
