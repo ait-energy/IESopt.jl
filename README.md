@@ -24,6 +24,16 @@ while still being user-friendly. This is enabled by reducing energy system asset
 supported by specialized implementation, and can be combined into complex systems without the need of a detailed
 understanding of mathematical modeling or proficiency in any coding-language.
 
+## MERGING DOCUMENTATIONS
+
+> We are currently merging this documentation into the (now) central one, over at working [iesopt](https://github.com/ait-energy/iesopt). Besides migrating everything, this requires some clean-up of
+> (potentially) confindential left-overs (e.g., from projects), so the documentation needs to be checked page-by-page. If you are trying to
+> get started before we manage to fix everything, get in touch with us directly - we'll help you set up everything you
+> need. Leftovers can be seen in #4c2a59c or earlier. Information in the current Julia documentation as well as in this README may be outdated!
+
+---
+---
+
 ## Table of Contents
 
 - [Background](#background)
@@ -47,9 +57,9 @@ in the documentation, both for Python and Julia. Depending on your use-case, and
 there are different ways to get started. If you are experienced with Julia, and want to interact with the core model
 itself, then using `IESopt.jl` directly will suit you best. If you are looking for a more user-friendly interaction, or
 are new to energy system modeling and/or coding at all, you might want to check out the Python wrapper
-[iesopt-py](https://github.com/ait-energy/iesopt-py).
+[iesopt](https://github.com/ait-energy/iesopt).
 
-> If you are not 110% sure where to start... start here: [iesopt](https://github.com/ait-energy/iesopt-py)
+> If you are not 110% sure where to start... start here: [iesopt](https://github.com/ait-energy/iesopt)
 
 ### Quick setup for Julia
 
@@ -62,11 +72,11 @@ activated (e.g., do `activate .`), then add the package with the following comma
 
 ### Quick setup for Python
 
-Head over to [iesopt-py](https://github.com/ait-energy/iesopt-py) and follow the instructions there, or - if you already
+Head over to [iesopt](https://github.com/ait-energy/iesopt) and follow the instructions there, or - if you already
 have a working Python environment - install the package, e.g., via `poetry`:
 
 ```bash
-poetry add iesopt-py
+poetry add iesopt
 ```
 
 ## Usage
@@ -126,7 +136,7 @@ IESopt.optimize!(model::JuMP.Model; save_results::Bool=true, kwargs...)
 IESopt.run(filename::String; verbosity=nothing, kwargs...)
 
 """Get the component with the name `component_name` from the `model`."""
-IESopt.component(model::JuMP.Model, component_name::String)
+IESopt.get_component(model::JuMP.Model, component_name::String)
 
 """Compute the Irreducible Infeasible Set (IIS) of the model."""
 IESopt.compute_IIS(model::JuMP.Model; filename::String = "")

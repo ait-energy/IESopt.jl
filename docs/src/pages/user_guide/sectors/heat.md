@@ -1,3 +1,0 @@
-# Heat
-
-To be added.

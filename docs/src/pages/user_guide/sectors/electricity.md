@@ -1,3 +1,0 @@
-# Electricity
-
-To be added.
