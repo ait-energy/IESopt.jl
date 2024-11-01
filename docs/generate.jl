@@ -10,8 +10,8 @@ end
 
 # This defines the order of the menu / page structure.
 examples_files = [
-    file[1:(end - 3)] for
-    file in readdir(normpath(@__DIR__, "src", "pages", "user_guide", "examples")) if endswith(file, ".md")
+    # file[1:(end - 3)] for
+    # file in readdir(normpath(@__DIR__, "src", "pages", "user_guide", "examples")) if endswith(file, ".md")
 ]
 
 _PAGES = Pair["Home" => "index.md"]
@@ -20,18 +20,9 @@ append!(
     _build_page_paths(
         [
             "Tutorials" => [
-                "setup", "first_model", "next_steps", "results",
-                "Creating new components" => ["index", "templates_1", "templates_2"],
+                "templates_1",
             ],
-            "User Guide" => [
-                "general",
-                "Sectors" => ["electricity", "heat", "gas"],
-                "solvers",
-                "Custom functionality" => ["templates", "addons"],
-                "Examples" => [], # TODO: examples_files,
-            ],
-            "Manual / Reference" => ["yaml", "core_components", "templates", "api"],
-            "References" => "references",
+            "Manual / Reference" => ["core_components", "api"],
             "Developer Documentation" => "dev_docs",
             "Changelog" => "changelog",
         ];
