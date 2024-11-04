@@ -64,6 +64,47 @@ function _parse_expression(@nospecialize(str::AbstractString), ::_ConversionExpr
     )::NamedTuple
 end
 
+
+"""
+    Expression
+
+A mutable struct representing a general expression in the optimization model.
+
+# Fields
+- `model::JuMP.Model`: The IESopt model associated with the expression.
+- `dirty::Bool`: A flag indicating if the expression is dirty (modified but not updated). Defaults to `false`.
+- `temporal::Bool`: A flag indicating if the expression is temporal. Defaults to `false`.
+- `empty::Bool`: A flag indicating if the expression is empty. Defaults to `false`.
+- `value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Vector{JuMP.AffExpr}, Float64, Vector{Float64}}`: The value of the expression, which can be a JuMP variable reference, affine expression, vector of affine expressions, float, or vector of floats. Defaults to `nothing`.
+- `internal::Union{Nothing, NamedTuple}`: Internal data associated with the expression. Defaults to `nothing`.
+
+# Usage examples
+```julia
+if !my_exp.empty
+    # ... do something with `my_exp`, since it contains values ...
+end
+```
+
+```julia
+# Get the Expression's value at Snapshot `t`.
+access(my_exp, t)
+
+# Get the Expression's value - could be vector-valued.
+access(my_exp)
+```
+
+Both ways to access the value can be used with a type assertion to get the value in a specific type:
+
+```julia
+# Get the Expression's value at Snapshot `t` as a Float64.
+access(my_exp, t, Float64)
+
+# Get the Expression's value as a Float64.
+access(my_exp, Float64)
+```
+
+If the value of `my_exp` is a vector of `Float64`, the first call will succeed, while the second will throw a type assertion error.
+"""
 @kwdef mutable struct Expression
     model::JuMP.Model
     
@@ -75,8 +116,25 @@ end
     internal::Union{Nothing, NamedTuple} = nothing
 end
 
+
+
+"""
+This constant defines a union type `OptionalScalarExpressionValue` which describes any scalar-valued value type that an
+Expression can hold. Due to `Optional` it also includes `nothing`.
+"""
 const OptionalScalarExpressionValue = Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Float64}
+
+"""
+This constant defines a union type `NonEmptyScalarExpressionValue` which describes any scalar-valued type that an
+Expression can hold, guaranteeing that the Expression can not be empty.
+"""
 const NonEmptyScalarExpressionValue = Union{JuMP.VariableRef, JuMP.AffExpr, Float64}
+
+"""
+This constant defines a union type `NonEmptyNumericalExpressionValue` which describes any numerical value type that an
+Expression can hold, guaranteeing that the Expression can not be empty. `JuMP` objects are not included, and it can be
+either scalar or vector-valued.
+"""
 const NonEmptyNumericalExpressionValue = Union{Float64, Vector{Float64}}
 
 _name(e::Expression) = e.empty ? "" : e.internal.name

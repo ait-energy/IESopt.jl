@@ -120,11 +120,38 @@ _get(@nospecialize(x::AbstractVector{<:Real}), t::_ID) = x[t]
 _get(x::JuMP.AffExpr, t::_ID) = x
 _get(x::Vector{JuMP.AffExpr}, t::_ID) = x[t]
 
-# TODO: refactor everything to only use this single public function
+# TODO: refactor everything to only use this single public function (removing `_get`)
+
+"""
+    get_value_at(x::T, ::_ID) where {T <: Union{Nothing, Real, JuMP.VariableRef, JuMP.AffExpr}}
+
+Returns the value of `x` at any Snapshot index `t`. Can be used to access variables without needing to handle whether
+they are vector-valued or not.
+
+# Arguments
+- `x::T`: The input value which can be of type `Nothing`, `Real`, `JuMP.VariableRef`, or `JuMP.AffExpr`.
+- `::_ID`: Unused Snapshot index.
+
+# Returns
+- The value of `x`.
+"""
 function get_value_at(@nospecialize(x::T), ::_ID) where {T <: Union{Nothing, Real, JuMP.VariableRef, JuMP.AffExpr}}
     return x::T
 end
 
+"""
+    get_value_at(x::Vector{T}, t::_ID) where {T <: Union{Real, JuMP.VariableRef, JuMP.AffExpr}}
+
+Retrieve the value at Snapshot index `t` from the vector `x`. Can be used to access variables without needing to handle whether
+they are vector-valued or not.
+
+# Arguments
+- `x::Vector{T}`: A vector containing elements of type `T`.
+- `t::_ID`: The index at which to retrieve the value from the vector `x`.
+
+# Returns
+- The value at index `t` in the vector `x`, with the type `T`.
+"""
 function get_value_at(@nospecialize(x::Vector{T}), t::_ID) where {T <: Union{Real, JuMP.VariableRef, JuMP.AffExpr}}
     return x[t]::T
 end
@@ -237,9 +264,26 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
 end
 
 """
-    _getcsv(filename::String; sep::String=",")
+    _getcsv(model::JuMP.Model, filename::String; sep::Char=',', dec::Char='.', sink=DataFrames.DataFrame, slice::Bool)
 
-Read a CSV into a DataFrame.
+Load a CSV file and optionally slice it based on the model's snapshot configuration.
+
+# Arguments
+- `model::JuMP.Model`: The optimization model.
+- `filename::String`: The path to the CSV file.
+- `sep::Char=',',`: The delimiter character used in the CSV file.
+- `dec::Char='.',`: The decimal character used in the CSV file.
+- `sink=DataFrames.DataFrame`: The type of data structure to return (default is `DataFrames.DataFrame`).
+- `slice::Bool`: Whether to slice the data based on the model's snapshot configuration.
+
+# Returns
+- A `DataFrames.DataFrame` containing the loaded (and optionally sliced) data.
+
+# Notes
+- If `slice` is `false`, the entire table is returned.
+- If `slice` is `true`, the function slices the data based on the model's snapshot configuration parameters: `offset`, `aggregation`, and `count`.
+- Snapshot aggregation and non-zero offsets are not supported together.
+- The function checks if the range of rows to be returned is within bounds and logs a critical message if it is not.
 """
 function _getcsv(
     model::JuMP.Model,

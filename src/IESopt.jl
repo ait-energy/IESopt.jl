@@ -283,11 +283,16 @@ function run(filename::String; @nospecialize(verbosity=nothing), @nospecialize(k
 end
 
 """
-    generate!(filename::String)
+    generate!(filename::String; @nospecialize(kwargs...))
 
-Builds and returns a model using the IESopt framework.
+Generate an IESopt model based on the top-level config in `filename`.
 
-This loads the configuration file specified by `filename`. Requires full specification of the `solver` entry in config.
+# Arguments
+- `filename::String`: The name of the file to load.
+- `kwargs...`: Additional keyword arguments that can be passed to the function.
+
+# Returns
+- `model::JuMP.Model`: The generated IESopt model.
 """
 function generate!(filename::String; @nospecialize(kwargs...))
     model = JuMP.Model()::JuMP.Model
@@ -296,13 +301,23 @@ function generate!(filename::String; @nospecialize(kwargs...))
 end
 
 """
-    generate!(model::JuMP.Model, filename::String)
+    generate!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
 
-Builds a model using the IESopt framework, "into" the provided `model`.
+Generates an IESopt model from a given file and attaches an optimizer if necessary.
 
-This loads the configuration file specified by `filename`. Be careful when creating your `model` in any other way than
-in the provided examples, as this can conflict with IESopt internals (especially for model/optimizer combinations
-that do not support bridges). Returns the model for convenience, even though it is modified in place.
+# Arguments
+- `model::JuMP.Model`: The JuMP model to be used.
+- `filename::String`: The path to the file containing the model definition.
+- `kwargs...`: Additional keyword arguments passed to the parsing function.
+
+# Returns
+- `model::JuMP.Model`: The generated IESopt model.
+
+# Notes
+- The function validates the file before parsing and building the model.
+- If the model is not in DIRECT mode and has no optimizer attached, an optimizer is attached.
+- The function logs the model generation process and handles any exceptions that occur during generation.
+- If an error occurs, detailed debug information and the stack trace are logged.
 """
 function generate!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
     # local stats_parse, stats_build, stats_total
@@ -472,6 +487,26 @@ function _attach_optimizer(model::JuMP.Model)
     return nothing
 end
 
+"""
+    parse!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
+
+Parse the model configuration from a specified file and update the given `JuMP.Model` object.
+
+# Arguments
+- `model::JuMP.Model`: The JuMP model to be updated.
+- `filename::String`: The path to the configuration file. The file must have a `.iesopt.yaml` extension.
+- `kwargs...`: Additional keyword arguments that can be passed to customize the parsing process.
+
+# Keyword Arguments
+- `verbosity`: Controls the verbosity level of the parsing process. Default is `nothing`.
+- `force_reload`: A boolean flag indicating whether to force reloading addons. Default is `true`.
+
+# Returns
+- `Bool`: Returns `true` if the model was successfully parsed.
+
+# Errors
+- Logs a critical error if the file does not have the `.iesopt.yaml` extension or if there is an error while parsing the model.
+"""
 function parse!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
     if !endswith(filename, ".iesopt.yaml")
         @critical "Model entry config files need to respect the `.iesopt.yaml` file extension" filename
@@ -490,6 +525,23 @@ function parse!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
     return true
 end
 
+"""
+    build!(model::JuMP.Model)
+
+Builds and prepares the given IESopt model. This function performs the following steps:
+
+1. Prepares the model by ensuring necessary conversions before performing consistency checks.
+2. Checks the consistency of all parsed components in the model.
+3. If any component fails the consistency check, an error is raised.
+4. Builds the model if all components pass the consistency checks.
+5. Logs profiling results after the build process, displaying the top 5 profiling results.
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model to be built and prepared.
+
+# Errors
+- Raises an error if any component does not pass the consistency check.
+"""
 function build!(model::JuMP.Model)
     # Prepare the model, ensuring some conversions before consistency checks.
     _prepare_model!(model)
@@ -510,9 +562,32 @@ function build!(model::JuMP.Model)
 end
 
 """
-    optimize!(model::JuMP.Model; save_results::Bool=true, kwargs...)
+    optimize!(model::JuMP.Model; kwargs...)
 
-Use `JuMP.optimize!` to optimize the given model, optionally serializing the model afterwards for later use.
+Optimize the given IESopt model with optional keyword arguments.
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model to be optimized.
+- `kwargs...`: Additional keyword arguments to be passed to the `JuMP.optimize!` function.
+
+# Description
+This function performs the following steps:
+1. If there are constraint safety penalties, it relaxes the constraints based on these penalties.
+2. Sets the verbosity of the solver output based on the model's configuration.
+3. Logs the solver output to a file if logging is enabled and supported by the solver.
+4. Calls `JuMP.optimize!` to solve the model.
+5. Checks the result count and termination status to log the optimization outcome.
+6. Analyzes the constraint safety results if there were any constraint safety penalties.
+7. Extracts and saves the results if the model is solved and feasible.
+8. Profiles the results after optimization.
+
+# Logging
+- Logs messages about the relaxation of constraints, solver output, and optimization status.
+- Logs warnings if the safety constraint feature is triggered or if unexpected result counts are encountered.
+- Logs errors if the solver log file setup fails, if no results are returned, or if extracting results is not possible.
+
+# Returns
+- `nothing`: This function does not return any value.
 """
 function optimize!(model::JuMP.Model; @nospecialize(kwargs...))
     with_logger(_iesopt_logger(model)) do
@@ -655,13 +730,15 @@ function compute_IIS(model::JuMP.Model; filename::String="")
 end
 
 """
-    function get_component(model::JuMP.Model, component_name::String)
+    function get_component(model::JuMP.Model, component_name::AbstractString)
 
 Get the component `component_name` from `model`.
 """
 function get_component(model::JuMP.Model, @nospecialize(component_name::AbstractString))
     cn = string(component_name)
-    if !haskey(_iesopt(model).model.components, cn)
+    components = _iesopt(model).model.components::Dict{String, _CoreComponent}
+
+    if !haskey(components, cn)
         st = stacktrace()
         trigger = length(st) > 0 ? st[1] : nothing
         origin = length(st) > 1 ? st[2] : nothing
@@ -669,10 +746,23 @@ function get_component(model::JuMP.Model, @nospecialize(component_name::Abstract
         @critical "Trying to access unknown component" component_name = cn trigger origin inside debug = _iesopt_debug(model)
     end
 
-    return _iesopt(model).model.components[cn]
+    return components[cn]::_CoreComponent
 end
 
-function get_components(model::JuMP.Model; @nospecialize(tagged::Union{Nothing, String, Vector{String}}=nothing))
+"""
+    get_components(model::JuMP.Model; tagged::Union{Nothing, String, Vector{String}} = nothing)
+
+Retrieve components from a given IESopt model.
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model from which to retrieve components.
+- `tagged::Union{Nothing, String, Vector{String}}`: Optional argument to specify tagged components to retrieve. 
+  If `nothing`, all components are retrieved. If a `String` or `Vector{String}`, only components with the specified tags are retrieved.
+
+# Returns
+- `Vector{_CoreComponent}`: A subset of components from the model.
+"""
+function get_components(model::JuMP.Model; @nospecialize(tagged::Union{Nothing, String, Vector{String}} = nothing))
     !isnothing(tagged) && return _components_tagged(model, tagged)::Vector{<:_CoreComponent}
 
     return collect(values(_iesopt(model).model.components))::Vector{<:_CoreComponent}
@@ -691,12 +781,17 @@ function _components_tagged(model::JuMP.Model, tags::Vector{String})
     return get_component.(model, cnames)::Vector{<:_CoreComponent}
 end
 
-function extract_result(model::JuMP.Model, component_name::String, field::String; mode::String)
-    return _result(get_component(model, component_name), mode, field)[2]
+"""
+    extract_result(model::JuMP.Model; path::String = "./out", write_to_file::Bool=true)
+
+DEPRECATED
+"""
+function extract_result(args...)
+    @critical "The function `extract_result` is deprecated"
 end
 
 """
-    function to_table(model::JuMP.Model; path::String = "./out")
+    function to_table(model::JuMP.Model; path::String = "./out", write_to_file::Bool=true)
 
 Turn `model` into a set of CSV files containing all core components that represent the model.
 

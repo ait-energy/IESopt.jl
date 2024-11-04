@@ -1,8 +1,11 @@
 """
     struct Snapshot
-        name
-        id
-        weight
+        name::_String
+        id::_ID
+        weight::_ScalarInput
+
+        is_representative::Bool
+        representative::_ID
     end
 
 Represent a specific timestamp, that can be tied to timeseries values.

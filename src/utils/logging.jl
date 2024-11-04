@@ -14,6 +14,21 @@ Logging.shouldlog(filelogger::FileLogger, arg...) = true
 Logging.min_enabled_level(filelogger::FileLogger) = Logging.Info
 Logging.catch_exceptions(filelogger::FileLogger) = Logging.catch_exceptions(filelogger.logger)
 
+
+"""
+    save_close_filelogger(model::JuMP.Model)
+
+Safely closes the file logger's iostream if it is open. This function checks if the logger associated with the given `model` is a `LoggingExtras.TeeLogger` and if it contains a `IESopt.FileLogger` as one of its loggers. If the file logger's stream is open, it will be closed.
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model which contains the logger to be closed.
+
+# Returns
+- `nothing`: This function does not return any value.
+
+# Notes
+- The function includes a `try-catch` block to handle any potential errors during the closing process. Currently, the catch block does not perform any actions.
+"""
 function save_close_filelogger(model::JuMP.Model)
     try
         if _iesopt(model).logger isa LoggingExtras.TeeLogger

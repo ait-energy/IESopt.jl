@@ -1,3 +1,13 @@
+
+"""
+    @critical(msg, args...)
+
+A macro that logs an error message and then throws an error with the same message. Use it in the same way you would use `@error`, or `@info`, etc.
+
+# Arguments
+- `msg`: The main error message to be logged and thrown.
+- `args...`: Additional arguments to be included in the error log.
+"""
 macro critical(msg, args...)
     return esc(quote
         local message = string($msg)

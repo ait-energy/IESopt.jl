@@ -42,12 +42,12 @@ end
 _is_template(filename::String) = endswith(filename, ".iesopt.template.yaml")
 _get_template_name(filename::String) = string(rsplit(basename(filename), "."; limit=4)[1])
 
-get_type(template::CoreTemplate) = template.type[]::Symbol
+_get_type(template::CoreTemplate) = template.type[]::Symbol
 
-function set_type!(template::CoreTemplate, t::Symbol) 
+function _set_type!(template::CoreTemplate, t::Symbol) 
     template.type[] = t
     return nothing
 end
 
-_is_component(template::CoreTemplate) = get_type(template) == :component
-_is_container(template::CoreTemplate) = get_type(template) == :container
+_is_component(template::CoreTemplate) = _get_type(template) == :component
+_is_container(template::CoreTemplate) = _get_type(template) == :container

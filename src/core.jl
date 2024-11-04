@@ -419,8 +419,19 @@ _iesopt_cache(model::JuMP.Model) = _iesopt(model).aux.cache::Dict{Symbol, Any}
 _iesopt_model(model::JuMP.Model) = _iesopt(model).model::_IESoptModelData
 _iesopt_logger(model::JuMP.Model) = _iesopt(model).logger::Union{Logging.ConsoleLogger, LoggingExtras.TeeLogger}
 
-# TODO: change this, to return a UnitRange (which helps JuMP)
-get_T(model::JuMP.Model) = _iesopt(model).model.T::Vector{_ID}
+"""
+    get_T(model::JuMP.Model)
+
+Retrieve the vector `T` from the IESopt model.
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model from which to extract the vector `T`.
+
+# Returns
+- `Vector{_ID}`: The vector `T`.
+
+"""
+get_T(model::JuMP.Model) = _iesopt(model).model.T::Vector{_ID}  # TODO: change this, to return a UnitRange (which helps JuMP)
 
 _has_addons(model::JuMP.Model) = !isempty(_iesopt(model).input.addons)
 

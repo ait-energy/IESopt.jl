@@ -29,9 +29,9 @@ function _load_template_yaml!(template::CoreTemplate)
     has_component = haskey(template.yaml, "component")
 
     if has_components && !has_component
-        set_type!(template, :container)
+        _set_type!(template, :container)
     elseif !has_components && has_component
-        set_type!(template, :component)
+        _set_type!(template, :component)
     else
         @critical "Template type could not be determined" template = template.name
     end
