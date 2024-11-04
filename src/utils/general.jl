@@ -5,9 +5,9 @@ abstract type _CoreComponent end
 end
 
 @kwdef struct _CoreComponentOptContainer
-    expressions = _CoreComponentOptContainerDict{Union{JuMP.AffExpr, Vector}}()
-    variables = _CoreComponentOptContainerDict{Union{JuMP.VariableRef, Vector}}()
-    constraints = _CoreComponentOptContainerDict{Union{JuMP.ConstraintRef, Vector}}()       # TODO: this clashes with a more specific definition of `ConstraintRef` in JuMP
+    expressions = _CoreComponentOptContainerDict{Union{JuMP.AffExpr, Vector{JuMP.AffExpr}}}()
+    variables = _CoreComponentOptContainerDict{Union{JuMP.VariableRef, Vector{JuMP.VariableRef}}}()
+    constraints = _CoreComponentOptContainerDict{Union{JuMP.ConstraintRef, Vector{<:JuMP.ConstraintRef}}}()       # TODO: this clashes with a more specific definition of `ConstraintRef` in JuMP
     objectives = _CoreComponentOptContainerDict{JuMP.AffExpr}()
 end
 
@@ -44,18 +44,13 @@ end
 # _ID is used for all internal "ids". To ensure proper access, all ids need to be >= 1, unique and dense
 const _ID = Int64
 # This defines the `_NumericalInput` type, that is used by IESopt for numerical input data (`Profile` values, ...)
-const _NumericalInput = Union{Number, AbstractVector{<:Number}, _CoreComponent}   # todo: this should be Expression (which we don't know here...)
+const _NumericalInput = Union{Real, AbstractVector{<:Real}, _CoreComponent}   # todo: this should be Expression (which we don't know here...)
 # This defines the `_ScalarInput` type, a scalar (non-vector) type for numerical input data.
-const _ScalarInput = Union{Number}
+const _ScalarInput = Real
 # A `_NumericalInput` type that allows passing `nothing`.
 const _OptionalNumericalInput = Union{_NumericalInput, Nothing}
 # A `_ScalarInput` type that allows passing `nothing`.
 const _OptionalScalarInput = Union{_ScalarInput, Nothing}
-
-# A bound that can be given either by a `_NumericalInput` or defined based on variable in another core component.
-const _Bound = Union{_NumericalInput, _AbstractAffExpr, _PresolvedAffExpr}
-# A `_Bound` type that allows passing `nothing`.
-const _OptionalBound = Union{_Bound, Nothing}
 
 # All strings in IESopt use this type.
 const _String = AbstractString #CSV.InlineStrings.AbstractString
@@ -121,7 +116,7 @@ end
 Get the value of the `numerical_input` at time (snapshot index) `t`.
 """
 # _get(x::Number, t::UInt) = x  # this is already done above (see `ScalarInput`)
-_get(x::AbstractVector{<:Number}, t::_ID) = x[t]
+_get(@nospecialize(x::AbstractVector{<:Real}), t::_ID) = x[t]
 _get(x::JuMP.AffExpr, t::_ID) = x
 _get(x::Vector{JuMP.AffExpr}, t::_ID) = x[t]
 
@@ -206,6 +201,8 @@ function _load_or_retrieve_addon_file(filename::String; reload::Bool)
 end
 
 function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=DataFrames.DataFrame, slice::Bool=true)
+    paths = _iesopt_config(model).paths::_ConfigPaths
+    
     if endswith(filename, ".csv")
         path = path === :auto ? :files : path
         filepath = abspath(getfield(_iesopt_config(model).paths, path), filename)
@@ -247,7 +244,7 @@ Read a CSV into a DataFrame.
 function _getcsv(
     model::JuMP.Model,
     filename::String;
-    sep::String=",",
+    sep::Char=',',
     dec::Char='.',
     sink=DataFrames.DataFrame,
     slice::Bool,
@@ -259,10 +256,10 @@ function _getcsv(
     table = CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)
 
     # If we are not slicing we return the whole table
-    slice || return table
+    slice || return table::DataFrames.DataFrame
 
     # Get some snapshot config parameters
-    offset = _iesopt_config(model).optimization.snapshots.offset
+    offset = _iesopt_config(model).optimization.snapshots.offset::Int64
     aggregation = _iesopt_config(model).optimization.snapshots.aggregate
 
     # Offset and aggregation don't work together.
@@ -272,24 +269,25 @@ function _getcsv(
 
     # Get the number of table rows and and the model's snapshot count
     nrows = size(table, 1)
-    count = _iesopt_config(model).optimization.snapshots.count
+    count = _iesopt_config(model).optimization.snapshots.count::Int64
 
     # Get the range of table rows we want to return.
     # Without snapshot aggregation we can return the rows specified by offset and count.
     # Otherwise, we start at 1 and multiply the number of rows to return by the number of snapshots to aggregate.
-    from, to = isnothing(aggregation) ? (offset + 1, offset + count) : (1, count * aggregation)
+    from, to = isnothing(aggregation) ? (offset + 1, offset + count) : (1, count * (aggregation::Float64))
 
     # Check if the range of rows is in bounds.
     if from < 1 || to > nrows || from > to
         @critical "Trying to access data with out-of-bounds or empty range" filename from to nrows
     end
 
-    return table[from:to, :]
+    return table[from:to, :]::DataFrames.DataFrame
 end
 
 function _getfromcsv(model::JuMP.Model, file::String, column::String)
     haskey(_iesopt(model).input.files, file) || (@critical "File not properly registered" column file)
-    return @view _iesopt(model).input.files[file][_iesopt(model).model.T, column]
+    df = _iesopt(model).input.files[file]::DataFrames.DataFrame
+    return @view df[get_T(model), column]
 end
 
 function _conv_S2NI(model::JuMP.Model, str::AbstractString)
@@ -372,9 +370,14 @@ function _unknown_to_string(model::JuMP.Model, sym::Symbol)::Union{Symbol, Strin
     return string(sym)
 end
 
-function _base_name(comp::_CoreComponent, str::String)
+function _base_name(@nospecialize(comp::_CoreComponent), str::String)
     !JuMP.set_string_names_on_creation(comp.model) && return ""
     return "$(comp.name).$str"
+end
+
+function _base_name(@nospecialize(comp::_CoreComponent), str::String, t::_ID)
+    !JuMP.set_string_names_on_creation(comp.model) && return ""
+    return "$(comp.name).$str[$t]"
 end
 
 # These are used in Benders and Stochastic.
@@ -399,7 +402,7 @@ function _add_obj_term!(model::JuMP.Model, term::String; component::String, obje
     return _add_obj_term_from_str!(model, Meta.parse(term); component=component, objective=objective)
 end
 
-function _add_obj_term!(model::JuMP.Model, term::Number; component::String, objective::String)
+function _add_obj_term!(model::JuMP.Model, term::Real; component::String, objective::String)
     push!(_iesopt(model).aux._obj_terms[objective], float(term))
     return nothing
 end

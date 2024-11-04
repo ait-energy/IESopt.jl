@@ -1,4 +1,4 @@
-function _convert_to_result(component::_CoreComponent)
+function _convert_to_result(@nospecialize(component::_CoreComponent))
     ret = _CoreComponentResult(
         Dict{Symbol, Any}(f => getfield(component, f) for f in _result_fields(component)),
         _CoreComponentOptResultContainer(),
@@ -54,7 +54,7 @@ function _extract_results(model::JuMP.Model)
         end
     end
 
-    merge!(result_components, Dict(k => (@profile model _convert_to_result(v)) for (k, v) in components))
+    merge!(result_components, Dict(k => _convert_to_result(v) for (k, v) in components))
     merge!(result_objectives, Dict(k => JuMP.value(v.expr) for (k, v) in _iesopt(model).model.objectives))
 
     # Add results that were defined by Core Templates.

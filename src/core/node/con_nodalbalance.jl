@@ -43,7 +43,7 @@ function _node_con_nodalbalance!(node::Node)
     if node.has_state
         factor = isnothing(node.state_percentage_loss) ? 1.0 : (1.0 - node.state_percentage_loss)
 
-        for t in _iesopt(model).model.T
+        for t in get_T(model)
             if (t == 1) && (node.state_cyclic === :disabled)
                 # If state_cyclic is disabled, we skip the basic state calculation. But in order to make sure that
                 # any amount of energy exchanged in the last snapshot, we use the special constraint for t=1
@@ -54,7 +54,7 @@ function _node_con_nodalbalance!(node::Node)
                 continue
             end
 
-            t_other = t == 1 ? _iesopt(model).model.T[end] : (t - 1)
+            t_other = t == 1 ? get_T(model)[end] : (t - 1)
             injection_t_other = _iesopt(model).model.snapshots[t_other].representative
 
             if (t == 1) && (node.state_cyclic === :geq)
@@ -68,7 +68,7 @@ function _node_con_nodalbalance!(node::Node)
                     node.var.state[t] <=
                     node.var.state[t_other] * (factor^_weight(model, t_other)) +
                     node.exp.injection[injection_t_other] * _weight(model, t_other),
-                    base_name = _base_name(node, "nodalbalance[$t]")
+                    base_name = _base_name(node, "nodalbalance", t)
                 )
             elseif (t == 1) && (node.state_cyclic === :leq)
                 if node.nodal_balance === :destroy
@@ -81,66 +81,79 @@ function _node_con_nodalbalance!(node::Node)
                     node.var.state[t] >=
                     node.var.state[t_other] * (factor^_weight(model, t_other)) +
                     node.exp.injection[injection_t_other] * _weight(model, t_other),
-                    base_name = _base_name(node, "nodalbalance[$t]")
+                    base_name = _base_name(node, "nodalbalance", t)
                 )
             else
                 if node.nodal_balance === :enforce
-                    node.con.nodalbalance[t] = @constraint(
-                        model,
-                        node.var.state[t] ==
-                        node.var.state[t_other] * (factor^_weight(model, t_other)) +
-                        node.exp.injection[injection_t_other] * _weight(model, t_other),
-                        base_name = _base_name(node, "nodalbalance[$t]")
-                    )
+                    # TODO: catch "weight = 1.0", since we can then turn off the multiplications!
+                    e = JuMP.AffExpr(0.0)
+                    JuMP.add_to_expression!(e, node.var.state[t_other]::JuMP.VariableRef, (factor^_weight(model, t_other))::Float64)
+                    JuMP.add_to_expression!(e, node.exp.injection[injection_t_other]::JuMP.AffExpr, _weight(model, t_other)::Float64)
+                    JuMP.add_to_expression!(e, node.var.state[t]::JuMP.VariableRef, -1.0)
+                    node.con.nodalbalance[t] = @constraint(model, e == 0.0, base_name = _base_name(node, "nodalbalance", t))
+                    # node.con.nodalbalance[t] = @constraint(
+                    #     model,
+                    #     node.var.state[t] ==
+                    #     node.var.state[t_other] * (factor^_weight(model, t_other)) +
+                    #     node.exp.injection[injection_t_other] * _weight(model, t_other),
+                    #     base_name = _base_name(node, "nodalbalance", t)
+                    # )
                 elseif node.nodal_balance === :create
+                    # TODO: reformulate as above
                     node.con.nodalbalance[t] = @constraint(
                         model,
                         node.var.state[t] >=
                         node.var.state[t_other] * (factor^_weight(model, t_other)) +
                         node.exp.injection[injection_t_other] * _weight(model, t_other),
-                        base_name = _base_name(node, "nodalbalance[$t]")
+                        base_name = _base_name(node, "nodalbalance", t)
                     )
                 elseif node.nodal_balance === :destroy
+                    # TODO: reformulate as above
                     node.con.nodalbalance[t] = @constraint(
                         model,
                         node.var.state[t] <=
                         node.var.state[t_other] * (factor^_weight(model, t_other)) +
                         node.exp.injection[injection_t_other] * _weight(model, t_other),
-                        base_name = _base_name(node, "nodalbalance[$t]")
+                        base_name = _base_name(node, "nodalbalance", t)
                     )
                 end
             end
         end
     elseif node.nodal_balance === :enforce
         if !_has_representative_snapshots(model)
-            node.con.nodalbalance = @constraint(
-                model,
-                [t = _iesopt(model).model.T],
-                _weight(model, t) * node.exp.injection[t] == 0,
-                base_name = _base_name(node, "nodalbalance"),
-                container = Array
-            )
+            nei = node.exp.injection::Vector{JuMP.AffExpr}
+            w = _weight.(model, get_T(model))
+            e = @expression(model, w .* nei)  # TODO: catch "weight = 1.0", since we can then turn off the multiplications!
+            node.con.nodalbalance = @constraint(model, e .== 0.0, base_name = _base_name(node, "nodalbalance"))
+            # node.con.nodalbalance = @constraint(
+            #     model,
+            #     [t = get_T(model)],
+            #     _weight(model, t) * node.exp.injection[t] == 0,
+            #     base_name = _base_name(node, "nodalbalance"),
+            #     container = Array
+            # )
         else
             # Create all representatives.
             _repr = Dict(
                 t => @constraint(
                     model,
                     _weight(model, t) * node.exp.injection[t] == 0,
-                    base_name = _base_name(node, "nodalbalance[$(t)]")
-                ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                    base_name = _base_name(node, "nodalbalance", t)
+                ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
             node.con.nodalbalance = collect(
                 _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
     elseif node.nodal_balance === :create
+        # TODO: reformulate as above
         if !_has_representative_snapshots(model)
             node.con.nodalbalance = @constraint(
                 model,
-                [t = _iesopt(model).model.T],
+                [t = get_T(model)],
                 _weight(model, t) * node.exp.injection[t] <= 0,
                 base_name = _base_name(node, "nodalbalance"),
                 container = Array
@@ -152,20 +165,21 @@ function _node_con_nodalbalance!(node::Node)
                     model,
                     _weight(model, t) * node.exp.injection[t] <= 0,
                     base_name = _base_name(node, "nodalbalance[$(t)]")
-                ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
             node.con.nodalbalance = collect(
                 _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
     elseif node.nodal_balance === :destroy
+        # TODO: reformulate as above
         if !_has_representative_snapshots(model)
             node.con.nodalbalance = @constraint(
                 model,
-                [t = _iesopt(model).model.T],
+                [t = get_T(model)],
                 _weight(model, t) * node.exp.injection[t] >= 0,
                 base_name = _base_name(node, "nodalbalance"),
                 container = Array
@@ -177,17 +191,18 @@ function _node_con_nodalbalance!(node::Node)
                     model,
                     _weight(model, t) * node.exp.injection[t] >= 0,
                     base_name = _base_name(node, "nodalbalance[$(t)]")
-                ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
             node.con.nodalbalance = collect(
                 _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
     elseif node.nodal_balance === :sum
-        T = _iesopt(model).model.T[end]
+        # TODO: reformulate as above
+        T = get_T(model)[end]
         begin_steps = [t for t in 1:(node.sum_window_step):T if (t - 1 + node.sum_window_size) <= T]
         node.con.nodalbalance = @constraint(
             model,

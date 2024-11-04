@@ -43,7 +43,6 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
 @kwdef struct Profile <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    init_state::Ref{Symbol} = Ref(:empty)
     constraint_safety::Bool
     constraint_safety_cost::_ScalarInput
 
@@ -64,7 +63,7 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`", "unit": "power", "default": "-"}```
     The concrete value of this `Profile` - either static or as time series. Only applicable if `mode: fixed`.
     """
-    value::OptionalExpression = nothing
+    value::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "string", "unit": "-", "default": "-"}```
     Name of the `Node` that this `Profile` draws energy from. Exactly one of `node_from` and `node_to` must be set.
@@ -91,18 +90,18 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "power", "default": "``-\\infty``"}```
     The lower bound of the range of this `Profile` (must be used together with `mode: ranged`).
     """
-    lb::OptionalExpression = nothing
+    lb::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "power", "default": "``+\\infty``"}```
     The upper bound of the range of this `Profile` (must be used together with `mode: ranged`).
     """
-    ub::OptionalExpression = nothing
+    ub::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary per energy", "default": "`0`"}```
     Cost per unit of energy that this `Profile` injects or withdraws from a `Node`. Refer to the basic examples to see
     how this can be combined with `mode` for different use cases.
     """
-    cost::OptionalExpression = nothing
+    cost::Expression = @_default_expression(nothing)
 
     allow_deviation::Symbol = :off
     cost_deviation::_OptionalScalarInput = nothing
@@ -146,15 +145,15 @@ function _isvalid(profile::Profile)
     end
 
     if (profile.mode === :create) || (profile.mode === :destroy)
-        !isnothing(profile.lb) && (@warn "Setting <lb> is ignored" profile = profile.name mode = profile.mode)
-        !isnothing(profile.ub) && (@warn "Setting <ub> is ignored" profile = profile.name mode = profile.mode)
+        !_isempty(profile.lb) && (@warn "Setting <lb> is ignored" profile = profile.name mode = profile.mode)
+        !_isempty(profile.ub) && (@warn "Setting <ub> is ignored" profile = profile.name mode = profile.mode)
     end
 
     if !(profile.mode in [:fixed, :create, :destroy, :ranged])
         @critical "Invalid <mode>" profile = profile.name
     end
 
-    if !isnothing(profile.value) && (profile.mode != :fixed)
+    if !_isempty(profile.value) && (profile.mode != :fixed)
         @critical "Setting <value> of Profile may result in unexpected behaviour, because <mode> is not `fixed`" profile =
             profile.name mode = profile.mode
     end
@@ -199,12 +198,12 @@ include("profile/con_value_bounds.jl")
 include("profile/obj_cost.jl")
 
 function _construct_expressions!(profile::Profile)
-    @profile profile.model _profile_exp_value!(profile)
+    _profile_exp_value!(profile)
     return nothing
 end
 
 function _construct_variables!(profile::Profile)
-    @profile profile.model _profile_var_aux_value!(profile)
+    _profile_var_aux_value!(profile)
     return nothing
 end
 
@@ -212,27 +211,27 @@ function _after_construct_variables!(profile::Profile)
     model = profile.model
     components = _iesopt(model).model.components
 
-    if !isnothing(profile.value)
+    if !_isempty(profile.value)
         if (profile.mode === :fixed) && _iesopt_config(model).parametric
             # Create all representatives.
             _repr = Dict(
                 t => @variable(model, base_name = _base_name(profile, "aux_value[$(t)]")) for
-                t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
             )
             # Create all variables, either as themselves or their representative.
             profile.var.aux_value = collect(
                 _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
 
         # After all variables are constructed the `value` can be finalized and used.
         _finalize(profile.value)
-        for t in _iesopt(model).model.T
+        for t in get_T(model)
             _repr_t =
                 _iesopt(model).model.snapshots[t].is_representative ? t :
                 _iesopt(model).model.snapshots[t].representative
-            val = _get(profile.value, _repr_t)
+            val = access(profile.value, _repr_t, Float64)
 
             if (profile.mode === :fixed) && _iesopt_config(model).parametric
                 JuMP.fix(profile.var.aux_value[t], val; force=true)
@@ -252,20 +251,20 @@ function _after_construct_variables!(profile::Profile)
     end
 
     # We can now also properly finalize the `lb`, `ub`, and `cost`.
-    !isnothing(profile.lb) && _finalize(profile.lb)
-    !isnothing(profile.ub) && _finalize(profile.ub)
-    !isnothing(profile.cost) && _finalize(profile.cost)
+    _finalize(profile.lb)
+    _finalize(profile.ub)
+    _finalize(profile.cost)
 
     return nothing
 end
 
 function _construct_constraints!(profile::Profile)
-    @profile profile.model _profile_con_value_bounds!(profile)
+    _profile_con_value_bounds!(profile)
     return nothing
 end
 
 function _construct_objective!(profile::Profile)
-    @profile profile.model _profile_obj_cost!(profile)
+    _profile_obj_cost!(profile)
 
     return nothing
 end

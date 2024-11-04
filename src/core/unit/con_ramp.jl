@@ -29,7 +29,7 @@ function _unit_con_ramp!(unit::Unit)
     if unit.enable_ramp_up && !isnothing(unit.ramp_up_cost)
         unit.con.ramp_up = @constraint(
             model,
-            [t = _iesopt(model).model.T],
+            [t = get_T(model)],
             unit.var.ramp_up[t] >= out[t] - ((t == 1) ? out[t] : out[t - 1]),
             base_name = _base_name(unit, "ramp_up"),
             container = Array
@@ -38,7 +38,7 @@ function _unit_con_ramp!(unit::Unit)
     if unit.enable_ramp_down && !isnothing(unit.ramp_down_cost)
         unit.con.ramp_down = @constraint(
             model,
-            [t = _iesopt(model).model.T],
+            [t = get_T(model)],
             unit.var.ramp_down[t] >= ((t == 1) ? out[t] : out[t - 1]) - out[t],
             base_name = _base_name(unit, "ramp_down"),
             container = Array

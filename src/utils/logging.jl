@@ -67,6 +67,8 @@ function _attach_logger!(model::JuMP.Model)
             _iesopt(model).logger = logger
         end
     end
+
+    return _iesopt(model).logger::Union{Logging.ConsoleLogger, LoggingExtras.TeeLogger}
 end
 
 # Based on `default_metafmt` from ConsoleLogger.jl

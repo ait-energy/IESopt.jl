@@ -37,12 +37,12 @@ function _profile_con_value_bounds!(profile::Profile)
 
     # Constrain the `value` based on the setting of `mode`.
     if profile.mode === :ranged
-        if !isnothing(profile.lb)
+        if !_isempty(profile.lb)
             if !_has_representative_snapshots(model)
                 profile.con.value_lb = @constraint(
                     model,
-                    [t = _iesopt(model).model.T],
-                    profile.var.aux_value[t] >= _get(profile.lb, t),
+                    [t = get_T(model)],
+                    profile.var.aux_value[t] >= access(profile.lb, t, NonEmptyScalarExpressionValue),
                     base_name = _base_name(profile, "value_lb"),
                     container = Array
                 )
@@ -51,24 +51,24 @@ function _profile_con_value_bounds!(profile::Profile)
                 _repr = Dict(
                     t => @constraint(
                         model,
-                        profile.var.aux_value[t] >= _get(profile.lb, t),
+                        profile.var.aux_value[t] >= access(profile.lb, t, NonEmptyScalarExpressionValue),
                         base_name = _base_name(profile, "value_lb[$(t)]")
-                    ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                    ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
                 )
 
                 # Create all constraints, either as themselves or their representative.
                 profile.con.value_lb = collect(
                     _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                    _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+                    _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
                 )
             end
         end
-        if !isnothing(profile.ub)
+        if !_isempty(profile.ub)
             if !_has_representative_snapshots(model)
                 profile.con.value_ub = @constraint(
                     model,
-                    [t = _iesopt(model).model.T],
-                    profile.var.aux_value[t] <= _get(profile.ub, t),
+                    [t = get_T(model)],
+                    profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
                     base_name = _base_name(profile, "value_ub"),
                     container = Array
                 )
@@ -77,15 +77,15 @@ function _profile_con_value_bounds!(profile::Profile)
                 _repr = Dict(
                     t => @constraint(
                         model,
-                        profile.var.aux_value[t] <= _get(profile.ub, t),
+                        profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
                         base_name = _base_name(profile, "value_ub[$(t)]")
-                    ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                    ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
                 )
 
                 # Create all constraints, either as themselves or their representative.
                 profile.con.value_ub = collect(
                     _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                    _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+                    _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
                 )
             end
         end

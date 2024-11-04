@@ -11,7 +11,7 @@ essentially describes "generation = demand".
 function _node_exp_injection!(node::Node)
     model = node.model
 
-    node.exp.injection = collect(JuMP.AffExpr(0) for _ in _iesopt(model).model.T)
+    node.exp.injection = collect(JuMP.AffExpr(0) for _ in get_T(model))
 
     if !isnothing(node.etdf_group)
         # Add this node's "net positions" (= it's injections) to the overall ETDF group.

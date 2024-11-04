@@ -90,7 +90,7 @@ function _parse_noncore_component!(
     end
 
     # Construct the parsed core component with all parameter replacements.
-    replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))
+    replacements = Regex(join(["<$k>" for k in keys(parameters)], "|")::String)
     if length(parameters) == 0
         comp = template.yaml["component"]
     else
@@ -100,10 +100,10 @@ function _parse_noncore_component!(
                 replace(YAML.write(v), replacements => p -> parameters[p[2:(end - 1)]]),
                 "\"" => "",  # this is necessary to prevent `Number`s being enclosed with "", ending up as `String`
                 "nothing" => "null", # this is necessary to properly preserve "null" (as nothing)
-            )
+            )::String
             if occursin("<", _new_component_str)
-                param_begin = findfirst("<", _new_component_str)[1]
-                param_end = findnext(">", _new_component_str, param_begin)[1]
+                param_begin = (findfirst("<", _new_component_str)::UnitRange{Int64})[1]
+                param_end = (findnext(">", _new_component_str, param_begin)::UnitRange{Int64})[1]
                 parameter = _new_component_str[param_begin:param_end]
                 @critical "Parameter placeholder not replaced" component = cname parameter
             end
@@ -222,15 +222,15 @@ function _parse_container!(
     end
 
     # Construct the parsed container with all parameter replacements.
-    replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))
+    replacements = Regex(join(["<$k>" for k in keys(parameters)]::String, "|"))
     _new_components_str = replace(
         replace(YAML.write(template.yaml["components"]), replacements => p -> parameters[p[2:(end - 1)]]),
         "\"" => "",  # this is necessary to prevent `Number`s being enclosed with "", ending up as `String`
         "nothing" => "null", # this is necessary to properly preserve "null" (as nothing)
-    )
+    )::String
     if occursin("<", _new_components_str)
-        param_begin = findfirst("<", _new_components_str)[1]
-        param_end = findnext(">", _new_components_str, param_begin)[1]
+        param_begin = (findfirst("<", _new_components_str)::UnitRange{Int64})[1]
+        param_end = (findnext(">", _new_components_str, param_begin)::UnitRange{Int64})[1]
         parameter = _new_components_str[param_begin:param_end]
         @critical "Parameter placeholder not replaced" component = name parameter
     end

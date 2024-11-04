@@ -33,7 +33,7 @@ function _node_con_last_state!(node::Node)
     model = node.model
 
     factor = isnothing(node.state_percentage_loss) ? 1.0 : (1.0 - node.state_percentage_loss)
-    t = _iesopt(model).model.T[end]
+    t = get_T(model)[end]
 
     injection_t = t
     if _has_representative_snapshots(model)
@@ -42,14 +42,16 @@ function _node_con_last_state!(node::Node)
         end
     end
 
-    lb = _get(node.state_lb, t)
-    ub = _get(node.state_ub, t)
+    lb = access(node.state_lb, t, OptionalScalarExpressionValue)
+    ub = access(node.state_ub, t, OptionalScalarExpressionValue)
 
     if !isnothing(node.state_final)
-        if (!isnothing(lb) && (node.state_final < lb)) || (!isnothing(ub) && (node.state_final > ub))
-            @warn "`state_final` is out of bounds and will be overwritten" node = node.name state_final =
-                node.state_final lb ub
-        end
+        # TODO: since lb/ub are potentially decision-containing expressions, we cannot check this here ...
+        #       re-work this somehow (and consider that a user might want to force a final state that is out of "bounds", when using a decision)
+        # if (!isnothing(lb) && (node.state_final < lb)) || (!isnothing(ub) && (node.state_final > ub))
+        #     @warn "`state_final` is out of bounds and will be overwritten" node = node.name state_final =
+        #         node.state_final lb ub
+        # end
 
         lb = node.state_final
         ub = node.state_final
@@ -73,11 +75,11 @@ function _node_con_last_state!(node::Node)
     end
 
     if node.constraint_safety
-        if !isnothing(node.state_lb)
+        if !_isempty(node.state_lb)
             _iesopt(model).aux.constraint_safety_penalties[node.con.last_state_lb] =
                 (component_name=node.name, t=t, description="last_state_lb", penalty=node.constraint_safety_cost)
         end
-        if !isnothing(node.state_ub)
+        if !_isempty(node.state_ub)
             _iesopt(model).aux.constraint_safety_penalties[node.con.last_state_ub] =
                 (component_name=node.name, t=t, description="last_state_ub", penalty=node.constraint_safety_cost)
         end

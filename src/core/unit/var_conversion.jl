@@ -23,7 +23,7 @@ function _unit_var_conversion!(unit::Unit)
     if !_has_representative_snapshots(model)
         unit.var.conversion = @variable(
             model,
-            [t = _iesopt(model).model.T],
+            [t = get_T(model)],
             lower_bound = 0,
             base_name = _base_name(unit, "conversion"),
             container = Array
@@ -32,13 +32,13 @@ function _unit_var_conversion!(unit::Unit)
         # Create all representatives.
         _repr = Dict(
             t => @variable(model, lower_bound = 0, base_name = _base_name(unit, "conversion[$(t)]")) for
-            t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+            t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
         )
 
         # Create all variables, either as themselves or their representative.
         unit.var.conversion = collect(
             _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-            _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+            _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
         )
     end
 
@@ -72,23 +72,24 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict, incremental_eff
     components = _iesopt(model).model.components
 
     # TODO: re-order this for loop like in the function below
-    for t in _iesopt(model).model.T
+    for t in get_T(model)
         _iesopt(model).model.snapshots[t].is_representative || continue
 
         for carrier in keys(unit.conversion_dict[:in])
             _total(unit, :in, carrier.name)[t] = (
-                _get(unit.conversion_at_min_dict[:in][carrier], t) * limits[:min][t] * _get(unit.capacity, t) +
+                _get(unit.conversion_at_min_dict[:in][carrier], t) * limits[:min][t] * access(unit.capacity, t, NonEmptyScalarExpressionValue) +
                 _get(incremental_efficiencies[:in][carrier], t) * unit.var.conversion[t]
             )
             JuMP.add_to_expression!(
                 components[unit.inputs[carrier]].exp.injection[t],
-                -_total(unit, :in, carrier.name)[t],
+                _total(unit, :in, carrier.name)[t],
+                -1.0,
             )
         end
 
         for carrier in keys(unit.conversion_dict[:out])
             _total(unit, :out, carrier.name)[t] = (
-                _get(unit.conversion_at_min_dict[:out][carrier], t) * limits[:min][t] * _get(unit.capacity, t) +
+                _get(unit.conversion_at_min_dict[:out][carrier], t) * limits[:min][t] * access(unit.capacity, t, NonEmptyScalarExpressionValue) +
                 _get(incremental_efficiencies[:out][carrier], t) * unit.var.conversion[t]
             )
             JuMP.add_to_expression!(
@@ -115,10 +116,10 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict)
         carrier => _total(unit, :out, carrier.name) for carrier in keys(unit.conversion_dict[:out])
     )
 
-    _a = collect(_get(limits[:min], t) for t in _iesopt(model).model.T)
-    _b = collect(_get(unit.capacity, t) for t in _iesopt(model).model.T)
+    _a = collect(_get(limits[:min], t) for t in get_T(model))
+    _b = collect(access(unit.capacity, t) for t in get_T(model))
     # TODO: this should be avoidable by doing unit.var.conversion?
-    _c::Vector{JuMP.VariableRef} = collect(unit_var_conversion[t] for t in _iesopt(model).model.T)
+    _c::Vector{JuMP.VariableRef} = unit.var.conversion
 
     _mode::Symbol, _term1::Vector{JuMP.AffExpr}, _term2::Vector{Float64} = (
         if _a[1] isa Number
@@ -135,18 +136,20 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict)
     )
 
     _snapshots = _iesopt(model).model.snapshots
-    _T = [t for t in _iesopt(model).model.T if _snapshots[t].is_representative]
+    _T = (
+        _has_representative_snapshots(model) ? [t for t in get_T(model) if _snapshots[t].is_representative] : get_T(model)
+    )::Vector{_ID}
 
     for (carrier, mult) in unit.conversion_dict[:in]
-        _inpinj::Vector{JuMP.AffExpr} = components[unit.inputs[carrier]].exp.injection
+        _inpinj = components[unit.inputs[carrier]].exp.injection::Vector{JuMP.AffExpr}
         for t in _T
-            _inpinj_t::JuMP.AffExpr = _inpinj[t]
+            _inpinj_t = _inpinj[t]::JuMP.AffExpr
 
             # (_get(limits[:min], t) * _get(unit.capacity, t) + unit.var.conversion[t]) * _get(mult, t)
             # = (a*b + c) * d
-            _d::Float64 = _get(mult, t)
-            _expr::JuMP.AffExpr = input_totals[carrier][t]
-            _coeff::Float64 = _d * _term2[t]
+            _d = _get(mult, t)::Float64
+            _expr = input_totals[carrier][t]::JuMP.AffExpr
+            _coeff = (_d * _term2[t])::Float64
 
             JuMP.add_to_expression!(_expr, _c[t], _d)
             JuMP.add_to_expression!(_inpinj_t, _c[t], -_d)
@@ -162,15 +165,15 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict)
     end
 
     for (carrier, mult) in unit.conversion_dict[:out]
-        _outinj::Vector{JuMP.AffExpr} = components[unit.outputs[carrier]].exp.injection
+        _outinj = components[unit.outputs[carrier]].exp.injection::Vector{JuMP.AffExpr}
         for t in _T
-            _outinj_t::JuMP.AffExpr = _outinj[t]
+            _outinj_t = _outinj[t]::JuMP.AffExpr
 
             # (_get(limits[:min], t) * _get(unit.capacity, t) + unit.var.conversion[t]) * _get(mult, t)
             # = (a*b + c) * d
-            _d::Float64 = _get(mult, t)
-            _expr::JuMP.AffExpr = output_totals[carrier][t]
-            _coeff::Float64 = _d * _term2[t]
+            _d = _get(mult, t)::Float64
+            _expr = output_totals[carrier][t]::JuMP.AffExpr
+            _coeff = (_d * _term2[t])::Float64
 
             JuMP.add_to_expression!(_expr, _c[t], _d)
             JuMP.add_to_expression!(_outinj_t, _c[t], _d)

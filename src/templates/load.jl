@@ -14,10 +14,14 @@ function _load_template(model::JuMP.Model, filename::String; read_file::Bool=fal
     return template
 end
 
-_load_template(template::CoreTemplate) =
-    _load_template(template.model, normpath(template.path, "$(template.name).iesopt.template.yaml"); read_file=true)
+function _load_template(template::CoreTemplate)
+    ((template._status[]::Symbol) == :empty) || return template
+    return _load_template(template.model, normpath(template.path, "$(template.name).iesopt.template.yaml"); read_file=true)
+end
 
 function _load_template_yaml!(template::CoreTemplate)
+    ((template._status[]::Symbol) == :raw) || return template
+
     merge!(template.yaml, YAML.load(template.raw; dicttype=Dict{String, Any}))
     template._status[] = :yaml
 
@@ -25,9 +29,9 @@ function _load_template_yaml!(template::CoreTemplate)
     has_component = haskey(template.yaml, "component")
 
     if has_components && !has_component
-        template.type[] = :container
+        set_type!(template, :container)
     elseif !has_components && has_component
-        template.type[] = :component
+        set_type!(template, :component)
     else
         @critical "Template type could not be determined" template = template.name
     end
@@ -37,7 +41,7 @@ function _load_template_yaml!(template::CoreTemplate)
     _build_template_function_validate(template)
     _build_template_function_finalize(template)
 
-    return nothing
+    return template
 end
 
 function _scan_all_templates(model::JuMP.Model)
@@ -80,14 +84,7 @@ function _scan_all_templates(model::JuMP.Model)
 end
 
 function _require_template(model::JuMP.Model, name::String)
-    haskey(_iesopt(model).input.noncore[:templates], name) || @critical "`CoreTemplate` not found" name
-    template = _iesopt(model).input.noncore[:templates][name]
-
-    if template._status[] == :empty
-        template = _load_template(template)
-    end
-
-    (template._status[] == :raw) && _load_template_yaml!(template)
-
-    return template
+    haskey(_iesopt(model).input.noncore[:templates], name) || @critical "`CoreTemplate` not found" name   
+    template = _iesopt(model).input.noncore[:templates][name] |> _load_template |>  _load_template_yaml!
+    return template::CoreTemplate
 end

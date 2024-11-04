@@ -22,11 +22,11 @@ function _node_var_pf_theta!(node::Node)
 
     if _iesopt(model).input.addons["Powerflow"].config["__settings__"].mode === :linear_angle
         if node.pf_slack
-            node.var.pf_theta = zeros(length(_iesopt(model).model.T))
+            node.var.pf_theta = zeros(length(get_T(model)))
         else
             node.var.pf_theta = @variable(
                 model,
-                [t = _iesopt(model).model.T],
+                [t = get_T(model)],
                 base_name = _base_name(node, "pf_theta"),
                 container = Array
             )

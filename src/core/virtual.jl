@@ -38,47 +38,49 @@ _setup!(::Virtual) = true
 
 _build_priority(::Virtual) = -1  # This means that `Virtual`s are not built.
 
-function Base.getproperty(virtual::Virtual, field::Symbol)
-    try
-        (field == :var) && (return getfield(virtual, :_ccoc).variables)
-        (field == :con) && (return getfield(virtual, :_ccoc).constraints)
-        (field == :exp) && (return getfield(virtual, :_ccoc).expressions)
-        (field == :obj) && (return getfield(virtual, :_ccoc).objectives)
+@recompile_invalidations begin
+    function Base.getproperty(virtual::Virtual, field::Symbol)
+        try
+            (field == :var) && (return getfield(virtual, :_ccoc).variables)
+            (field == :con) && (return getfield(virtual, :_ccoc).constraints)
+            (field == :exp) && (return getfield(virtual, :_ccoc).expressions)
+            (field == :obj) && (return getfield(virtual, :_ccoc).objectives)
 
-        # Helper functions for "object-oriented" calling inside templates.
-        (field == :get) && (return (p, args...) -> _get_parameter_safe(p, virtual._parameters, args...))
-        (field == :set) && (return (p::String, v::Any) -> _set_parameter_safe(p, v, virtual._parameters))
-        (field == :get_ts) && (return (p, args...) -> _get_timeseries_safe(p, virtual._parameters, __model__))
-        (field == :set_ts) && (return (p::String, v::Any) -> _set_timeseries_safe(p, v, virtual._parameters, __model__))
+            # Helper functions for "object-oriented" calling inside templates.
+            (field == :get) && (return (p, args...) -> _get_parameter_safe(p, virtual._parameters, args...))
+            (field == :set) && (return (p::String, v::Any) -> _set_parameter_safe(p, v, virtual._parameters))
+            (field == :get_ts) && (return (p, args...) -> _get_timeseries_safe(p, virtual._parameters, __model__))
+            (field == :set_ts) && (return (p::String, v::Any) -> _set_timeseries_safe(p, v, virtual._parameters, __model__))
 
-        # See if we may be trying to find a component that is "inside" this Virtual?
-        cname = "$(getfield(virtual, :name)).$field"
-        model = getfield(virtual, :model)
-        haskey(_iesopt(model).model.components, cname) && return get_component(model, cname)
+            # See if we may be trying to find a component that is "inside" this Virtual?
+            cname = "$(getfield(virtual, :name)).$field"
+            model = getfield(virtual, :model)
+            haskey(_iesopt(model).model.components, cname) && return get_component(model, cname)
 
-        return getfield(virtual, field)
-    catch e
-        @error "Field not found in Virtual" e
-        return nothing
-    end
-end
-
-function Base.setproperty!(virtual::Virtual, field::Symbol, value)
-    if field in [:get, :set, :get_ts, :set_ts]
-        @error "Field name is reserved for internal use of Virtual" name = virtual.name field
-        return nothing
+            return getfield(virtual, field)
+        catch e
+            @error "Field not found in Virtual" e
+            return nothing
+        end
     end
 
-    return setfield!(virtual, field, value)
-end
+    function Base.setproperty!(virtual::Virtual, field::Symbol, value)
+        if field in [:get, :set, :get_ts, :set_ts]
+            @error "Field name is reserved for internal use of Virtual" name = virtual.name field
+            return nothing
+        end
 
-function Base.propertynames(virtual::Virtual)
-    prefix = "$(getfield(virtual, :name))."
-    sub_components = Symbol[]
-    for cname in keys(_iesopt(virtual.model).model.components)
-        startswith(cname, prefix) || continue
-        push!(sub_components, Symbol(split(cname, prefix)[2]))
+        return setfield!(virtual, field, value)
     end
 
-    return (:model, :name, :type, :exp, :var, :con, :obj, sub_components...)
+    function Base.propertynames(virtual::Virtual)
+        prefix = "$(getfield(virtual, :name))."
+        sub_components = Symbol[]
+        for cname in keys(_iesopt(virtual.model).model.components)
+            startswith(cname, prefix) || continue
+            push!(sub_components, Symbol(split(cname, prefix)[2]))
+        end
+
+        return (:model, :name, :type, :exp, :var, :con, :obj, sub_components...)
+    end
 end

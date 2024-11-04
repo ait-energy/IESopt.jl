@@ -1,18 +1,18 @@
-function _parse_model!(model::JuMP.Model, filename::String, global_parameters::Dict)
+function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global_parameters::Dict))
     filename = normpath(filename)
     model.ext[:_iesopt_wd] = dirname(filename)
     model.ext[:iesopt] = _IESoptData(YAML.load_file(filename; dicttype=Dict{String, Any}))
 
     # Parse the overall global configuration (e.g., replacing parameters).
-    (@profile _parse_global_specification!(model, global_parameters)) || return false
+    _parse_global_specification!(model, global_parameters) || return false
 
     # Construct the final (internal) configuration structure.
     _iesopt(model).input.config = _Config(model)
 
     # Attach a logger now, so logging can be suppressed/modified for the remaining parsing code.
-    _attach_logger!(model)
+    logger = _attach_logger!(model)
 
-    with_logger(_iesopt(model).logger) do
+    with_logger(logger) do
         @info "IESopt.jl (core)  |  2021 © AIT Austrian Institute of Technology GmbH" authors = "Stefan Strömer, Daniel Schwabeneder, and contributors" version =
             pkgversion(@__MODULE__) top_level_config = basename(filename) path = abspath(dirname(filename))
         if !isempty(_iesopt(model).input.parameters)
@@ -20,7 +20,7 @@ function _parse_model!(model::JuMP.Model, filename::String, global_parameters::D
         end
 
         # Pre-load all registered files.
-        merge!(_iesopt(model).input.files, @profile _parse_inputfiles(model, _iesopt_config(model).files.entries))
+        merge!(_iesopt(model).input.files, _parse_inputfiles(model, _iesopt_config(model).files.entries))
         if !isempty(_iesopt(model).input.files)
             @info "Successfully read $(length(_iesopt(model).input.files)) input file(s)"
         end
@@ -28,27 +28,27 @@ function _parse_model!(model::JuMP.Model, filename::String, global_parameters::D
         description = get(_iesopt(model).input._tl_yaml, "components", Dict{String, Any}())
 
         # Parse all snapshots.
-        @profile _parse_snapshots!(model)
+        _parse_snapshots!(model)
 
         # Parse all carriers beforehand, since those are used during component parsing.
-        @profile _parse_carriers!(model, get(_iesopt(model).input._tl_yaml, "carriers", nothing))
+        _parse_carriers!(model, get(_iesopt(model).input._tl_yaml, "carriers", nothing))
 
         # Scan for all templates.
-        @profile _scan_all_templates(model)
+        _scan_all_templates(model)
 
         # Parse potential global addons
         if haskey(_iesopt(model).input._tl_yaml, "addons")
             merge!(
                 _iesopt(model).input.addons,
-                @profile _parse_global_addons(model, _iesopt(model).input._tl_yaml["addons"])
+                _parse_global_addons(model, _iesopt(model).input._tl_yaml["addons"])
             )
         end
 
         # Parse potential external CSV files defining components.
-        @profile _parse_components_csv!(model, _iesopt(model).input._tl_yaml, description)
+        _parse_components_csv!(model, _iesopt(model).input._tl_yaml, description)
 
         # Fully flatten the model description before parsing.
-        @profile _flatten_model!(model, description)
+        _flatten_model!(model, description)
         merge!(_iesopt(model).aux._flattened_description, deepcopy(description))
 
         # Construct the objectives container & add all registered objectives.
@@ -62,7 +62,7 @@ function _parse_model!(model::JuMP.Model, filename::String, global_parameters::D
         end
 
         # Parse all components into a unified storage and keep a reference of "name=>id" matchings.
-        return (@profile _parse_components!(model, description))
+        return _parse_components!(model, description)
 
         # Construct the dictionary that holds all constraints that wish to be relaxed. These include (as value)
         # their respective penalty. This exists, even if the model constraint_safety setting is off, since individual
@@ -75,13 +75,13 @@ function _parse_model!(model::JuMP.Model, filename::String, global_parameters::D
     return true
 end
 
-function _parse_global_specification!(model::JuMP.Model, global_parameters::Dict)
-    data = _iesopt(model).input._tl_yaml
+function _parse_global_specification!(model::JuMP.Model, @nospecialize(global_parameters::Dict))
+    data = (_iesopt(model).input._tl_yaml)::Dict{String, Any}
 
     # Check for stochastic configurations.
     if haskey(data, "stochastic")
-        _iesopt(model).input.stochastic[:base_config] = data["stochastic"]
-        _iesopt(model).input.stochastic[:scenario] = Dict()
+        _iesopt(model).input.stochastic[:base_config] = data["stochastic"]::Dict{String, Any}
+        _iesopt(model).input.stochastic[:scenario] = Dict{String, Any}()
 
         if isempty(global_parameters)
             @warn "Missing global parameters in stochastic model; you can safely ignore this warning if this is a stochastic main-problem"
@@ -110,10 +110,10 @@ function _parse_global_specification!(model::JuMP.Model, global_parameters::Dict
     if haskey(data, "parameters") ||
        (!isempty(_iesopt(model).input.stochastic) && !isempty(_iesopt(model).input.stochastic[:scenario]))
         # Pop out parameters.
-        parameters = pop!(data, "parameters", Dict())
+        parameters = pop!(data, "parameters", Dict{String, Any}())
 
         if parameters isa String
-            parameters = YAML.load_file(normpath(model.ext[:_iesopt_wd], parameters); dicttype=Dict{String, Any})
+            parameters = YAML.load_file(normpath(model.ext[:_iesopt_wd]::String, parameters::String); dicttype=Dict{String, Any})::Dict{String, Any}
         elseif parameters isa Dict
         else
             @critical "Unrecognized format for global parameters" type = typeof(parameters)
@@ -141,7 +141,7 @@ function _parse_global_specification!(model::JuMP.Model, global_parameters::Dict
         end
 
         # Construct the parsed global configuration with all parameter replacements.
-        replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))
+        replacements = Regex(join(["<$k>" for k in keys(parameters)], "|")::String)
         _iesopt(model).input._tl_yaml = YAML.load(
             replace(
                 replace(YAML.write(data), replacements => p -> parameters[p[2:(end - 1)]]),
@@ -161,7 +161,7 @@ function _parse_global_specification!(model::JuMP.Model, global_parameters::Dict
     return true
 end
 
-function _parse_global_addons(model::JuMP.Model, addons::Dict{String, Any})
+function _parse_global_addons(model::JuMP.Model, @nospecialize(addons::Dict{String, Any}))
     @info "Preloading global addons"
     return Dict{String, NamedTuple}(
         filename => (addon=_getfile(model, string(filename, ".jl")), config=prop) for (filename, prop) in addons
@@ -175,7 +175,7 @@ function _parse_inputfiles(model::JuMP.Model, files::Dict{String, String})
     )
 end
 
-function _flatten_model!(model::JuMP.Model, description::Dict{String, Any})
+function _flatten_model!(model::JuMP.Model, @nospecialize(description::Dict{String, Any}))
     @info "Begin flattening model"
 
     cnt_disabled_components = 0
@@ -192,7 +192,7 @@ function _flatten_model!(model::JuMP.Model, description::Dict{String, Any})
             continue
         end
 
-        type = description[cname]["type"]
+        type = description[cname]["type"]::String
 
         if type == "Expression"
             @critical "The `Expression` Core Component is deprecated" component = cname
@@ -211,12 +211,7 @@ function _flatten_model!(model::JuMP.Model, description::Dict{String, Any})
     @info "Finished flattening model" number_of_disabled_components = cnt_disabled_components
 end
 
-function _validate(data::Dict; schema::String="")
-    @warn "Validation is currently not updated to new YAML syntax and will therefore be skipped"
-    return nothing
-end
-
-function _parse_components!(model::JuMP.Model, description::Dict{String, Any})
+function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{String, Any}))
     @info "Parsing components from YAML" n_components = length(description)
 
     components = _iesopt(model).model.components
@@ -483,9 +478,9 @@ end
 
 function _parse_components_csv!(
     model::JuMP.Model,
-    data::Dict{String, Any},
-    description::Dict{String, Any};
-    path::Union{String, Nothing}=nothing,
+    @nospecialize(data::Dict{String, Any}),
+    @nospecialize(description::Dict{String, Any});
+    @nospecialize(path::Union{String, Nothing}=nothing),
 )
     !haskey(data, "load_components") && return
 

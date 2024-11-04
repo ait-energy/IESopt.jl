@@ -5,15 +5,11 @@ A general purpose solver agnostic energy system optimization framework.
 """
 module IESopt
 
+using PrecompileTools: @setup_workload, @compile_workload, @recompile_invalidations
+
 # See: https://discourse.julialang.org/t/base-docs-doc-failing-with-1-11-0/121187
 # This is a workaround for an issue introduced by Julia 1.11.0, and seems to now be necessary to use `Base.Docs`
 import REPL
-
-# Required for installing/loading solvers, and proper precompilation.
-import Pkg
-using PrecompileTools: @setup_workload, @compile_workload
-
-_is_precompiling() = ccall(:jl_generating_output, Cint, ()) == 1
 
 # Setup `IESoptLib.jl` and `HiGHS.jl`.
 import IESoptLib
@@ -42,7 +38,6 @@ import ArgCheck
 
 # Used to "hotload" code (e.g., addons, Core Templates).
 using RuntimeGeneratedFunctions
-RuntimeGeneratedFunctions.init(@__MODULE__)
 
 # Used to parse expressions from strings (over using `Meta.parse`).
 import JuliaSyntax
@@ -64,8 +59,8 @@ const MOI = JuMP.MOI
 # File (and filesystem/git) and data format handling.
 import YAML
 import JSON
+import SentinelArrays, InlineStrings, CSV  # NOTE: The first two only help with precompilation of CSV.
 import DataFrames
-import CSV
 import JLD2
 import LibGit2
 import ZipFile
@@ -74,17 +69,19 @@ import ZipFile
 import Printf
 import Dates
 
+_is_precompiling() = ccall(:jl_generating_output, Cint, ()) == 1
+
 include("utils/utils.jl")
 include("config/config.jl")
 include("core.jl")
 include("parser.jl")
-include("opt/opt.jl")
+# include("opt/opt.jl")
 include("results/results.jl")
 include("validation/validation.jl")
 include("templates/templates.jl")
-include("texify/texify.jl")
+# include("texify/texify.jl")
 
-function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
+function _build_model!(model::JuMP.Model)
     if _iesopt_config(model).optimization.high_performance
         if model.set_string_names_on_creation
             @info "Overwriting `string_names_on_creation` to `false` since `high_performance` is set"
@@ -103,7 +100,7 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
         _construct_constraints!,
         _after_construct_constraints!,
         _construct_objective!,
-    ]
+    ]::Vector{Function}
 
     # TODO: care about components/global addons returning false somewhere
 
@@ -113,23 +110,26 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
     # For instance, Decisions with a default build priority of 1000 are built before all other components
     # with a default build priority of 0.
     # Components with a negative build priority are not built at all.
-    corder = sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)
+    corder = sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)::Vector{<:_CoreComponent}
 
     @info "Start creating JuMP model"
     for f in build_order
+        # for component in corder
+        #     if _build_priority(component) >= 0
+        #         _iesopt(model).debug = component.name
+        #         f(component)
+        #     end
+        # end
+
         # Construct all components, building them in the necessary order.
         progress_map(
             corder;
             mapfun=foreach,
-            progress=Progress(length(corder); enabled=_iesopt_config(model).progress, desc="$(Symbol(f)) ..."),
+            progress=Progress(length(corder); enabled=_iesopt_config(model).progress::Bool, desc="$(Symbol(f)) ..."),
         ) do component
             if _build_priority(component) >= 0
                 _iesopt(model).debug = component.name
-                f(component)
-
-                if f == _construct_objective!
-                    component.init_state[] = :initialized
-                end
+                f(component)::Nothing
             end
         end
 
@@ -146,22 +146,14 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
                 end
             end
         end
-
-        # Call any registered callbacks
-        if !isnothing(callbacks)
-            if f == _construct_expressions!
-                if haskey(callbacks, :post_expression)
-                    callbacks[:post_expression](model)
-                end
-            end
-        end
     end
 
     @info "Finalizing Virtuals"
     for component in corder
         component isa Virtual || continue
-        for i in reverse(eachindex(component._finalizers))
-            component._finalizers[i](component)
+        finalizers = component._finalizers::Vector{Function}
+        for i in reverse(eachindex(finalizers))
+            finalizers[i](component)
         end
     end
 
@@ -171,7 +163,7 @@ function _build_model!(model::JuMP.Model; callbacks::Union{Nothing, Dict})
         # for (etdf_group, node_ids) in _iesopt(model).aux.etdf.groups
         #     _iesopt(model).aux.etdf.constr[etdf_group] = @constraint(
         #         model,
-        #         [t = _iesopt(model).model.T],
+        #         [t = get_T(model) ],
         #         sum(_iesopt(model).model.components[id].exp.injection[t] for id in node_ids) == 0
         #     )
         # end
@@ -226,7 +218,7 @@ function _prepare_model!(model::JuMP.Model)
     # Potentially remove components that are tagged `conditional`, and violate some of their conditions.
     failed_components = []
     for (cname, component) in _iesopt(model).model.components
-        !(@profile model _check(component)) && push!(failed_components, cname)
+        !_check(component) && push!(failed_components, cname)
     end
     if length(failed_components) > 0
         @warn "Some components are removed based on the `conditional` setting" n_components = length(failed_components)
@@ -273,7 +265,7 @@ config file).
 
 Keyword arguments are passed to the [`generate!`](@ref) function.
 """
-function run(filename::String; verbosity=nothing, kwargs...)
+function run(filename::String; @nospecialize(verbosity=nothing), @nospecialize(kwargs...))
     model = generate!(filename; verbosity=verbosity, kwargs...)
     if haskey(model.ext, :_iesopt_failed_generate)
         @error "Errors in model generation; skipping optimization"
@@ -297,9 +289,10 @@ Builds and returns a model using the IESopt framework.
 
 This loads the configuration file specified by `filename`. Requires full specification of the `solver` entry in config.
 """
-function generate!(filename::String; kwargs...)
-    model = JuMP.Model()
-    return generate!(model, filename; kwargs...)
+function generate!(filename::String; @nospecialize(kwargs...))
+    model = JuMP.Model()::JuMP.Model
+    generate!(model, filename; kwargs...)
+    return model::JuMP.Model
 end
 
 """
@@ -311,27 +304,41 @@ This loads the configuration file specified by `filename`. Be careful when creat
 in the provided examples, as this can conflict with IESopt internals (especially for model/optimizer combinations
 that do not support bridges). Returns the model for convenience, even though it is modified in place.
 """
-function generate!(model::JuMP.Model, filename::String; kwargs...)
-    local stats_parse, stats_build, stats_total
+function generate!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
+    # local stats_parse, stats_build, stats_total
+    # TODO: "re-enable" by refactoring to TimerOutputs
 
-    success = true
     try
         # Validate before parsing.
-        !validate(filename) && return nothing
+        # !validate(filename) && return nothing
 
         # Parse & build the model.
-        stats_total = @timed begin
-            stats_parse = @timed parse!(model, filename; kwargs...)
-            !stats_parse.value && return nothing
+        parse!(model, filename; kwargs...) || return model
+        with_logger(_iesopt_logger(model)) do
             if JuMP.mode(model) != JuMP.DIRECT && JuMP.MOIU.state(JuMP.backend(model)) == JuMP.MOIU.NO_OPTIMIZER
-                with_logger(_iesopt(model).logger) do
-                    return _attach_optimizer(model)
-                end
+                _attach_optimizer(model)
             end
-            stats_build = @timed with_logger(_iesopt(model).logger) do
-                return @profile build!(model)
-            end
+
+            build!(model)
+
+            @info "Finished model generation"
         end
+
+        model.ext[:_iesopt_failed_generate] = false
+
+        # NOTE: See below for "timed" sections.
+        # stats_total = @timed begin
+        #     stats_parse = @timed parse!(model, filename; kwargs...)
+        #     !stats_parse.value && return model
+        #     if JuMP.mode(model) != JuMP.DIRECT && JuMP.MOIU.state(JuMP.backend(model)) == JuMP.MOIU.NO_OPTIMIZER
+        #         with_logger(_iesopt_logger(model)) do
+        #             return _attach_optimizer(model)
+        #         end
+        #     end
+        #     stats_build = @timed with_logger(_iesopt_logger(model)) do
+        #         return build!(model)
+        #     end
+        # end
     catch
         # Get debug information from model, if available.
         debug = haskey(model.ext, :iesopt) ? _iesopt(model).debug : "not available"
@@ -361,17 +368,14 @@ function generate!(model::JuMP.Model, filename::String; kwargs...)
         end
 
         @error "Error(s) during model generation" debug number_of_errors = length(curr_ex) _exceptions...
-        success = false
+        model.ext[:_iesopt_failed_generate] = true
     else
-        with_logger(_iesopt(model).logger) do
-            @info "Finished model generation" times =
-                (parse=stats_parse.time, build=stats_build.time, total=stats_total.time)
-        end
+        # with_logger(_iesopt_logger(model)) do
+        #     @info "Finished model generation" times =
+        #         (parse=stats_parse.time, build=stats_build.time, total=stats_total.time)
+        # end
     end
 
-    if !success
-        model.ext[:_iesopt_failed_generate] = true
-    end
     return model
 end
 
@@ -379,56 +383,58 @@ _setoptnow(model::JuMP.Model, ::Val{:none}, moa::Bool) = @critical "This code sh
 
 function _attach_optimizer(model::JuMP.Model)
     @info "Setting up Optimizer"
-    solver = get(
-        # note: when adding a solver here, add its import at the top
-        Dict{String, String}(
-            "highs" => "HiGHS",
-            "gurobi" => "Gurobi",
-            "cbc" => "Cbc",
-            "glpk" => "GLPK",
-            "cplex" => "CPLEX",
-            "ipopt" => "Ipopt",
-            "scip" => "SCIP",
-        ),
-        lowercase(_iesopt_config(model).optimization.solver.name),
-        nothing,
-    )
 
-    if isnothing(solver)
-        @critical "Can't determine proper solver" solver
+    solver_name = _iesopt_config(model).optimization.solver.name
+    solver = get(
+        Dict{String, Symbol}(
+            "highs" => :HiGHS,
+            "gurobi" => :Gurobi,
+            "cbc" => :Cbc,
+            "glpk" => :GLPK,
+            "cplex" => :CPLEX,
+            "ipopt" => :Ipopt,
+            "scip" => :SCIP,
+        ),
+        lowercase(solver_name),
+        :unknown,
+    )::Symbol
+
+    if solver == :unknown
+        @critical "Can't determine proper solver" solver_name
     end
 
     if _iesopt_config(model).optimization.solver.mode == "direct"
         @critical "Automatic direct mode is currently not supported"
     end
 
-    if solver != "HiGHS"
-        try
-            @info "Trying to import solver interface" solver
-            Main.eval(Meta.parse("import $(solver)"))
-        catch
-            @info "Solver interface could not be imported; trying to install and precompile it" solver
-            try
-                Pkg.add(solver)
-                Pkg.resolve()
-                @info "Trying to import solver interface" solver
-                Main.eval(Meta.parse("import $(solver)"))
-            catch
-                @critical "Failed to setup solver interface; please install it manually" solver
-            end
-            @error "Solver interface installed, but you need to manually reload; please execute your code again"
-            rethrow(ErrorException("Please execute your code again"))
-        end
-
-        sym_solver = Symbol(solver)
-        Base.retry_load_extensions()
-        Base.invokelatest(_setoptnow, model, Val{sym_solver}(), false)
-    else
+    if solver == :HiGHS
         if _is_multiobjective(model)
             JuMP.set_optimizer(model, () -> IESopt.MOA.Optimizer(HiGHS.Optimizer))
         else
             JuMP.set_optimizer(model, HiGHS.Optimizer)
         end
+    else
+        try
+            @info "Trying to import solver interface" solver
+            # Main.eval(Meta.parse("import $(solver)"))
+            Base.require(@__MODULE__, solver)
+        catch
+            rethrow(ErrorException("Failed to setup solver interface; please install it manually"))
+            # @info "Solver interface could not be imported; trying to install and precompile it" solver
+            # try
+            #     Pkg.add(solver)
+            #     Pkg.resolve()
+            #     @info "Trying to import solver interface" solver
+            #     Main.eval(Meta.parse("import $(solver)"))
+            # catch
+            #     @critical "Failed to setup solver interface; please install it manually" solver
+            # end
+            # @error "Solver interface installed, but you need to manually reload; please execute your code again"
+            # rethrow(ErrorException("Please execute your code again"))
+        end
+
+        Base.retry_load_extensions()
+        Base.invokelatest(_setoptnow, model, Val{solver}(), false)
     end
 
     if _is_multiobjective(model)
@@ -436,37 +442,6 @@ function _attach_optimizer(model::JuMP.Model)
         @info "Setting MOA mode" mode = moa_mode
         JuMP.set_attribute(model, MOA.Algorithm(), eval(Meta.parse("MOA.$moa_mode()")))
     end
-
-    if false
-        println("solver_module: ", solver_module)
-
-        let s = solver_module
-            if !_is_multiobjective(model)
-                if _iesopt_config(model).optimization.solver.mode == "direct"
-                    @critical "Automatic direct mode is currently not supported"
-                    # todo: we can use an "isempty" function that ignores :ext to check for an empty model,
-                    #       then create a new one and copy over the :ext dict
-                else
-                    @info "Activating solver" solver
-                    JuMP.set_optimizer(model, s)
-                end
-            else
-                if _iesopt_config(model).optimization.solver.mode == "direct"
-                    @critical "Multi-objective optimization currently does not support direct mode"
-                else
-                    @info "Activating solver in multi-objective mode" solver
-                    JuMP.set_optimizer(model, () -> MOA.Optimizer(s.Optimizer))
-
-                    moa_mode = _iesopt_config(model).optimization.multiobjective.mode
-                    @info "Setting MOA mode" mode = moa_mode
-                    JuMP.set_attribute(model, MOA.Algorithm(), eval(Meta.parse("MOA.$moa_mode()")))
-                end
-            end
-        end
-    end
-
-    # todo: we currently need to abort here, but there SHOULD be some way to continue without running into world-age
-    #       related problems, etc.
 
     for (attr, value) in _iesopt_config(model).optimization.solver.attributes
         try
@@ -497,7 +472,7 @@ function _attach_optimizer(model::JuMP.Model)
     return nothing
 end
 
-function parse!(model::JuMP.Model, filename::String; kwargs...)
+function parse!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
     if !endswith(filename, ".iesopt.yaml")
         @critical "Model entry config files need to respect the `.iesopt.yaml` file extension" filename
     end
@@ -515,21 +490,21 @@ function parse!(model::JuMP.Model, filename::String; kwargs...)
     return true
 end
 
-function build!(model; callbacks::Union{Nothing, Dict}=nothing)
+function build!(model::JuMP.Model)
     # Prepare the model, ensuring some conversions before consistency checks.
-    @profile _prepare_model!(model)
+    _prepare_model!(model)
 
     # Perform conistency checks on all parsed components.
-    all_components_ok = true
+    all_components_ok = true::Bool
     for (id, component) in _iesopt(model).model.components
-        all_components_ok &= _isvalid(component)
+        all_components_ok &= _isvalid(component)::Bool
     end
     if !all_components_ok
         error("Some components did not pass the consistency check.")
     end
 
     # Build the model.
-    @profile _build_model!(model; callbacks=callbacks)
+    _build_model!(model)
 
     @info "Profiling results after `build` [time, top 5]" _profiling_format_top(model, 5)...
 end
@@ -539,16 +514,16 @@ end
 
 Use `JuMP.optimize!` to optimize the given model, optionally serializing the model afterwards for later use.
 """
-function optimize!(model::JuMP.Model; kwargs...)
-    with_logger(_iesopt(model).logger) do
-        return @profile _optimize!(model; kwargs...)
+function optimize!(model::JuMP.Model; @nospecialize(kwargs...))
+    with_logger(_iesopt_logger(model)) do
+        return _optimize!(model; kwargs...)
     end
 end
 
-function _optimize!(model::JuMP.Model; kwargs...)
+function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
     if !isempty(_iesopt(model).aux.constraint_safety_penalties)
         @info "Relaxing constraints based on constraint_safety"
-        _iesopt(model).aux.constraint_safety_expressions = @profile JuMP.relax_with_penalty!(
+        _iesopt(model).aux.constraint_safety_expressions = JuMP.relax_with_penalty!(
             model,
             Dict(k => v.penalty for (k, v) in _iesopt(model).aux.constraint_safety_penalties),
         )
@@ -583,7 +558,7 @@ function _optimize!(model::JuMP.Model; kwargs...)
     end
 
     @info "Starting optimize ..."
-    @profile JuMP.optimize!(model; kwargs...)
+    JuMP.optimize!(model; kwargs...)
 
     # todo: make use of `is_solved_and_feasible`? if, make sure the version requirement of JuMP is correct
 
@@ -633,8 +608,8 @@ function _optimize!(model::JuMP.Model; kwargs...)
         if !JuMP.is_solved_and_feasible(model)
             @error "Extracting results is only possible for a solved and feasible model"
         else
-            @profile _extract_results(model)
-            @profile _save_results(model)
+            _extract_results(model)
+            _save_results(model)
         end
     end
 
@@ -684,19 +659,20 @@ end
 
 Get the component `component_name` from `model`.
 """
-function get_component(model::JuMP.Model, component_name::AbstractString)
-    if !haskey(_iesopt(model).model.components, component_name)
+function get_component(model::JuMP.Model, @nospecialize(component_name::AbstractString))
+    cn = string(component_name)
+    if !haskey(_iesopt(model).model.components, cn)
         st = stacktrace()
         trigger = length(st) > 0 ? st[1] : nothing
         origin = length(st) > 1 ? st[2] : nothing
         inside = length(st) > 2 ? st[3] : nothing
-        @critical "Trying to access unknown component" component_name trigger origin inside debug = _iesopt_debug(model)
+        @critical "Trying to access unknown component" component_name = cn trigger origin inside debug = _iesopt_debug(model)
     end
 
-    return _iesopt(model).model.components[component_name]
+    return _iesopt(model).model.components[cn]
 end
 
-function get_components(model::JuMP.Model; tagged::Union{Nothing, String, Vector{String}}=nothing)
+function get_components(model::JuMP.Model; @nospecialize(tagged::Union{Nothing, String, Vector{String}}=nothing))
     !isnothing(tagged) && return _components_tagged(model, tagged)::Vector{<:_CoreComponent}
 
     return collect(values(_iesopt(model).model.components))::Vector{<:_CoreComponent}
@@ -770,6 +746,9 @@ for sym in names(@__MODULE__; all=true)
     @eval export $sym
 end
 
+RuntimeGeneratedFunctions.init(@__MODULE__)
+
 include("precompile/precompile_tools.jl")
+# include("precompile/precompile_manual.jl")
 
 end

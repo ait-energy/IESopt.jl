@@ -25,7 +25,6 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
 @kwdef struct Node <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    init_state::Ref{Symbol} = Ref(:empty)
     constraint_safety::Bool
     constraint_safety_cost::_ScalarInput
 
@@ -51,12 +50,12 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "energy", "default": "``-\\infty``"}```
     Lower bound of the internal state, requires `has_state = true`.
     """
-    state_lb::OptionalExpression = nothing
+    state_lb::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "energy", "default": "``+\\infty``"}```
     Upper bound of the internal state, requires `has_state = true`.
     """
-    state_ub::OptionalExpression = nothing
+    state_ub::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "`eq`, `geq`, or `disabled`", "unit": "-", "default": "`eq`"}```
     Controls how the state considers the boundary between last and first `Snapshot`. `disabled` disables cyclic
@@ -141,7 +140,7 @@ function _isvalid(node::Node)
     end
 
     if node.nodal_balance === :sum
-        if node.sum_window_size == length(_iesopt(node.model).model.T)
+        if node.sum_window_size == length(get_T(node.model))
             if node.sum_window_step != 1
                 @error "`sum_window_step` should probably be 1" node = node.name
             end
@@ -157,7 +156,7 @@ end
 function _setup!(node::Node)
     model = node.model
 
-    node.con.nodalbalance = Vector{JuMP.ConstraintRef}(undef, _iesopt(model).model.T[end])
+    node.con.nodalbalance = Vector{JuMP.ConstraintRef}(undef, get_T(model)[end])
 
     if !isnothing(node.etdf_group)
         # Check if we need to create the current ETDF group.
@@ -213,28 +212,28 @@ include("node/con_nodalbalance.jl")
 include("node/con_last_state.jl")
 
 function _construct_expressions!(node::Node)
-    @profile node.model _node_exp_injection!(node)
+    _node_exp_injection!(node)
     return nothing
 end
 
 function _construct_variables!(node::Node)
-    @profile node.model _node_var_state!(node)
-    @profile node.model _node_var_pf_theta!(node)
+    _node_var_state!(node)
+    _node_var_pf_theta!(node)
     return nothing
 end
 
 function _after_construct_variables!(node::Node)
     # We can now properly finalize the `state_lb`, and `state_ub`.
-    !isnothing(node.state_lb) && _finalize(node.state_lb)
-    !isnothing(node.state_ub) && _finalize(node.state_ub)
+    _finalize(node.state_lb)
+    _finalize(node.state_ub)
 
     return nothing
 end
 
 function _construct_constraints!(node::Node)
-    @profile node.model _node_con_state_bounds!(node)
-    @profile node.model _node_con_nodalbalance!(node)
-    @profile node.model _node_con_last_state!(node)
+    _node_con_state_bounds!(node)
+    _node_con_nodalbalance!(node) # 25% here
+    _node_con_last_state!(node)
     return nothing
 end
 

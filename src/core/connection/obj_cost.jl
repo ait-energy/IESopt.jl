@@ -17,18 +17,18 @@ Here $\omega_t$ is the weight of `Snapshot` `t`.
     different ones, in opposing directions, and including `lb = 0`.
 """
 function _connection_obj_cost!(connection::Connection)
-    if isnothing(connection.cost)
+    if _isempty(connection.cost)
         return nothing
     end
 
     model = connection.model
 
     connection.obj.cost = JuMP.AffExpr(0.0)
-    for t in _iesopt(connection.model).model.T
+    for t in get_T(connection.model)
         JuMP.add_to_expression!(
             connection.obj.cost,
             connection.var.flow[t],
-            _weight(model, t) * _get(connection.cost, t),
+            _weight(model, t) * access(connection.cost, t, Float64),
         )
     end
 

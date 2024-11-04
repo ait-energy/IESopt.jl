@@ -5,7 +5,6 @@ component's settings, as well as have associated costs.
 @kwdef struct Decision <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    init_state::Ref{Symbol} = Ref(:empty)
     constraint_safety::Bool
     constraint_safety_cost::_ScalarInput
 
@@ -174,23 +173,23 @@ include("decision/var_sos.jl")
 include("decision/var_value.jl")
 
 function _construct_variables!(decision::Decision)
-    @profile decision.model _decision_var_fixed!(decision)
-    @profile decision.model _decision_var_sos!(decision)
-    @profile decision.model _decision_var_value!(decision)
+    _decision_var_fixed!(decision)
+    _decision_var_sos!(decision)
+    _decision_var_value!(decision)
     return nothing
 end
 
 function _construct_constraints!(decision::Decision)
-    @profile decision.model _decision_con_fixed!(decision)
-    @profile decision.model _decision_con_sos_value!(decision)
-    @profile decision.model _decision_con_sos1!(decision)
+    _decision_con_fixed!(decision)
+    _decision_con_sos_value!(decision)
+    _decision_con_sos1!(decision)
     return _decision_con_sos2!(decision)
 end
 
 function _construct_objective!(decision::Decision)
-    @profile decision.model _decision_obj_fixed!(decision)
-    @profile decision.model _decision_obj_sos!(decision)
-    @profile decision.model _decision_obj_value!(decision)
+    _decision_obj_fixed!(decision)
+    _decision_obj_sos!(decision)
+    _decision_obj_value!(decision)
     return nothing
 end
 

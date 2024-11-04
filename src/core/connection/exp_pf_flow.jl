@@ -13,7 +13,7 @@ function _connection_exp_pf_flow!(connection::Connection)
     !connection.is_pf_controlled[] && return
 
     if _iesopt(model).input.addons["Powerflow"].config["__settings__"].mode === :linear_angle
-        connection.exp.pf_flow = [JuMP.AffExpr(0) for _ in _iesopt(model).model.T]
+        connection.exp.pf_flow = [JuMP.AffExpr(0) for _ in get_T(model)]
     end
 
     return nothing

@@ -64,40 +64,51 @@ function _parse_expression(@nospecialize(str::AbstractString), ::_ConversionExpr
     )::NamedTuple
 end
 
-@kwdef mutable struct Expression2
+@kwdef mutable struct Expression
     model::JuMP.Model
     
     dirty::Bool = false
     temporal::Bool = false
+    empty::Bool = false
+
     value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Vector{JuMP.AffExpr}, Float64, Vector{Float64}} = nothing
     internal::Union{Nothing, NamedTuple} = nothing
 end
-Expression = Expression2
-OptionalExpression = Union{Nothing, Expression}
 
-_name(e::OptionalExpression) = ""
-_name(e::Expression) = isnothing(e.internal) ? "" : e.internal.name
+const OptionalScalarExpressionValue = Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Float64}
+const NonEmptyScalarExpressionValue = Union{JuMP.VariableRef, JuMP.AffExpr, Float64}
+const NonEmptyNumericalExpressionValue = Union{Float64, Vector{Float64}}
 
-function Base.show(io::IO, e::Expression)
-    str_show = """:: Expression ::"""
+_name(e::Expression) = e.empty ? "" : e.internal.name
+_isfixed(e::Expression) = (e.empty || (e.value isa Float64) || (e.value isa Vector{Float64}))::Bool
+_isempty(e::Expression) = e.empty::Bool
 
-    str_show *= "\n├ name: $(_name(e))"
-    str_show *= "\n├ dirty: $(e.dirty)"
-    str_show *= "\n├ temporal: $(e.temporal)"
-    str_show *= "\n├ value type: $(typeof(e.value))"
+@recompile_invalidations begin
+    function Base.show(io::IO, e::Expression)
+        str_show = """:: Expression ::"""
 
-    if !isnothing(e.internal)
-        str_show *= "\n└ internal: $(hasproperty(e.internal, :val) ? e.internal.val : "func($(join(e.internal.elements, ", ")))")"
-    else
-        str_show *= "\n└ internal: -"
+        str_show *= "\n├ name: $(_name(e))"
+        str_show *= "\n├ dirty: $(e.dirty)"
+        str_show *= "\n├ temporal: $(e.temporal)"
+        str_show *= "\n├ value type: $(typeof(e.value))"
+
+        if !isnothing(e.internal)
+            str_show *= "\n└ internal: $(hasproperty(e.internal, :val) ? e.internal.val : "func($(join(e.internal.elements, ", ")))")"
+        else
+            str_show *= "\n└ internal: -"
+        end
+
+        return print(io, str_show)
     end
-
-    return print(io, str_show)
 end
 
-_convert_to_expression(::JuMP.Model, ::Nothing) = nothing
+_convert_to_expression(model::JuMP.Model, ::Nothing) = Expression(; model, empty=true)
 _convert_to_expression(model::JuMP.Model, data::Real) = Expression(; model, value=convert(Float64, data))
 _convert_to_expression(model::JuMP.Model, data::Vector{<:Real}) = Expression(; model, value=convert.(Float64, data), temporal=true)
+
+macro _default_expression(value)
+    return esc(:(_convert_to_expression(model, $value)))
+end
 
 function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractString))
     parsed = _parse_expression(data, _GeneralExpressionType())
@@ -137,25 +148,46 @@ function _make_temporal(e::Expression)
     e.temporal && return nothing
 
     if isnothing(e.value)
-        e.value = zeros(Float64, length(_iesopt(e.model).model.T))
+        e.value = zeros(Float64, length(get_T(e.model)))
     elseif e.value isa Float64
-        e.value = fill(e.value, length(_iesopt(e.model).model.T))
+        e.value = fill(e.value, length(get_T(e.model)))
     else
         if e.value isa JuMP.VariableRef
             e.value = @expression(e.model, e.value)
         end
-        e.value = collect(JuMP.AffExpr, copy(e.value) for _ in _iesopt(e.model).model.T)
+        e.value = collect(JuMP.AffExpr, copy(e.value) for _ in get_T(e.model))
     end
 
     e.temporal = true
     return nothing
 end
 
-_get(e::Expression) = e.value
-_get(e::Expression, t::_ID) = (e.value isa Vector) ? e.value[t] : e.value
-_finalize(::Nothing) = nothing
+# _get(e::Expression) = e.value
+# _get(e::Expression, t::_ID) = (e.value isa Vector) ? e.value[t] : e.value
+
+function prepare(e::Expression; default::Float64)
+    if e.empty
+        return _convert_to_expression(e.model, default)::Expression
+    else
+        return e::Expression
+    end
+end
+
+access(e::Expression) = e.value
+function access(e::Expression, t::_ID)
+    if e.value isa Vector{JuMP.AffExpr}
+        return (e.value::Vector{JuMP.AffExpr})[t]::JuMP.AffExpr
+    elseif  e.value isa Vector{Float64}
+        return (e.value::Vector{Float64})[t]::Float64
+    else
+        return e.value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Float64}
+    end
+end
+access(e::Expression, @nospecialize(T::Type)) = access(e)::T
+access(e::Expression, t::_ID, @nospecialize(T::Type)) = access(e, t)::T
 
 function _finalize(e::Expression)
+    e.empty && return nothing
     e.dirty || return nothing
 
     extraction_names = e.internal.elements
@@ -164,8 +196,11 @@ function _finalize(e::Expression)
     for extract in extraction_names
         # TODO: cache this
         if contains(extract, "@")
-            col, file = split(extract, "@")
-            push!(extractions, _snapshot_aggregation!(e.model, collect(skipmissing(_iesopt(e.model).input.files[file][!, col]))))
+            col, file = string.(split(extract, "@"))
+            push!(
+                extractions,
+                identity.(_getfromcsv(e.model, file, col))::Vector{Float64}
+            )
             e.temporal = true
         else
             dec, acc = split(extract, ":")       
@@ -178,7 +213,7 @@ function _finalize(e::Expression)
     if e.temporal
         e.value = [
             e.internal.func([get_value_at(extract, t) for extract in extractions])
-            for t in _iesopt(e.model).model.T
+            for t in get_T(e.model)
         ]
     else
         e.value = e.internal.func(extractions)
@@ -188,6 +223,7 @@ function _finalize(e::Expression)
     return nothing
 end
 
+_finalize(::Nothing) = nothing
 
 # struct _Expression
 #     model::JuMP.Model

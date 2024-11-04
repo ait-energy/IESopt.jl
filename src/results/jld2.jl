@@ -92,9 +92,9 @@ function _save_results(model::JuMP.Model)
             file["input/parameters"] = _iesopt(model).input.parameters
         end
 
-        # file["info/hash"] = @profile _get_hash(model)
+        # file["info/hash"] = _get_hash(model)
         if :git in _iesopt_config(model).results.include
-            file["info/git"] = @profile model _get_git()
+            file["info/git"] = _get_git()
         end
         if :log in _iesopt_config(model).results.include
             file["info/logs/iesopt"] = _get_iesopt_log(model)

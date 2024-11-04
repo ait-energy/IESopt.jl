@@ -10,7 +10,7 @@ This is mostly used to represent various commodities that (easily) represent som
 but also enables modelling commodities that are not (treated as) representing some type of energy (e.g. CO2). Specify
 `unit` to bind that carrier to an (arbitrary) unit that allows easier plotting and result analysis.
 """
-Base.@kwdef struct Carrier
+@kwdef struct Carrier
     # mandatory
     name::String
 
@@ -19,7 +19,9 @@ Base.@kwdef struct Carrier
     color::Union{String, Nothing} = nothing
 end
 
-Base.hash(carrier::Carrier) = hash(carrier.name)
+@recompile_invalidations begin
+    Base.hash(carrier::Carrier) = hash(carrier.name)
+end
 
 """
     _parse_carriers(carriers::Dict{String, Any})
@@ -42,4 +44,6 @@ end
 #     )
 # end
 
-Base.string(carrier::Carrier) = carrier.name
+@recompile_invalidations begin
+    Base.string(carrier::Carrier) = carrier.name
+end

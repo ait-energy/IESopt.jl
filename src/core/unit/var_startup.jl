@@ -19,7 +19,7 @@ function _unit_var_startup!(unit::Unit)
     if !_has_representative_snapshots(model)
         unit.var.startup = @variable(
             model,
-            [t = _iesopt(model).model.T],
+            [t = get_T(model)],
             # This will automatically be binary/integer valued as soon as `var_ison` is.
             # binary=(unit.unit_commitment === :binary), integer=(unit.unit_commitment === :integer),
             lower_bound = 0.0,
@@ -30,13 +30,13 @@ function _unit_var_startup!(unit::Unit)
         # Create all representatives.
         _repr = Dict(
             t => @variable(model, lower_bound = 0.0, base_name = _base_name(unit, "startup[$(t)]")) for
-            t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+            t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
         )
 
         # Create all variables, either as themselves or their representative.
         unit.var.startup = collect(
             _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-            _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+            _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
         )
     end
 

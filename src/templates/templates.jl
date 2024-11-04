@@ -5,26 +5,28 @@ include("functions/functions.jl")
 include("load.jl")
 include("parse.jl")
 
-function Base.show(io::IO, template::CoreTemplate)
-    info = _analyse(template)
+@recompile_invalidations begin
+    function Base.show(io::IO, template::CoreTemplate)
+        info = _analyse(template)
 
-    beautify(value::Any) = value
-    beautify(value::Vector) = isempty(value) ? "-" : (length(value) <= 4 ? join(value, ", ") : "$(value[1]), $(value[2]), ..., $(value[end])")
+        beautify(value::Any) = value
+        beautify(value::Vector) = isempty(value) ? "-" : (length(value) <= 4 ? join(value, ", ") : "$(value[1]), $(value[2]), ..., $(value[end])")
 
-    str_show = ":: IESopt.Template ::"
+        str_show = ":: IESopt.Template ::"
 
-    ks = collect(keys(info))
-    for k in ks[1:(end - 1)]
-        v = info[k]
-        (k == "docs") && (v = collect(keys(info[k])))
-        (k == "parameters") && (v = [p for p in keys(info[k]) if !startswith(p, "_")])
-        str_show *= "\n├ $k: $(beautify(v))"
+        ks = collect(keys(info))
+        for k in ks[1:(end - 1)]
+            v = info[k]
+            (k == "docs") && (v = collect(keys(info[k])))
+            (k == "parameters") && (v = [p for p in keys(info[k]) if !startswith(p, "_")])
+            str_show *= "\n├ $k: $(beautify(v))"
+        end
+        k = ks[end]
+        v = (k in ["docs", "parameters"]) ? collect(keys(info[k])) : info[k]
+        str_show *= "\n└ $k: $(beautify(v))"
+
+        return print(io, str_show)
     end
-    k = ks[end]
-    v = (k in ["docs", "parameters"]) ? collect(keys(info[k])) : info[k]
-    str_show *= "\n└ $k: $(beautify(v))"
-
-    return print(io, str_show)
 end
 
 function _analyse(template::CoreTemplate)
@@ -32,7 +34,7 @@ function _analyse(template::CoreTemplate)
     template = _require_template(template.model, template.name)
     template._status[] = old_status
 
-    internal = (template.type[] == :container) ? values(template.yaml["components"]) : [template.yaml["component"]]
+    internal = _is_container(template) ? values(template.yaml["components"]) : [template.yaml["component"]]
     child_types = sort!(collect(Set(comp["type"] for comp in internal)))::Vector{String}
     instances = get(_iesopt(template.model).model.tags, template.name, String[])
 
@@ -40,7 +42,7 @@ function _analyse(template::CoreTemplate)
     isempty(docs) && @warn "Template is missing `docs` entry" template = template.name
 
     return OrderedDict(
-        "type" => (template.type[] == :container) ? template.name : "$(template.name) <: $(child_types[1])",
+        "type" => _is_container(template) ? template.name : "$(template.name) <: $(child_types[1])",
         "instances" => instances,
         "docs" => docs,
         "parameters" => get(template.yaml, "parameters", Dict{String, Any}()),

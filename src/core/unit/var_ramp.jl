@@ -18,7 +18,7 @@ function _unit_var_ramp!(unit::Unit)
     if unit.enable_ramp_up && !isnothing(unit.ramp_up_cost)
         unit.var.ramp_up = @variable(
             model,
-            [t = _iesopt(model).model.T],
+            [t = get_T(model)],
             lower_bound = 0,
             base_name = _base_name(unit, "ramp_up"),
             container = Array
@@ -27,7 +27,7 @@ function _unit_var_ramp!(unit::Unit)
     if unit.enable_ramp_down && !isnothing(unit.ramp_up_cost)
         unit.var.ramp_down = @variable(
             model,
-            [t = _iesopt(model).model.T],
+            [t = get_T(model)],
             lower_bound = 0,
             base_name = _base_name(unit, "ramp_down"),
             container = Array

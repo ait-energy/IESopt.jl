@@ -12,7 +12,7 @@ formats). The `weight` (default = 1.0) specifies the "probabilistic weight" of t
 timeperiod that **begins** there (a `weight` of 2 can therefore represent a 2-hour-resolution; this also allows a
 variable temporal resolution throughout the year/month/...).
 """
-Base.@kwdef struct Snapshot
+@kwdef struct Snapshot
     # mandatory
     name::_String
     id::_ID
@@ -29,24 +29,25 @@ function _parse_snapshots!(model::JuMP.Model)
 
     # Check for Snapshot aggregation.
     if !isnothing(config.aggregate)
-        @warn "Snapshot aggregation is an experimental feature, that does not work correctly with expressions (and maybe other stuff) - using it is not advised"
+        @critical "Snapshot aggregation is deprecated in its current form"
+        # @warn "Snapshot aggregation is an experimental feature, that does not work correctly with expressions (and maybe other stuff) - using it is not advised"
 
-        T_orig, T_factor = config.count, config.aggregate
+        # T_orig, T_factor = config.count, config.aggregate
 
-        if (T_orig ÷ T_factor) != (T_orig / T_factor)
-            @critical "Cannot aggregate snapshots based on non exact divisor" T = T_orig div = T_factor
-        end
+        # if (T_orig ÷ T_factor) != (T_orig / T_factor)
+        #     @critical "Cannot aggregate snapshots based on non exact divisor" T = T_orig div = T_factor
+        # end
 
-        T = _ID(T_orig ÷ T_factor)
-        _iesopt(model).model.snapshots = Dict{_ID, Snapshot}(
-            t => Snapshot(; name="S$t <t$((t-1) * T_factor + 1)-t$(t * T_factor)>", id=t, weight=T_factor) for t in 1:T
-        )
+        # T = _ID(T_orig ÷ T_factor)
+        # _iesopt(model).model.snapshots = Dict{_ID, Snapshot}(
+        #     t => Snapshot(; name="S$t <t$((t-1) * T_factor + 1)-t$(t * T_factor)>", id=t, weight=T_factor) for t in 1:T
+        # )
 
-        # _iesopt_config(model)._perform_snapshot_aggregation = T_factor       # todo: config refactor
-        _iesopt(model).model.T = 1:T
+        # # _iesopt_config(model)._perform_snapshot_aggregation = T_factor       # todo: config refactor
+        # _iesopt(model).model.T = 1:T
 
-        @info "Aggregated into $(length(_iesopt(model).model.snapshots)) snapshots"
-        return nothing
+        # @info "Aggregated into $(length(_iesopt(model).model.snapshots)) snapshots"
+        # return nothing
     end
 
     # Set up `T`.
@@ -114,9 +115,10 @@ function _parse_snapshots!(model::JuMP.Model)
 end
 
 _snapshot(model::JuMP.Model, t::_ID) = _iesopt(model).model.snapshots[t]
-_weight(model::JuMP.Model, t::_ID) = _iesopt(model).model.snapshots[t].weight    # TODO: this should safety check with non-equal weights and representative snapshots
+_weight(model::JuMP.Model, t::_ID) = _iesopt(model).model.snapshots[t].weight::Float64    # TODO: this should safety check with non-equal weights and representative snapshots
 
 function _snapshot_aggregation!(model::JuMP.Model, data::Vector)
+    # TODO: remove this (deprecated)
     config = _iesopt_config(model).optimization.snapshots
 
     if !isnothing(config.aggregate)

@@ -10,8 +10,8 @@ function _profile_exp_value!(profile::Profile)
     model = profile.model
 
     profile.exp.value = Vector{JuMP.AffExpr}()
-    sizehint!(profile.exp.value, length(_iesopt(model).model.T))
-    for t in _iesopt(model).model.T
+    sizehint!(profile.exp.value, length(get_T(model)))
+    for t in get_T(model)
         push!(profile.exp.value, JuMP.AffExpr(0.0))
     end
 

@@ -23,7 +23,7 @@ function _unit_con_startup!(unit::Unit)
 
     unit.con.startup_lb = @constraint(
         model,
-        [t = _iesopt(model).model.T],
+        [t = get_T(model)],
         unit.var.startup[t] >= unit.var.ison[t] - ((t == 1) ? unit.is_on_before : unit.var.ison[t - 1]),
         base_name = _base_name(unit, "startup_lb"),
         container = Array
@@ -34,7 +34,7 @@ function _unit_con_startup!(unit::Unit)
     # The following constraint is currently not active, since it should never be necessary (= model will never startup
     # more units than are available).
     # unit.constr_startup_ub = @constraint(
-    #     model, [t=_iesopt(model).model.T],
+    #     model, [t=get_T(model)],
     #     unit.var.startup[t] <= _get(unit.unit_count),
     #     base_name=_base_name(model, "unit_startup_ub", (n=unit.name, t=_snapshot(model, t).name))
     # )

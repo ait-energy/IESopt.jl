@@ -15,17 +15,19 @@ function _unit_obj_ramp_cost!(unit::Unit)
 
     model = unit.model
 
+    # TODO: the "var.ramp * c" mults are expensive! rework this!
+
     unit.obj.ramp_cost = JuMP.AffExpr(0.0)
     if unit.enable_ramp_up && !isnothing(unit.ramp_up_cost)
         JuMP.add_to_expression!(
             unit.obj.ramp_cost,
-            _affine_expression(unit.var.ramp_up[t] * unit.ramp_up_cost for t in _iesopt(model).model.T),
+            _affine_expression(unit.var.ramp_up[t] * unit.ramp_up_cost for t in get_T(model)),
         )
     end
     if unit.enable_ramp_down && !isnothing(unit.ramp_down_cost)
         JuMP.add_to_expression!(
             unit.obj.ramp_cost,
-            _affine_expression(unit.var.ramp_down[t] * unit.ramp_down_cost for t in _iesopt(model).model.T),
+            _affine_expression(unit.var.ramp_down[t] * unit.ramp_down_cost for t in get_T(model)),
         )
     end
 

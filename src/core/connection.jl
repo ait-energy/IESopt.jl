@@ -4,7 +4,6 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
 @kwdef struct Connection <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    init_state::Ref{Symbol} = Ref(:empty)
     constraint_safety::Bool
     constraint_safety_cost::_ScalarInput
 
@@ -37,17 +36,17 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     The symmetric bound on this `Connection`'s flow. Results in `lb = -capacity` and `ub = capacity`. Must not be
     specified if `lb`, `ub`, or both are explicitly stated.
     """
-    capacity::OptionalExpression = nothing
+    capacity::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "power", "default": "``-\\infty``"}```
     Lower bound of this `Connection`'s flow.
     """
-    lb::OptionalExpression = nothing
+    lb::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric, `col@file`, `decision:value`", "unit": "power", "default": "``+\\infty``"}```
     Upper bound of this `Connection`'s flow.
     """
-    ub::OptionalExpression = nothing
+    ub::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary (per energy)", "default": "-"}```
     Cost of every unit of energy flow over this connection that is added to the model's objective function. Keep in mind
@@ -57,7 +56,7 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     being unidirectional (with `lb: 0`). Remember, that these can share the same "capacity" (which is then set as`ub`),
     even when using `decision:value` or `col@file` as value.
     """
-    cost::OptionalExpression = nothing
+    cost::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "0"}```
     Fractional loss when transfering energy. This loss occurs "at the destination", which means that for a loss of 5%,
@@ -66,7 +65,7 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     would, e.g., translate to consuming 200 units of energy at `node_from` and injecting 190 units at `node_to`, if the
     `Snapshot` duration is 2 hours.
     """
-    loss::OptionalExpression = nothing
+    loss::Expression = @_default_expression(0.0)
 
     # Energy Transfer Distribution Factors
     etdf::Union{Dict{<:Union{_ID, _String}, <:Any}, _String, Nothing} = nothing
@@ -182,7 +181,7 @@ function _prepare!(connection::Connection)
             connection.pf_X = connection.pf_X / Z_base
         end
 
-        if isnothing(connection.capacity)
+        if _isempty(connection.capacity)
             # Only calculate capacity if it is not given by the user
             connection.capacity = _convert_to_expression(model, connection.pf_V * connection.pf_I)
         end
@@ -193,23 +192,23 @@ function _prepare!(connection::Connection)
 end
 
 function _isvalid(connection::Connection)
-    if !isnothing(connection.capacity) && (!isnothing(connection.lb))
+    if !_isempty(connection.capacity) && (!_isempty(connection.lb))
         @critical "Setting <capacity> as well as <lb> for Connection can result in unexpected behaviour" connection =
             connection.name
     end
 
-    if !isnothing(connection.capacity) && (!isnothing(connection.ub))
+    if !_isempty(connection.capacity) && (!_isempty(connection.ub))
         @critical "Setting <capacity> as well as <ub> for Connection can result in unexpected behaviour" connection =
             connection.name
     end
 
-    if !isnothing(connection.cost) && connection.cost.is_expression && length(connection.cost.decisions) > 0
+    if !_isfixed(connection.cost)
         @critical "Endogenuous Connection <cost> leads to quadratic expressions and is currently not supported" connection =
             connection.name
     end
 
-    if !isnothing(connection.loss) &&
-       (isnothing(connection.lb) || connection.lb.is_expression || any(<(0), connection.lb.value))
+    if !_isempty(connection.loss) &&
+       (_isempty(connection.lb) || !_isfixed(connection.lb) || any(<(0), connection.lb.value))
         @critical "Setting <loss> for Connection requires nonnegative <lb>" connection = connection.name
     end
 
@@ -283,31 +282,31 @@ include("connection/con_flow_bounds.jl")
 include("connection/obj_cost.jl")
 
 function _construct_expressions!(connection::Connection)
-    @profile connection.model _connection_exp_pf_flow!(connection)
+    _connection_exp_pf_flow!(connection)
     return nothing
 end
 
 function _construct_variables!(connection::Connection)
-    @profile connection.model _connection_var_flow!(connection)
+    _connection_var_flow!(connection)
     return nothing
 end
 
 function _after_construct_variables!(connection::Connection)
     # We can now properly finalize the `lb`, `ub`, `capacity`, and `cost`.
-    !isnothing(connection.lb) && _finalize(connection.lb)
-    !isnothing(connection.ub) && _finalize(connection.ub)
-    !isnothing(connection.capacity) && _finalize(connection.capacity)
-    !isnothing(connection.cost) && _finalize(connection.cost)
+    _finalize(connection.lb)
+    _finalize(connection.ub)
+    _finalize(connection.capacity)
+    _finalize(connection.cost)
 
     return nothing
 end
 
 function _construct_constraints!(connection::Connection)
-    @profile connection.model _connection_con_flow_bounds!(connection)
+    _connection_con_flow_bounds!(connection)
     return nothing
 end
 
 function _construct_objective!(connection::Connection)
-    @profile connection.model _connection_obj_cost!(connection)
+    _connection_obj_cost!(connection)
     return nothing
 end

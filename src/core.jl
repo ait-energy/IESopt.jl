@@ -5,9 +5,11 @@
 # Further, it seems to be sufficient to overload `isequal` instead of also `Base.:(==)`, see:
 # https://stackoverflow.com/a/34939856/5377696; https://github.com/JuliaLang/julia/issues/12198#issuecomment-122938304
 # indicates the opposite...
-Base.hash(cc::_CoreComponent) = cc.name
-Base.:(==)(cc1::_CoreComponent, cc2::_CoreComponent) = cc1.name == cc2.name
-Base.isequal(cc1::_CoreComponent, cc2::_CoreComponent) = Base.isequal(cc1.name, cc2.name)
+@recompile_invalidations begin
+    Base.hash(@nospecialize(cc::_CoreComponent)) = hash(cc.name::String)
+    Base.:(==)(@nospecialize(cc1::_CoreComponent), @nospecialize(cc2::_CoreComponent)) = (cc1.name::String) == (cc2.name::String)
+    Base.isequal(@nospecialize(cc1::_CoreComponent), @nospecialize(cc2::_CoreComponent)) = isequal(cc1.name::String, cc2.name::String)
+end
 
 # TODO: replace with https://github.com/KristofferC/TimerOutputs.jl
 """
@@ -113,32 +115,33 @@ _finalize_docstring(Profile)
 _finalize_docstring(Unit)
 _finalize_docstring(Virtual)
 
-function Base.show(io::IO, cc::_CoreComponent)
-    str_show = """:: $(typeof(cc)) ::"""
+@recompile_invalidations begin
+    function Base.show(io::IO, @nospecialize(cc::_CoreComponent))
+        str_show = """:: $(typeof(cc)) ::"""
 
-    fields = _result_fields(cc)
-    for field in fields[1:(end - 1)]
-        str_show *= "\n├ $field: $(getfield(cc, field))"
+        fields = _result_fields(cc)
+        for field in fields[1:(end - 1)]
+            str_show *= "\n├ $field: $(getfield(cc, field))"
+        end
+        str_show *= "\n└ $(fields[end]): $(getfield(cc, fields[end]))"
+
+        return print(io, str_show)
     end
-    str_show *= "\n└ $(fields[end]): $(getfield(cc, fields[end]))"
-
-    return print(io, str_show)
 end
 
 # Here, empty implementations are done to ensure every core component type implements all necessary functionality, even
 # if it does not care about that. Make sure to implement them, in order to actually use them.
-_check(cc::_CoreComponent) = !cc.conditional
-function _prepare!(::_CoreComponent) end
-function _isvalid(cc::_CoreComponent)
+_check(@nospecialize(cc::_CoreComponent)) = !cc.conditional
+function _prepare!(@nospecialize(::_CoreComponent)) end
+function _isvalid(@nospecialize(cc::_CoreComponent))
     @warn "_isvalid(...) not implemented" cc_type = typeof(cc)
     return true
 end
-function _setup!(::_CoreComponent) end
-function _result(::_CoreComponent, ::String, ::String; result::Int=1) end
-function _to_table(component::_CoreComponent)
+function _setup!(@nospecialize(::_CoreComponent)) end
+function _result(@nospecialize(::_CoreComponent), ::String, ::String; result::Int=1) end
+function _to_table(@nospecialize(component::_CoreComponent))
     excluded_fields = (
         :model,
-        :init_state,
         :config,
         :ext,
         :addon,
@@ -169,89 +172,91 @@ function _to_table(component::_CoreComponent)
         !((field in excluded_fields) || contains(String(field), r"var_|constr_|expr_|obj_"))
     )
 end
-function _construct_expressions!(::_CoreComponent) end
-function _after_construct_expressions!(::_CoreComponent) end
-function _construct_variables!(::_CoreComponent) end
-function _after_construct_variables!(::_CoreComponent) end
-function _construct_constraints!(::_CoreComponent) end
-function _after_construct_constraints!(::_CoreComponent) end
-function _construct_objective!(::_CoreComponent) end
+function _construct_expressions!(@nospecialize(::_CoreComponent)) end
+function _after_construct_expressions!(@nospecialize(::_CoreComponent)) end
+function _construct_variables!(@nospecialize(::_CoreComponent)) end
+function _after_construct_variables!(@nospecialize(::_CoreComponent)) end
+function _construct_constraints!(@nospecialize(::_CoreComponent)) end
+function _after_construct_constraints!(@nospecialize(::_CoreComponent)) end
+function _construct_objective!(@nospecialize(::_CoreComponent)) end
 
-function _result_fields(component::_CoreComponent)
+function _result_fields(@nospecialize(component::_CoreComponent))
     @error "_result_fields(...) not implemented" component = component.name
     return nothing
 end
 
-_component_type(::_CoreComponent) = nothing
+_component_type(@nospecialize(::_CoreComponent)) = nothing
 _component_type(::Connection) = :Connection
 _component_type(::Decision) = :Decision
 _component_type(::Node) = :Node
 _component_type(::Profile) = :Profile
 _component_type(::Unit) = :Unit
 
-_build_priority(cc::_CoreComponent) = _build_priority(cc.build_priority, 0.0)
+_build_priority(@nospecialize(cc::_CoreComponent)) = _build_priority(cc.build_priority, 0.0)
 _build_priority(::Nothing, default) = default
 _build_priority(priority::Real, ::T) where {T} = convert(T, priority)
 _build_priority(priority, ::Any) = @error "Unsupported build priority" priority
 
-function Base.getproperty(cc::_CoreComponent, field::Symbol)
-    try
-        (field == :var) && (return getfield(cc, :_ccoc).variables)
-        (field == :con) && (return getfield(cc, :_ccoc).constraints)
-        (field == :exp) && (return getfield(cc, :_ccoc).expressions)
-        (field == :obj) && (return getfield(cc, :_ccoc).objectives)
-        return getfield(cc, field)
-    catch e
-        @error "Field not found in _CoreComponent" e
-        return nothing
+@recompile_invalidations begin
+    function Base.getproperty(@nospecialize(cc::_CoreComponent), field::Symbol)
+        try
+            (field == :var) && (return getfield(cc, :_ccoc).variables::_CoreComponentOptContainerDict)
+            (field == :con) && (return getfield(cc, :_ccoc).constraints::_CoreComponentOptContainerDict)
+            (field == :exp) && (return getfield(cc, :_ccoc).expressions::_CoreComponentOptContainerDict)
+            (field == :obj) && (return getfield(cc, :_ccoc).objectives::_CoreComponentOptContainerDict)
+            return getfield(cc, field)
+        catch e
+            @error "Field not found in _CoreComponent" e
+            return nothing
+        end
     end
-end
 
-function Base.propertynames(cc::_CoreComponent)
-    return (fieldnames(typeof(cc))..., :exp, :var, :con, :obj)
-end
+    function Base.propertynames(@nospecialize(cc::_CoreComponent))
+        return (fieldnames(typeof(cc))..., :exp, :var, :con, :obj)
+    end
 
-function Base.getproperty(ccocd::_CoreComponentOptContainerDict, field::Symbol)
-    try
+    function Base.getproperty(ccocd::_CoreComponentOptContainerDict, field::Symbol)
+        try
+            return getfield(ccocd, :dict)[field]
+        catch e
+            @error "Field not found in _CoreComponentOptContainerDict" e
+            return nothing
+        end
+    end
+
+    function Base.setproperty!(ccocd::_CoreComponentOptContainerDict, field::Symbol, value)
+        return getfield(ccocd, :dict)[field] = value
+    end
+
+    function Base.setindex!(ccocd::_CoreComponentOptContainerDict, value, field::Symbol)
+        return getfield(ccocd, :dict)[field] = value
+    end
+
+    function Base.getindex(ccocd::_CoreComponentOptContainerDict, field::Symbol)
         return getfield(ccocd, :dict)[field]
-    catch e
-        @error "Field not found in _CoreComponentOptContainerDict" e
-        return nothing
     end
+
+    function Base.keys(ccocd::_CoreComponentOptContainerDict)
+        return keys(getfield(ccocd, :dict))
+    end
+
+    # function Base.getproperty(ccoc::_CoreComponentOptContainer, field::Symbol)
+    #     (field == :var) && (return getfield(ccoc, :variables))
+    #     (field == :con) && (return getfield(ccoc, :constraints))
+    #     (field == :exp) && (return getfield(ccoc, :expressions))
+    #     (field == :obj) && (return getfield(ccoc, :objectives))
+
+    #     throw(ArgumentError("Field $field not found in _CoreComponentOptContainer"))
+    # end
+
+    # function Base.setproperty!(ccoc::_CoreComponentOptContainer, field::Symbol, value)
+    #     getfield(ccoc, :content)[field] = value
+    # end
+
+    # function Base.propertynames(ccoc::_CoreComponentOptContainer)
+    #     return propertynames(getfield(ccoc, :content))
+    # end
 end
-
-function Base.setproperty!(ccocd::_CoreComponentOptContainerDict, field::Symbol, value)
-    return getfield(ccocd, :dict)[field] = value
-end
-
-function Base.setindex!(ccocd::_CoreComponentOptContainerDict, value, field::Symbol)
-    return getfield(ccocd, :dict)[field] = value
-end
-
-function Base.getindex(ccocd::_CoreComponentOptContainerDict, field::Symbol)
-    return getfield(ccocd, :dict)[field]
-end
-
-function Base.keys(ccocd::_CoreComponentOptContainerDict)
-    return keys(getfield(ccocd, :dict))
-end
-
-# function Base.getproperty(ccoc::_CoreComponentOptContainer, field::Symbol)
-#     (field == :var) && (return getfield(ccoc, :variables))
-#     (field == :con) && (return getfield(ccoc, :constraints))
-#     (field == :exp) && (return getfield(ccoc, :expressions))
-#     (field == :obj) && (return getfield(ccoc, :objectives))
-
-#     throw(ArgumentError("Field $field not found in _CoreComponentOptContainer"))
-# end
-
-# function Base.setproperty!(ccoc::_CoreComponentOptContainer, field::Symbol, value)
-#     getfield(ccoc, :content)[field] = value
-# end
-
-# function Base.propertynames(ccoc::_CoreComponentOptContainer)
-#     return propertynames(getfield(ccoc, :content))
-# end
 
 @kwdef struct _CoreComponentOptResultContainer
     expressions = _CoreComponentOptContainerDict{Union{Float64, Vector{Float64}}}()
@@ -267,28 +272,30 @@ struct _CoreComponentResult <: _CoreComponent
     _ccorc::_CoreComponentOptResultContainer
 end
 
-function Base.getproperty(ccr::_CoreComponentResult, field::Symbol)
-    try
-        (field == :var) && (return getfield(ccr, :_ccorc).variables)
-        (field == :con) && (return getfield(ccr, :_ccorc).constraints)
-        (field == :exp) && (return getfield(ccr, :_ccorc).expressions)
-        (field == :obj) && (return getfield(ccr, :_ccorc).objectives)
-        (field == :res) && (return getfield(ccr, :_ccorc).results)
-        return getfield(ccr, :_info)[field]
-    catch e
-        @critical "Field not found in _CoreComponentResult" e
+@recompile_invalidations begin
+    function Base.getproperty(ccr::_CoreComponentResult, field::Symbol)
+        try
+            (field == :var) && (return getfield(ccr, :_ccorc).variables)
+            (field == :con) && (return getfield(ccr, :_ccorc).constraints)
+            (field == :exp) && (return getfield(ccr, :_ccorc).expressions)
+            (field == :obj) && (return getfield(ccr, :_ccorc).objectives)
+            (field == :res) && (return getfield(ccr, :_ccorc).results)
+            return getfield(ccr, :_info)[field]
+        catch e
+            @critical "Field not found in _CoreComponentResult" e
+        end
+    end
+
+    function Base.propertynames(ccr::_CoreComponentResult)
+        return (propertynames(ccr)..., :exp, :var, :con, :obj, keys(getfield(ccr, :_info))...)
     end
 end
 
-function Base.propertynames(ccr::_CoreComponentResult)
-    return (propertynames(ccr)..., :exp, :var, :con, :obj, keys(getfield(ccr, :_info))...)
-end
-
-_hasexp(cc::_CoreComponent, name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).expressions, :dict), name)
-_hasvar(cc::_CoreComponent, name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).variables, :dict), name)
-_hascon(cc::_CoreComponent, name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).constraints, :dict), name)
-_hasobj(cc::_CoreComponent, name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).objectives, :dict), name)
-_hasres(cc::_CoreComponent, name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).results, :dict), name)
+_hasexp(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).expressions, :dict), name)
+_hasvar(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).variables, :dict), name)
+_hascon(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).constraints, :dict), name)
+_hasobj(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).objectives, :dict), name)
+_hasres(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).results, :dict), name)
 
 mutable struct _Profiling
     time::Float64
@@ -405,11 +412,15 @@ function _IESoptData(toplevel_yaml::Dict)
     )
 end
 
-_iesopt(model::JuMP.Model) = model.ext[:iesopt]
-_iesopt_config(model::JuMP.Model) = _iesopt(model).input.config
+_iesopt(model::JuMP.Model) = model.ext[:iesopt]::_IESoptData
+_iesopt_config(model::JuMP.Model) = _iesopt(model).input.config::_Config
 _iesopt_debug(model::JuMP.Model) = _iesopt(model).debug     # TODO: as soon as debug is a "stack", only report the last entry in this function
-_iesopt_cache(model::JuMP.Model) = _iesopt(model).aux.cache
-_iesopt_model(model::JuMP.Model) = _iesopt(model).model
+_iesopt_cache(model::JuMP.Model) = _iesopt(model).aux.cache::Dict{Symbol, Any}
+_iesopt_model(model::JuMP.Model) = _iesopt(model).model::_IESoptModelData
+_iesopt_logger(model::JuMP.Model) = _iesopt(model).logger::Union{Logging.ConsoleLogger, LoggingExtras.TeeLogger}
+
+# TODO: change this, to return a UnitRange (which helps JuMP)
+get_T(model::JuMP.Model) = _iesopt(model).model.T::Vector{_ID}
 
 _has_addons(model::JuMP.Model) = !isempty(_iesopt(model).input.addons)
 
