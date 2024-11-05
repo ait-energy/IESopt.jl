@@ -59,7 +59,7 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     cost::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "0"}```
-    Fractional loss when transfering energy. This loss occurs "at the destination", which means that for a loss of 5%,
+    Fractional loss when transferring energy. This loss occurs "at the destination", which means that for a loss of 5%,
     set as `loss: 0.05`, and considering a `Snapshot` where the `Connection` has a flow value of `100`, it will
     "extract" `100` from `node_from` and "inject" `95` into `node_to`. Since the flow variable is given as power, this
     would, e.g., translate to consuming 200 units of energy at `node_from` and injecting 190 units at `node_to`, if the

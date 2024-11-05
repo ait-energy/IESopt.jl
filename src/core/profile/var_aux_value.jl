@@ -10,7 +10,7 @@ interprets this, based on the setting of `profile.mode`:
 2. **create**, **destroy**, or **ranged**: This models the creation or destruction of energy - used mainly to represent model
    boundaries, and energy that comes into the model or leaves the model's scope. It is however important that `create` should mostly be used feeding into a `Node` (`profile.node_from = nothing`) and
    `destroy` withdrawing from a `Node` (`profile.node_to = nothing`). If `lb` and `ub` are defined, `ranged` can be used
-   that allows a more detailled control over the `Profile`, specifying upper and lower bounds for every `Snapshot`. See
+   that allows a more detailed control over the `Profile`, specifying upper and lower bounds for every `Snapshot`. See
    `_profile_con_value_bounds!(profile::Profile)` for details on the specific bounds for each case.
 
 This variable is added to the `profile.exp.value`. Additionally, the energy (that `profile.exp.value` represents)

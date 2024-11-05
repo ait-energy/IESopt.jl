@@ -76,7 +76,7 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
     state_final::_OptionalScalarInput = nothing
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "0"}```
-    Per `Snapshot` percentage loss of state (loosing 1% should be set as `0.01`).
+    Per `Snapshot` percentage loss of state (losing 1% should be set as `0.01`).
     """
     state_percentage_loss::_OptionalScalarInput = nothing
 

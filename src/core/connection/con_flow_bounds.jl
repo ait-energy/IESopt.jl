@@ -3,13 +3,13 @@
 
 Add the constraint defining the bounds of the flow (related to `connection`) to the `model`.
 
-Specifiying `capacity` will lead to symmetric bounds (``\text{lb} := -capacity`` and ``\text{ub} := capacity``), while
-asymmetric bounds can be set by explicitly specifiying `lb` and `ub`.
+Specifying `capacity` will lead to symmetric bounds (``\text{lb} := -capacity`` and ``\text{ub} := capacity``), while
+asymmetric bounds can be set by explicitly specifying `lb` and `ub`.
 
 !!! note
     Usage of `etdf` is currently not fully tested, and not documented.
 
-Upper and lower bounds can be "infinite" (by not setting them) resulting in the repective constraints not being added,
+Upper and lower bounds can be "infinite" (by not setting them) resulting in the respective constraints not being added,
 and the flow variable therefore being (partially) unconstrained. Depending on the configuration the `flow` is calculated
 differently:
 - if `connection.etdf` is set, it is based on an ETDF sum flow,
