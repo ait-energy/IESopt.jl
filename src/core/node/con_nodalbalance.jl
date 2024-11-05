@@ -87,10 +87,19 @@ function _node_con_nodalbalance!(node::Node)
                 if node.nodal_balance === :enforce
                     # TODO: catch "weight = 1.0", since we can then turn off the multiplications!
                     e = JuMP.AffExpr(0.0)
-                    JuMP.add_to_expression!(e, node.var.state[t_other]::JuMP.VariableRef, (factor^_weight(model, t_other))::Float64)
-                    JuMP.add_to_expression!(e, node.exp.injection[injection_t_other]::JuMP.AffExpr, _weight(model, t_other)::Float64)
+                    JuMP.add_to_expression!(
+                        e,
+                        node.var.state[t_other]::JuMP.VariableRef,
+                        (factor^_weight(model, t_other))::Float64,
+                    )
+                    JuMP.add_to_expression!(
+                        e,
+                        node.exp.injection[injection_t_other]::JuMP.AffExpr,
+                        _weight(model, t_other)::Float64,
+                    )
                     JuMP.add_to_expression!(e, node.var.state[t]::JuMP.VariableRef, -1.0)
-                    node.con.nodalbalance[t] = @constraint(model, e == 0.0, base_name = _base_name(node, "nodalbalance", t))
+                    node.con.nodalbalance[t] =
+                        @constraint(model, e == 0.0, base_name = _base_name(node, "nodalbalance", t))
                     # node.con.nodalbalance[t] = @constraint(
                     #     model,
                     #     node.var.state[t] ==

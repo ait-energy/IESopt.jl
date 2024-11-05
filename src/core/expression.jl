@@ -1,5 +1,5 @@
 function _string_to_fevalexpr(@nospecialize(str::AbstractString))
-    buf = IOBuffer(sizehint=length(str))
+    buf = IOBuffer(; sizehint=length(str))
     it = eachsplit(str, r"(?<=[+\-*/ ()])|(?=[+\-*/ ()])")
 
     # Instead of interpolating the explicit things a user might access in a string directly into the returned
@@ -14,10 +14,12 @@ function _string_to_fevalexpr(@nospecialize(str::AbstractString))
     for elem in it
         if any(isletter(c) for c in elem)
             if !contains(elem, r"[:|@]")
-                e = JuliaSyntax.parsestmt(Expr, String(take!(buf)));
+                e = JuliaSyntax.parsestmt(Expr, String(take!(buf)))
 
                 if length(access_order) >= starting_access_index
-                    f = @RuntimeGeneratedFunction(:(function (__el::Vector{Union{Float64, String}}); return $e; end))
+                    f = @RuntimeGeneratedFunction(:(function (__el::Vector{Union{Float64, String}})
+                        return $e
+                    end))
                     push!(extracted_expressions, (name=elem, func=f, elements=access_order[starting_access_index:end]))
                     starting_access_index = length(access_order) + 1
                 else
@@ -34,10 +36,12 @@ function _string_to_fevalexpr(@nospecialize(str::AbstractString))
     end
 
     if isempty(extracted_expressions)
-        e = JuliaSyntax.parsestmt(Expr, String(take!(buf)));
+        e = JuliaSyntax.parsestmt(Expr, String(take!(buf)))
 
         if length(access_order) >= starting_access_index
-            f = @RuntimeGeneratedFunction(:(function (__el::Vector{Union{Float64, String}}); return $e; end))
+            f = @RuntimeGeneratedFunction(:(function (__el::Vector{Union{Float64, String}})
+                return $e
+            end))
             push!(extracted_expressions, (name="", func=f, elements=access_order[starting_access_index:end]))
         else
             value = convert(Float64, eval(e))
@@ -58,12 +62,8 @@ end
 
 function _parse_expression(@nospecialize(str::AbstractString), ::_ConversionExpressionType)
     lhs, rhs = split(str, " -> ")
-    return (
-        lhs = (lhs == "~") ? nothing : _string_to_fevalexpr(lhs),
-        rhs = _string_to_fevalexpr(rhs),
-    )::NamedTuple
+    return (lhs=(lhs == "~") ? nothing : _string_to_fevalexpr(lhs), rhs=_string_to_fevalexpr(rhs))::NamedTuple
 end
-
 
 """
     Expression
@@ -107,7 +107,7 @@ If the value of `my_exp` is a vector of `Float64`, the first call will succeed, 
 """
 @kwdef mutable struct Expression
     model::JuMP.Model
-    
+
     dirty::Bool = false
     temporal::Bool = false
     empty::Bool = false
@@ -115,8 +115,6 @@ If the value of `my_exp` is a vector of `Float64`, the first call will succeed, 
     value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Vector{JuMP.AffExpr}, Float64, Vector{Float64}} = nothing
     internal::Union{Nothing, NamedTuple} = nothing
 end
-
-
 
 """
 This constant defines a union type `OptionalScalarExpressionValue` which describes any scalar-valued value type that an
@@ -162,7 +160,8 @@ end
 
 _convert_to_expression(model::JuMP.Model, ::Nothing) = Expression(; model, empty=true)
 _convert_to_expression(model::JuMP.Model, data::Real) = Expression(; model, value=convert(Float64, data))
-_convert_to_expression(model::JuMP.Model, data::Vector{<:Real}) = Expression(; model, value=convert.(Float64, data), temporal=true)
+_convert_to_expression(model::JuMP.Model, data::Vector{<:Real}) =
+    Expression(; model, value=convert.(Float64, data), temporal=true)
 
 macro _default_expression(value)
     return esc(:(_convert_to_expression(model, $value)))
@@ -199,7 +198,7 @@ function _convert_to_conversion_expressions(model::JuMP.Model, @nospecialize(dat
         end
     end
 
-    return (in = expressions[:lhs], out = expressions[:rhs])
+    return (in=expressions[:lhs], out=expressions[:rhs])
 end
 
 function _make_temporal(e::Expression)
@@ -235,7 +234,7 @@ access(e::Expression) = e.value
 function access(e::Expression, t::_ID)
     if e.value isa Vector{JuMP.AffExpr}
         return (e.value::Vector{JuMP.AffExpr})[t]::JuMP.AffExpr
-    elseif  e.value isa Vector{Float64}
+    elseif e.value isa Vector{Float64}
         return (e.value::Vector{Float64})[t]::Float64
     else
         return e.value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Float64}
@@ -255,13 +254,10 @@ function _finalize(e::Expression)
         # TODO: cache this
         if contains(extract, "@")
             col, file = string.(split(extract, "@"))
-            push!(
-                extractions,
-                identity.(_getfromcsv(e.model, file, col))::Vector{Float64}
-            )
+            push!(extractions, identity.(_getfromcsv(e.model, file, col))::Vector{Float64})
             e.temporal = true
         else
-            dec, acc = split(extract, ":")       
+            dec, acc = split(extract, ":")
             # TODO: remove this
             @assert acc == "value"
             push!(extractions, get_component(e.model, dec).var.value)
@@ -269,10 +265,7 @@ function _finalize(e::Expression)
     end
 
     if e.temporal
-        e.value = [
-            e.internal.func([get_value_at(extract, t) for extract in extractions])
-            for t in get_T(e.model)
-        ]
+        e.value = [e.internal.func([get_value_at(extract, t) for extract in extractions]) for t in get_T(e.model)]
     else
         e.value = e.internal.func(extractions)
     end

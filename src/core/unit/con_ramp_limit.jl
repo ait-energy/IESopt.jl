@@ -33,7 +33,10 @@ function _unit_con_ramp_limit!(unit::Unit)
             model,
             [t = get_T(model)],
             out[t] - ((t == 1) ? out[t] : out[t - 1]) <=
-            unit.ramp_up_limit * _weight(model, t) * access(unit.unit_count, Float64) * access(unit.capacity, t, NonEmptyScalarExpressionValue),
+            unit.ramp_up_limit *
+            _weight(model, t) *
+            access(unit.unit_count, Float64) *
+            access(unit.capacity, t, NonEmptyScalarExpressionValue),
             base_name = _base_name(unit, "ramp_up_limit"),
             container = Array
         )
@@ -43,7 +46,10 @@ function _unit_con_ramp_limit!(unit::Unit)
             model,
             [t = get_T(model)],
             ((t == 1) ? out[t] : out[t - 1]) - out[t] <=
-            unit.ramp_down_limit * _weight(model, t) * access(unit.unit_count, Float64) * access(unit.capacity, t, NonEmptyScalarExpressionValue),
+            unit.ramp_down_limit *
+            _weight(model, t) *
+            access(unit.unit_count, Float64) *
+            access(unit.capacity, t, NonEmptyScalarExpressionValue),
             base_name = _base_name(unit, "ramp_down_limit"),
             container = Array
         )

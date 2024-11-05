@@ -10,7 +10,9 @@ include("parse.jl")
         info = _analyse(template)
 
         beautify(value::Any) = value
-        beautify(value::Vector) = isempty(value) ? "-" : (length(value) <= 4 ? join(value, ", ") : "$(value[1]), $(value[2]), ..., $(value[end])")
+        beautify(value::Vector) =
+            isempty(value) ? "-" :
+            (length(value) <= 4 ? join(value, ", ") : "$(value[1]), $(value[2]), ..., $(value[end])")
 
         str_show = ":: IESopt.Template ::"
 
@@ -47,7 +49,7 @@ function _analyse(template::CoreTemplate)
         "docs" => docs,
         "parameters" => get(template.yaml, "parameters", Dict{String, Any}()),
         "child types" => child_types,
-        "functions" => collect(keys(get(template.yaml, "functions", Dict{String, Any}())))
+        "functions" => collect(keys(get(template.yaml, "functions", Dict{String, Any}()))),
     )
 end
 

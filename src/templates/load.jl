@@ -16,7 +16,11 @@ end
 
 function _load_template(template::CoreTemplate)
     ((template._status[]::Symbol) == :empty) || return template
-    return _load_template(template.model, normpath(template.path, "$(template.name).iesopt.template.yaml"); read_file=true)
+    return _load_template(
+        template.model,
+        normpath(template.path, "$(template.name).iesopt.template.yaml");
+        read_file=true,
+    )
 end
 
 function _load_template_yaml!(template::CoreTemplate)
@@ -84,7 +88,7 @@ function _scan_all_templates(model::JuMP.Model)
 end
 
 function _require_template(model::JuMP.Model, name::String)
-    haskey(_iesopt(model).input.noncore[:templates], name) || @critical "`CoreTemplate` not found" name   
-    template = _iesopt(model).input.noncore[:templates][name] |> _load_template |>  _load_template_yaml!
+    haskey(_iesopt(model).input.noncore[:templates], name) || @critical "`CoreTemplate` not found" name
+    template = _iesopt(model).input.noncore[:templates][name] |> _load_template |> _load_template_yaml!
     return template::CoreTemplate
 end

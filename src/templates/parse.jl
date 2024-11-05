@@ -57,7 +57,8 @@ function _parse_noncore_component!(
     end
 
     if haskey(template.yaml, "functions")
-        @warn "It is highly recommended NOT to use `functions` in single component templates that just \"rename\" another template" template = template.name maxlog = 1
+        @warn "It is highly recommended NOT to use `functions` in single component templates that just \"rename\" another template" template =
+            template.name maxlog = 1
 
         # Write the final version of parameters into the Virtual.
         virtual = _iesopt(model).model.components[cname]

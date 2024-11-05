@@ -12,24 +12,22 @@ function _build_template_function_finalize(template::CoreTemplate)
 
     # Convert into a proper function.
     template.functions[:finalize] = @RuntimeGeneratedFunction(
-        :(
-            function (__virtual__::Virtual)
-                __template_name__ = $(template).name
-                __parameters__ = __virtual__._parameters
-                __model__ = __virtual__.model
-                this = __virtual__
+        :(function (__virtual__::Virtual)
+            __template_name__ = $(template).name
+            __parameters__ = __virtual__._parameters
+            __model__ = __virtual__.model
+            this = __virtual__
 
-                try
-                    $code_ex
-                catch e
-                    template = __template_name__
-                    component = __virtual__.name
-                    @error "Error while finalizing component" error = string(e) template component
-                    rethrow(e)
-                end
-                return nothing
+            try
+                $code_ex
+            catch e
+                template = __template_name__
+                component = __virtual__.name
+                @error "Error while finalizing component" error = string(e) template component
+                rethrow(e)
             end
-        )
+            return nothing
+        end)
     )
 
     return nothing

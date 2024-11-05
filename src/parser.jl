@@ -38,10 +38,7 @@ function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global
 
         # Parse potential global addons
         if haskey(_iesopt(model).input._tl_yaml, "addons")
-            merge!(
-                _iesopt(model).input.addons,
-                _parse_global_addons(model, _iesopt(model).input._tl_yaml["addons"])
-            )
+            merge!(_iesopt(model).input.addons, _parse_global_addons(model, _iesopt(model).input._tl_yaml["addons"]))
         end
 
         # Parse potential external CSV files defining components.
@@ -113,7 +110,10 @@ function _parse_global_specification!(model::JuMP.Model, @nospecialize(global_pa
         parameters = pop!(data, "parameters", Dict{String, Any}())
 
         if parameters isa String
-            parameters = YAML.load_file(normpath(model.ext[:_iesopt_wd]::String, parameters::String); dicttype=Dict{String, Any})::Dict{String, Any}
+            parameters = YAML.load_file(
+                normpath(model.ext[:_iesopt_wd]::String, parameters::String);
+                dicttype=Dict{String, Any},
+            )::Dict{String, Any}
         elseif parameters isa Dict
         else
             @critical "Unrecognized format for global parameters" type = typeof(parameters)
@@ -480,7 +480,7 @@ function _parse_components_csv!(
     model::JuMP.Model,
     @nospecialize(data::Dict{String, Any}),
     @nospecialize(description::Dict{String, Any});
-    @nospecialize(path::Union{String, Nothing}=nothing),
+    @nospecialize(path::Union{String, Nothing} = nothing),
 )
     !haskey(data, "load_components") && return
 

@@ -229,7 +229,7 @@ end
 
 function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=DataFrames.DataFrame, slice::Bool=true)
     paths = _iesopt_config(model).paths::_ConfigPaths
-    
+
     if endswith(filename, ".csv")
         path = path === :auto ? :files : path
         filepath = abspath(getfield(_iesopt_config(model).paths, path), filename)

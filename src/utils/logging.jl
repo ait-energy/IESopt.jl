@@ -14,7 +14,6 @@ Logging.shouldlog(filelogger::FileLogger, arg...) = true
 Logging.min_enabled_level(filelogger::FileLogger) = Logging.Info
 Logging.catch_exceptions(filelogger::FileLogger) = Logging.catch_exceptions(filelogger.logger)
 
-
 """
     save_close_filelogger(model::JuMP.Model)
 

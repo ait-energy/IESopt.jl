@@ -7,8 +7,10 @@
 # indicates the opposite...
 @recompile_invalidations begin
     Base.hash(@nospecialize(cc::_CoreComponent)) = hash(cc.name::String)
-    Base.:(==)(@nospecialize(cc1::_CoreComponent), @nospecialize(cc2::_CoreComponent)) = (cc1.name::String) == (cc2.name::String)
-    Base.isequal(@nospecialize(cc1::_CoreComponent), @nospecialize(cc2::_CoreComponent)) = isequal(cc1.name::String, cc2.name::String)
+    Base.:(==)(@nospecialize(cc1::_CoreComponent), @nospecialize(cc2::_CoreComponent)) =
+        (cc1.name::String) == (cc2.name::String)
+    Base.isequal(@nospecialize(cc1::_CoreComponent), @nospecialize(cc2::_CoreComponent)) =
+        isequal(cc1.name::String, cc2.name::String)
 end
 
 # TODO: replace with https://github.com/KristofferC/TimerOutputs.jl
@@ -291,10 +293,13 @@ end
     end
 end
 
-_hasexp(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).expressions, :dict), name)
+_hasexp(@nospecialize(cc::_CoreComponent), name::Symbol) =
+    haskey(getfield(getfield(cc, :_ccoc).expressions, :dict), name)
 _hasvar(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).variables, :dict), name)
-_hascon(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).constraints, :dict), name)
-_hasobj(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).objectives, :dict), name)
+_hascon(@nospecialize(cc::_CoreComponent), name::Symbol) =
+    haskey(getfield(getfield(cc, :_ccoc).constraints, :dict), name)
+_hasobj(@nospecialize(cc::_CoreComponent), name::Symbol) =
+    haskey(getfield(getfield(cc, :_ccoc).objectives, :dict), name)
 _hasres(@nospecialize(cc::_CoreComponent), name::Symbol) = haskey(getfield(getfield(cc, :_ccoc).results, :dict), name)
 
 mutable struct _Profiling

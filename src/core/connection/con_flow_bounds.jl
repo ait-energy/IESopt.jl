@@ -55,22 +55,38 @@ function _connection_con_flow_bounds!(connection::Connection)
 
             if !_isempty(connection.lb)
                 b = access(connection.lb, t, NonEmptyScalarExpressionValue)::NonEmptyScalarExpressionValue
-                ccflb[t] = @constraint(model::JuMP.Model, v >= b, base_name = _base_name(connection, "flow_lb", t))::JuMP.ConstraintRef
+                ccflb[t] = @constraint(
+                    model::JuMP.Model,
+                    v >= b,
+                    base_name = _base_name(connection, "flow_lb", t)
+                )::JuMP.ConstraintRef
             end
 
             if !_isempty(connection.ub)
                 b = access(connection.ub, t, NonEmptyScalarExpressionValue)::NonEmptyScalarExpressionValue
-                ccfub[t] = @constraint(model::JuMP.Model, v <= b, base_name = _base_name(connection, "flow_ub", t))::JuMP.ConstraintRef
+                ccfub[t] = @constraint(
+                    model::JuMP.Model,
+                    v <= b,
+                    base_name = _base_name(connection, "flow_ub", t)
+                )::JuMP.ConstraintRef
             end
         else
             c = access(connection.capacity, t, NonEmptyScalarExpressionValue)::NonEmptyScalarExpressionValue
             v = cvf[t]::JuMP.VariableRef
 
             e = JuMP.@expression(model::JuMP.Model, c + v)
-            ccflb[t] = @constraint(model::JuMP.Model, e::JuMP.AffExpr >= 0.0, base_name = _base_name(connection, "flow_lb", t))::JuMP.ConstraintRef
+            ccflb[t] = @constraint(
+                model::JuMP.Model,
+                e::JuMP.AffExpr >= 0.0,
+                base_name = _base_name(connection, "flow_lb", t)
+            )::JuMP.ConstraintRef
 
             JuMP.add_to_expression!(e, v, -2.0)
-            ccfub[t] = @constraint(model::JuMP.Model, e::JuMP.AffExpr >= 0.0, base_name = _base_name(connection, "flow_ub", t))::JuMP.ConstraintRef
+            ccfub[t] = @constraint(
+                model::JuMP.Model,
+                e::JuMP.AffExpr >= 0.0,
+                base_name = _base_name(connection, "flow_ub", t)
+            )::JuMP.ConstraintRef
         end
 
         # # Calculate proper lower and upper bounds of the flow.

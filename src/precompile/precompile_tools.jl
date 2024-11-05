@@ -8,7 +8,7 @@
             optimize!(model)
 
             generate!(normpath(dir, "08_basic_investment.iesopt.yaml"); verbosity=true)
-            
+
             model = generate!(normpath(dir, "09_csv_only.iesopt.yaml"); verbosity=false)
             optimize!(model)
 

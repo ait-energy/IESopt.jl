@@ -1,4 +1,4 @@
-function _get_parameter_safe(p::String, parameters::Dict{String, Any}, default::Any = nothing)
+function _get_parameter_safe(p::String, parameters::Dict{String, Any}, default::Any=nothing)
     haskey(parameters, p) || @critical "Trying to access (`get`) undefined parameter in `CoreTemplate`" parameter = p
     return isnothing(default) ? parameters[p] : something(parameters[p], default)
 end
@@ -44,7 +44,7 @@ _get_template_name(filename::String) = string(rsplit(basename(filename), "."; li
 
 _get_type(template::CoreTemplate) = template.type[]::Symbol
 
-function _set_type!(template::CoreTemplate, t::Symbol) 
+function _set_type!(template::CoreTemplate, t::Symbol)
     template.type[] = t
     return nothing
 end

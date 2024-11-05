@@ -47,12 +47,8 @@ function _connection_var_flow!(connection::Connection)
 
         # Construct the flow variable.
         if !_has_representative_snapshots(model)
-            connection.var.flow = @variable(
-                model,
-                [t = get_T(model)],
-                base_name = _base_name(connection, "flow"),
-                container = Array
-            )
+            connection.var.flow =
+                @variable(model, [t = get_T(model)], base_name = _base_name(connection, "flow"), container = Array)
         else
             # Create all representatives.
             _repr = Dict(
@@ -66,7 +62,6 @@ function _connection_var_flow!(connection::Connection)
                 _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
-
 
         # Connect to correct nodes.
         cvf = connection.var.flow::Vector{JuMP.VariableRef}

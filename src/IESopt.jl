@@ -110,7 +110,8 @@ function _build_model!(model::JuMP.Model)
     # For instance, Decisions with a default build priority of 1000 are built before all other components
     # with a default build priority of 0.
     # Components with a negative build priority are not built at all.
-    corder = sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)::Vector{<:_CoreComponent}
+    corder =
+        sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)::Vector{<:_CoreComponent}
 
     @info "Start creating JuMP model"
     for f in build_order
@@ -265,7 +266,7 @@ config file).
 
 Keyword arguments are passed to the [`generate!`](@ref) function.
 """
-function run(filename::String; @nospecialize(verbosity=nothing), @nospecialize(kwargs...))
+function run(filename::String; @nospecialize(verbosity = nothing), @nospecialize(kwargs...))
     model = generate!(filename; verbosity=verbosity, kwargs...)
     if haskey(model.ext, :_iesopt_failed_generate)
         @error "Errors in model generation; skipping optimization"
@@ -743,7 +744,8 @@ function get_component(model::JuMP.Model, @nospecialize(component_name::Abstract
         trigger = length(st) > 0 ? st[1] : nothing
         origin = length(st) > 1 ? st[2] : nothing
         inside = length(st) > 2 ? st[3] : nothing
-        @critical "Trying to access unknown component" component_name = cn trigger origin inside debug = _iesopt_debug(model)
+        @critical "Trying to access unknown component" component_name = cn trigger origin inside debug =
+            _iesopt_debug(model)
     end
 
     return components[cn]::_CoreComponent

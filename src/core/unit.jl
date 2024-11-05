@@ -219,7 +219,8 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
 
     # [Internal] =======================================================================================================
     conversion_dict::Dict{Symbol, Dict{Carrier, NonEmptyNumericalExpressionValue}} = Dict(:in => Dict(), :out => Dict())
-    conversion_at_min_dict::Dict{Symbol, Dict{Carrier, NonEmptyNumericalExpressionValue}} = Dict(:in => Dict(), :out => Dict())
+    conversion_at_min_dict::Dict{Symbol, Dict{Carrier, NonEmptyNumericalExpressionValue}} =
+        Dict(:in => Dict(), :out => Dict())
 
     capacity_carrier::NamedTuple{(:inout, :carrier), Tuple{Symbol, Carrier}}
     marginal_cost_carrier::Union{Nothing, NamedTuple{(:inout, :carrier), Tuple{Symbol, Carrier}}} = nothing
@@ -462,7 +463,7 @@ function _convert_unit_conversion_dict!(carriers::Dict{String, Carrier}, unit::U
     for side in [:in, :out]
         terms = getproperty(parsed, side)
         isempty(terms) && continue
-        
+
         for (carrier_str, expr) in terms
             unit.conversion_dict[side][carriers[carrier_str]] = expr.value::NonEmptyNumericalExpressionValue
         end
@@ -475,7 +476,7 @@ function _convert_unit_conversion_dict!(carriers::Dict{String, Carrier}, unit::U
     for side in [:in, :out]
         terms = getproperty(parsed, side)
         isempty(terms) && continue
-        
+
         for (carrier_str, expr) in terms
             unit.conversion_at_min_dict[side][carriers[carrier_str]] = expr.value::NonEmptyNumericalExpressionValue
         end
@@ -503,7 +504,7 @@ function _normalize_conversion_expressions!(unit::Unit)
         if any(norm .== 0)
             @critical "Using a zero (0.0) efficiency in `conversion_at_min` is not allowed" unit = unit.name
         end
-    
+
         for dir in [:in, :out]
             for (carrier, val) in unit.conversion_at_min_dict[dir]
                 unit.conversion_at_min_dict[dir][carrier] = val ./ norm
@@ -532,7 +533,12 @@ function _unit_capacity_limits(unit::Unit)
         if !_isfixed(unit.capacity)
             @critical "Endogenuous <capacity> and <availability> are currently not supported" unit = unit.name
         end
-        max_conversion = min.(1.0, access(unit.availability, NonEmptyNumericalExpressionValue) ./ access(unit.capacity, NonEmptyNumericalExpressionValue))
+        max_conversion =
+            min.(
+                1.0,
+                access(unit.availability, NonEmptyNumericalExpressionValue) ./
+                access(unit.capacity, NonEmptyNumericalExpressionValue),
+            )
     else
         max_conversion = 1.0
     end
@@ -551,12 +557,15 @@ function _unit_capacity_limits(unit::Unit)
         return Dict{Symbol, Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}}}(
             :min => 0.0,
             :online => online_conversion::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
-            :max => max_conversion::NonEmptyNumericalExpressionValue
+            :max => max_conversion::NonEmptyNumericalExpressionValue,
         )
     end
 
     return Dict{Symbol, Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}}}(
-        :min => unit.min_conversion .* (unit.adapt_min_to_availability ? online_conversion : unit.var.ison)::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
+        :min =>
+            unit.min_conversion .* (
+                unit.adapt_min_to_availability ? online_conversion : unit.var.ison
+            )::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
         :online => online_conversion::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
         :max => max_conversion::NonEmptyNumericalExpressionValue,
     )

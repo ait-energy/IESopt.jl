@@ -30,12 +30,8 @@ function _profile_var_aux_value!(profile::Profile)
     else
         # Create the variable.
         if !_has_representative_snapshots(model)
-            profile.var.aux_value = @variable(
-                model,
-                [t = get_T(model)],
-                base_name = _base_name(profile, "aux_value"),
-                container = Array
-            )
+            profile.var.aux_value =
+                @variable(model, [t = get_T(model)], base_name = _base_name(profile, "aux_value"), container = Array)
         else
             # Create all representatives.
             _repr = Dict(

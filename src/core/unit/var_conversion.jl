@@ -77,7 +77,9 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict, incremental_eff
 
         for carrier in keys(unit.conversion_dict[:in])
             _total(unit, :in, carrier.name)[t] = (
-                _get(unit.conversion_at_min_dict[:in][carrier], t) * limits[:min][t] * access(unit.capacity, t, NonEmptyScalarExpressionValue) +
+                _get(unit.conversion_at_min_dict[:in][carrier], t) *
+                limits[:min][t] *
+                access(unit.capacity, t, NonEmptyScalarExpressionValue) +
                 _get(incremental_efficiencies[:in][carrier], t) * unit.var.conversion[t]
             )
             JuMP.add_to_expression!(
@@ -89,7 +91,9 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict, incremental_eff
 
         for carrier in keys(unit.conversion_dict[:out])
             _total(unit, :out, carrier.name)[t] = (
-                _get(unit.conversion_at_min_dict[:out][carrier], t) * limits[:min][t] * access(unit.capacity, t, NonEmptyScalarExpressionValue) +
+                _get(unit.conversion_at_min_dict[:out][carrier], t) *
+                limits[:min][t] *
+                access(unit.capacity, t, NonEmptyScalarExpressionValue) +
                 _get(incremental_efficiencies[:out][carrier], t) * unit.var.conversion[t]
             )
             JuMP.add_to_expression!(
@@ -137,7 +141,8 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict)
 
     _snapshots = _iesopt(model).model.snapshots
     _T = (
-        _has_representative_snapshots(model) ? [t for t in get_T(model) if _snapshots[t].is_representative] : get_T(model)
+        _has_representative_snapshots(model) ? [t for t in get_T(model) if _snapshots[t].is_representative] :
+        get_T(model)
     )::Vector{_ID}
 
     for (carrier, mult) in unit.conversion_dict[:in]

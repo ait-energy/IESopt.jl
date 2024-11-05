@@ -26,7 +26,11 @@ function _profile_obj_cost!(profile::Profile)
     # todo: furthermore, this always calls VariableRef * Float, which is inefficient, and could be done in add_to_expression
     profile.obj.cost = JuMP.AffExpr(0.0)
     for t in get_T(model)
-        JuMP.add_to_expression!(profile.obj.cost, profile.exp.value[t], _weight(model, t) * access(profile.cost, t, Float64))
+        JuMP.add_to_expression!(
+            profile.obj.cost,
+            profile.exp.value[t],
+            _weight(model, t) * access(profile.cost, t, Float64),
+        )
     end
 
     push!(_iesopt(model).model.objectives["total_cost"].terms, profile.obj.cost)
