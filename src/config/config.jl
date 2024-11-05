@@ -5,6 +5,7 @@ include("results.jl")
 include("optimization.jl")
 
 struct _Config
+    version::Dict{String, String}
     names::_ConfigNames
 
     optimization::_ConfigOptimization
@@ -21,6 +22,18 @@ end
 
 function _Config(model::JuMP.Model)
     config = _iesopt(model).input._tl_yaml["config"]
+
+    current_version_core = string(pkgversion(@__MODULE__))::String
+    if !haskey(config, "version")
+        @warn "Missing `version` specification in the configuration file - consider adding it now, see: https://ait-energy.github.io/iesopt/pages/manual/yaml/top_level.html#version"
+        config["version"] = Dict{String, String}("core" => current_version_core)
+    end
+
+    version_core = pop!(config["version"], "core", current_version_core)::String
+    if version_core != current_version_core
+        @error "The `version.core` (v$(version_core)) entry in the configuration file is different from the current version of `IESopt.jl` (v$(current_version_core)), which might lead to unexpected behavior or errors"
+    end
+    config["version"] = Dict{String, String}(string(k) => string(v) for (k, v) in config["version"])
 
     model_path = model.ext[:_iesopt_wd]
     verbosity = model.ext[:_iesopt_verbosity]
@@ -43,6 +56,7 @@ function _Config(model::JuMP.Model)
 
     verbosity = isnothing(verbosity) ? get(config, "verbosity", true) : verbosity
     return _Config(
+        config["version"],
         names,
         _ConfigOptimization(get(config, "optimization", Dict{String, Any}())),
         _ConfigFiles(get(config, "files", Dict{String, Any}()), paths),

@@ -434,9 +434,40 @@ Retrieve the vector `T` from the IESopt model.
 
 # Returns
 - `Vector{_ID}`: The vector `T`.
-
 """
 get_T(model::JuMP.Model) = _iesopt(model).model.T::Vector{_ID}  # TODO: change this, to return a UnitRange (which helps JuMP)
+
+"""
+    get_version()
+
+Get the current version of IESopt.jl.
+
+# Returns
+- `String`: The current version of IESopt.jl.
+"""
+get_version() = string(pkgversion(@__MODULE__))::String
+
+"""
+    get_version(model::JuMP.Model, entry::String)
+
+Get the version of a specific entry in the configuration file. Possible entries are `core`, `python`, or any that a user
+manually added to the configuration file.
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model.
+- `entry::String`: The version entry to retrieve.
+
+# Returns
+- `String`: The version of the specified entry.
+"""
+function get_version(model::JuMP.Model, entry::String)
+    if !haskey(_iesopt_config(model).version, entry)
+        @warn "Missing version entry in config" entry
+        return "missing"
+    end
+
+    return _iesopt_config(model).version[entry]::String
+end
 
 _has_addons(model::JuMP.Model) = !isempty(_iesopt(model).input.addons)
 
