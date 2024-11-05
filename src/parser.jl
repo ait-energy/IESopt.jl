@@ -374,7 +374,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             # Convert strings that contain an `_Expression`.
 
             # The capacity is mandatory.
-            capacity_str = pop!(prop, "capacity")
+            capacity_str = pop!(prop, "capacity")::String
             if !(capacity_str isa AbstractString) || (!occursin("in:", capacity_str) && !occursin("out:", capacity_str))
                 @critical "`capacity` must be specified with either `out:carrier` or `in:carrier`" unit = name
             end
@@ -384,7 +384,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
 
             # The marginal cost not.
             if haskey(prop, "marginal_cost")
-                marginal_cost_str = pop!(prop, "marginal_cost")
+                marginal_cost_str = pop!(prop, "marginal_cost")::String
                 if !occursin("in:", marginal_cost_str) && !occursin("out:", marginal_cost_str)
                     @critical "`marginal_cost` must be specified with either `out:carrier` or `in:carrier`" unit = name
                 end
