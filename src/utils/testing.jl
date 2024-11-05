@@ -20,6 +20,7 @@ end
         @suppress optimize!(m)
         @test JuMP.objective_value(m) ≈ obj atol = 0.1
         @suppress save_close_filelogger(m)
+        return m
     end
     
     function run(cfg_name = nothing; verbosity=false, kwargs...)
