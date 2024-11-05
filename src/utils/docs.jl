@@ -55,16 +55,18 @@ function _docs_docstr_to_admonition(f::Function)
     header = """
     !!! tip "How to?"
         Access this $(obj_longtype) by using:
+
         ```julia
         # Julia
         get_component(model, "your_$(obj_cc)").$(obj_type).$(obj_name)
         ```
+        
         ```python
         # Python
         model.get_component("your_$(obj_cc)").$(obj_type).$(obj_name)
         ```
 
-        You can find the full implementation and all details here: [`IESopt.jl`](https://github.com/$(f_path)).
+        You can find the full implementation and all details here: [`$(obj_cc)/$(obj_type)_$(obj_name) @ IESopt.jl`](https://github.com/$(f_path)).
     """
 
     docstr = string(Base.Docs.doc(f))
