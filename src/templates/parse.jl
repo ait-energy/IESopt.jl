@@ -222,7 +222,7 @@ function _parse_container!(
     end
 
     # Construct the parsed container with all parameter replacements.
-    replacements = Regex(join(["<$k>" for k in keys(parameters)]::String, "|"))
+    replacements = Regex(join(["<$k>" for k in keys(parameters)], "|")::String)
     _new_components_str = replace(
         replace(YAML.write(template.yaml["components"]), replacements => p -> parameters[p[2:(end - 1)]]),
         "\"" => "",  # this is necessary to prevent `Number`s being enclosed with "", ending up as `String`
