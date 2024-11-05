@@ -9,12 +9,12 @@ This constructs the constraints
     & \sum_{t' = t}^{t + \text{min\_on\_time}} ison_{t'} >= \text{min\_on\_time} \cdot (ison_t - ison_{t-1}) \qquad \forall t \in T \\
     & \sum_{t' = t}^{t + \text{min\_off\_time}} (1 - ison_{t'}) >= \text{min\_off\_time} \cdot (ison_{t-1} - ison_t) \qquad \forall t \in T
 \end{align}
+```
 
 respecting `on_time_before` and `off_time_before`, and `is_on_before`. See the code for more details.
 
 !!! info "Aggregated units"
     This is currently not fully adapted to account for `Unit`s with `unit_count > 1`.
-```
 """
 function _unit_con_min_onoff_time!(unit::Unit)
     if unit.unit_commitment === :off
