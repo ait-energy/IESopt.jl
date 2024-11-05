@@ -215,7 +215,7 @@ function _after_construct_variables!(profile::Profile)
         if (profile.mode === :fixed) && _iesopt_config(model).parametric
             # Create all representatives.
             _repr = Dict(
-                t => @variable(model, base_name = _base_name(profile, "aux_value[$(t)]")) for
+                t => @variable(model, base_name = make_base_name(profile, "aux_value[$(t)]")) for
                 t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
             )
             # Create all variables, either as themselves or their representative.

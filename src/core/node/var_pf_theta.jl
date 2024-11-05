@@ -25,7 +25,7 @@ function _node_var_pf_theta!(node::Node)
             node.var.pf_theta = zeros(length(get_T(model)))
         else
             node.var.pf_theta =
-                @variable(model, [t = get_T(model)], base_name = _base_name(node, "pf_theta"), container = Array)
+                @variable(model, [t = get_T(model)], base_name = make_base_name(node, "pf_theta"), container = Array)
         end
     end
 end

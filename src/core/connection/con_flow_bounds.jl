@@ -58,7 +58,7 @@ function _connection_con_flow_bounds!(connection::Connection)
                 ccflb[t] = @constraint(
                     model::JuMP.Model,
                     v >= b,
-                    base_name = _base_name(connection, "flow_lb", t)
+                    base_name = make_base_name(connection, "flow_lb", t)
                 )::JuMP.ConstraintRef
             end
 
@@ -67,7 +67,7 @@ function _connection_con_flow_bounds!(connection::Connection)
                 ccfub[t] = @constraint(
                     model::JuMP.Model,
                     v <= b,
-                    base_name = _base_name(connection, "flow_ub", t)
+                    base_name = make_base_name(connection, "flow_ub", t)
                 )::JuMP.ConstraintRef
             end
         else
@@ -78,14 +78,14 @@ function _connection_con_flow_bounds!(connection::Connection)
             ccflb[t] = @constraint(
                 model::JuMP.Model,
                 e::JuMP.AffExpr >= 0.0,
-                base_name = _base_name(connection, "flow_lb", t)
+                base_name = make_base_name(connection, "flow_lb", t)
             )::JuMP.ConstraintRef
 
             JuMP.add_to_expression!(e, v, -2.0)
             ccfub[t] = @constraint(
                 model::JuMP.Model,
                 e::JuMP.AffExpr >= 0.0,
-                base_name = _base_name(connection, "flow_ub", t)
+                base_name = make_base_name(connection, "flow_ub", t)
             )::JuMP.ConstraintRef
         end
 
@@ -103,11 +103,11 @@ function _connection_con_flow_bounds!(connection::Connection)
 
         # if !isnothing(lb)
         #     connection.con.flow_lb[t] =
-        #         @constraint(model, constrained_flow[t] >= lb, base_name = _base_name(connection, "flow_lb", t))
+        #         @constraint(model, constrained_flow[t] >= lb, base_name = make_base_name(connection, "flow_lb", t))
         # end
         # if !isnothing(ub)
         #     connection.con.flow_ub[t] =
-        #         @constraint(model, constrained_flow[t] <= ub, base_name = _base_name(connection, "flow_ub", t))
+        #         @constraint(model, constrained_flow[t] <= ub, base_name = make_base_name(connection, "flow_ub", t))
         # end
     end
 

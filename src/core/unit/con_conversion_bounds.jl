@@ -67,7 +67,7 @@ function _unit_con_conversion_bounds!(unit::Unit)
             # NOTE: this is `min[t] * capacity[t] + conversion[t] <= online[t] * capacity[t]`
             # equal to: conversion[t] <= capacity[t] * (online[t] - min[t])
             uvc[t] <= access(uc, t, NonEmptyScalarExpressionValue) * (_get(limits[:online], t) - _get(limits[:min], t)),
-            base_name = _base_name(unit, "conversion_ub"),
+            base_name = make_base_name(unit, "conversion_ub"),
             container = Array
         )
     else
@@ -78,7 +78,7 @@ function _unit_con_conversion_bounds!(unit::Unit)
                 model,
                 _get(limits[:min], t) * access(uc, t, NonEmptyScalarExpressionValue) + uvc[t] <=
                 _get(limits[:online], t) * access(uc, t, NonEmptyScalarExpressionValue),
-                base_name = _base_name(unit, "conversion_ub[t]")
+                base_name = make_base_name(unit, "conversion_ub[t]")
             ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
         )
 

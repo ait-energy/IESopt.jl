@@ -30,12 +30,16 @@ function _profile_var_aux_value!(profile::Profile)
     else
         # Create the variable.
         if !_has_representative_snapshots(model)
-            profile.var.aux_value =
-                @variable(model, [t = get_T(model)], base_name = _base_name(profile, "aux_value"), container = Array)
+            profile.var.aux_value = @variable(
+                model,
+                [t = get_T(model)],
+                base_name = make_base_name(profile, "aux_value"),
+                container = Array
+            )
         else
             # Create all representatives.
             _repr = Dict(
-                t => @variable(model, base_name = _base_name(profile, "aux_value[$(t)]")) for
+                t => @variable(model, base_name = make_base_name(profile, "aux_value[$(t)]")) for
                 t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
             )
 

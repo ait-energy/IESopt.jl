@@ -31,7 +31,7 @@ function _unit_con_ramp!(unit::Unit)
             model,
             [t = get_T(model)],
             unit.var.ramp_up[t] >= out[t] - ((t == 1) ? out[t] : out[t - 1]),
-            base_name = _base_name(unit, "ramp_up"),
+            base_name = make_base_name(unit, "ramp_up"),
             container = Array
         )
     end
@@ -40,7 +40,7 @@ function _unit_con_ramp!(unit::Unit)
             model,
             [t = get_T(model)],
             unit.var.ramp_down[t] >= ((t == 1) ? out[t] : out[t - 1]) - out[t],
-            base_name = _base_name(unit, "ramp_down"),
+            base_name = make_base_name(unit, "ramp_down"),
             container = Array
         )
     end

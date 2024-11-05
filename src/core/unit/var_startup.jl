@@ -23,13 +23,13 @@ function _unit_var_startup!(unit::Unit)
             # This will automatically be binary/integer valued as soon as `var_ison` is.
             # binary=(unit.unit_commitment === :binary), integer=(unit.unit_commitment === :integer),
             lower_bound = 0.0,
-            base_name = _base_name(unit, "startup"),
+            base_name = make_base_name(unit, "startup"),
             container = Array
         )
     else
         # Create all representatives.
         _repr = Dict(
-            t => @variable(model, lower_bound = 0.0, base_name = _base_name(unit, "startup[$(t)]")) for
+            t => @variable(model, lower_bound = 0.0, base_name = make_base_name(unit, "startup[$(t)]")) for
             t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
         )
 

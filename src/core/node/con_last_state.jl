@@ -61,7 +61,7 @@ function _node_con_last_state!(node::Node)
         node.con.last_state_lb = @constraint(
             model,
             lb <= node.var.state[t] * (factor^_weight(model, t)) + node.exp.injection[injection_t] * _weight(model, t),
-            base_name = _base_name(node, "last_state_lb"),
+            base_name = make_base_name(node, "last_state_lb"),
             container = Array
         )
     end
@@ -70,7 +70,7 @@ function _node_con_last_state!(node::Node)
         node.con.last_state_ub = @constraint(
             model,
             ub >= node.var.state[t] * (factor^_weight(model, t)) + node.exp.injection[injection_t] * _weight(model, t),
-            base_name = _base_name(node, "last_state_ub")
+            base_name = make_base_name(node, "last_state_ub")
         )
     end
 

@@ -13,11 +13,11 @@ function _decision_con_sos2!(decision::Decision)
     decision.con.sos_set = @constraint(
         model,
         decision.var.sos in JuMP.SOS2(),      # todo: calculate proper weights for induced order
-        base_name = _base_name(decision, "sos_set")
+        base_name = make_base_name(decision, "sos_set")
     )
 
     decision.con.sos2 =
-        @constraint(model, sum(v for v in decision.var.sos) == 1.0, base_name = _base_name(decision, "sos2"))   # todo: modify this based on fixed
+        @constraint(model, sum(v for v in decision.var.sos) == 1.0, base_name = make_base_name(decision, "sos2"))   # todo: modify this based on fixed
 
     return nothing
 end

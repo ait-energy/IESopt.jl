@@ -67,7 +67,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
             if T_min_on[t].force
                 push!(
                     unit.con.min_on_time,
-                    @constraint(model, unit.var.ison[t] == 1, base_name = _base_name(unit, "min_on_time", t))
+                    @constraint(model, unit.var.ison[t] == 1, base_name = make_base_name(unit, "min_on_time", t))
                 )
             else
                 prev = (t == 1) ? Int64(unit.is_on_before) : unit.var.ison[t - 1]
@@ -77,7 +77,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
                         model,
                         sum(unit.var.ison[_t] for _t in t:(T_min_on[t].t_end)) >=
                         T_min_on[t].max_dur * (unit.var.ison[t] - prev),
-                        base_name = _base_name(unit, "min_on_time", t)
+                        base_name = make_base_name(unit, "min_on_time", t)
                     )
                 )
             end
@@ -124,7 +124,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
             if T_min_off[t].force
                 push!(
                     unit.con.min_off_time,
-                    @constraint(model, unit.var.ison[t] == 0, base_name = _base_name(unit, "min_off_time", t))
+                    @constraint(model, unit.var.ison[t] == 0, base_name = make_base_name(unit, "min_off_time", t))
                 )
             else
                 prev = (t == 1) ? Int64(unit.is_on_before) : unit.var.ison[t - 1]
@@ -134,7 +134,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
                         model,
                         sum((1 - unit.var.ison[_t]) for _t in t:(T_min_off[t].t_end)) >=
                         T_min_off[t].max_dur * (prev - unit.var.ison[t]),
-                        base_name = _base_name(unit, "min_off_time", t)
+                        base_name = make_base_name(unit, "min_off_time", t)
                     )
                 )
             end

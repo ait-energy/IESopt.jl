@@ -20,7 +20,7 @@ function _unit_var_ramp!(unit::Unit)
             model,
             [t = get_T(model)],
             lower_bound = 0,
-            base_name = _base_name(unit, "ramp_up"),
+            base_name = make_base_name(unit, "ramp_up"),
             container = Array
         )
     end
@@ -29,7 +29,7 @@ function _unit_var_ramp!(unit::Unit)
             model,
             [t = get_T(model)],
             lower_bound = 0,
-            base_name = _base_name(unit, "ramp_down"),
+            base_name = make_base_name(unit, "ramp_down"),
             container = Array
         )
     end

@@ -14,7 +14,7 @@ function _unit_con_ison!(unit::Unit)
         model,
         [t = get_T(model)],
         unit.var.ison[t] <= access(unit.unit_count, NonEmptyScalarExpressionValue),
-        base_name = _base_name(unit, "ison_ub"),
+        base_name = make_base_name(unit, "ison_ub"),
         container = Array
     )
 

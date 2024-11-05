@@ -22,7 +22,7 @@ function _unit_var_ison!(unit::Unit)
             integer = (unit.unit_commitment === :integer),
             lower_bound = 0,
             upper_bound = access(unit.unit_count, Number),
-            base_name = _base_name(unit, "ison"),
+            base_name = make_base_name(unit, "ison"),
             container = Array
         )
     else
@@ -32,7 +32,7 @@ function _unit_var_ison!(unit::Unit)
             binary = (unit.unit_commitment === :binary),
             integer = (unit.unit_commitment === :integer),
             lower_bound = 0,
-            base_name = _base_name(unit, "ison"),
+            base_name = make_base_name(unit, "ison"),
             container = Array
         )
     end

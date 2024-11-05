@@ -37,7 +37,7 @@ function _unit_con_ramp_limit!(unit::Unit)
             _weight(model, t) *
             access(unit.unit_count, Float64) *
             access(unit.capacity, t, NonEmptyScalarExpressionValue),
-            base_name = _base_name(unit, "ramp_up_limit"),
+            base_name = make_base_name(unit, "ramp_up_limit"),
             container = Array
         )
     end
@@ -50,7 +50,7 @@ function _unit_con_ramp_limit!(unit::Unit)
             _weight(model, t) *
             access(unit.unit_count, Float64) *
             access(unit.capacity, t, NonEmptyScalarExpressionValue),
-            base_name = _base_name(unit, "ramp_down_limit"),
+            base_name = make_base_name(unit, "ramp_down_limit"),
             container = Array
         )
     end

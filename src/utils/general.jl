@@ -426,12 +426,61 @@ function _unknown_to_string(model::JuMP.Model, sym::Symbol)::Union{Symbol, Strin
     return string(sym)
 end
 
-function _base_name(@nospecialize(comp::_CoreComponent), str::String)
+"""
+    make_base_name(comp::_CoreComponent, str::String)
+
+Create a `JuMP` object (e.g., a variable) for a given component based on the component's name and a user-defined string.
+
+# Arguments
+- `comp`: The core component for which to create the base name.
+- `str`: The user-defined string to append to the component's name.
+
+# Returns
+- A string containing the base name for the object.
+
+# Example
+```julia
+JuMP.@constraint(
+    model,
+    [t = get_T(model)],
+    profile.exp.value[t] <= 1,
+    base_name = make_base_name(profile, "con_custom"),
+    container = Array,
+)
+```
+"""
+function make_base_name(@nospecialize(comp::_CoreComponent), str::String)
     !JuMP.set_string_names_on_creation(comp.model) && return ""
     return "$(comp.name).$str"
 end
 
-function _base_name(@nospecialize(comp::_CoreComponent), str::String, t::_ID)
+"""
+    make_base_name(comp::_CoreComponent, str::String, t::_ID)
+
+Create a `JuMP` object (e.g., a variable) for a given component based on the component's name, a user-defined string,
+and a snapshot index.
+
+# Arguments
+- `comp`: The core component for which to create the base name.
+- `str`: The user-defined string to append to the component's name.
+- `t`: The snapshot index.
+
+# Returns
+- A string containing the base name for the object.
+
+# Example
+```julia
+for t in 4:7
+    JuMP.@constraint(
+        model,
+        profile.exp.value[t] <= profile.exp.value[t - 1],
+        base_name = make_base_name(profile, "con_custom", t),
+        container = Array,
+    )
+end
+```
+"""
+function make_base_name(@nospecialize(comp::_CoreComponent), str::String, t::_ID)
     !JuMP.set_string_names_on_creation(comp.model) && return ""
     return "$(comp.name).$str[$t]"
 end

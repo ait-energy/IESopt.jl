@@ -25,7 +25,7 @@ function _node_con_state_bounds!(node::Node)
             model,
             [t = get_T(model)],
             node.var.state[t] >= access(node.state_lb, t),
-            base_name = _base_name(node, "state_lb"),
+            base_name = make_base_name(node, "state_lb"),
             container = Array
         )
     end
@@ -34,7 +34,7 @@ function _node_con_state_bounds!(node::Node)
             model,
             [t = get_T(model)],
             node.var.state[t] <= access(node.state_ub, t),
-            base_name = _base_name(node, "state_ub"),
+            base_name = make_base_name(node, "state_ub"),
             container = Array
         )
     end

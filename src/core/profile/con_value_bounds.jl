@@ -43,7 +43,7 @@ function _profile_con_value_bounds!(profile::Profile)
                     model,
                     [t = get_T(model)],
                     profile.var.aux_value[t] >= access(profile.lb, t, NonEmptyScalarExpressionValue),
-                    base_name = _base_name(profile, "value_lb"),
+                    base_name = make_base_name(profile, "value_lb"),
                     container = Array
                 )
             else
@@ -52,7 +52,7 @@ function _profile_con_value_bounds!(profile::Profile)
                     t => @constraint(
                         model,
                         profile.var.aux_value[t] >= access(profile.lb, t, NonEmptyScalarExpressionValue),
-                        base_name = _base_name(profile, "value_lb[$(t)]")
+                        base_name = make_base_name(profile, "value_lb[$(t)]")
                     ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
                 )
 
@@ -69,7 +69,7 @@ function _profile_con_value_bounds!(profile::Profile)
                     model,
                     [t = get_T(model)],
                     profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
-                    base_name = _base_name(profile, "value_ub"),
+                    base_name = make_base_name(profile, "value_ub"),
                     container = Array
                 )
             else
@@ -78,7 +78,7 @@ function _profile_con_value_bounds!(profile::Profile)
                     t => @constraint(
                         model,
                         profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
-                        base_name = _base_name(profile, "value_ub[$(t)]")
+                        base_name = make_base_name(profile, "value_ub[$(t)]")
                     ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
                 )
 
