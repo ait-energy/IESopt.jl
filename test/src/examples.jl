@@ -116,20 +116,15 @@ end
 # @test sum(JuMP.value.(values(model.ext[:iesopt].aux.constraint_safety_expressions))) ≈ 0
 
 @testitem "20_chp" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
-    model = TestExampleModule.run()
+    model = TestExampleModule.check(; obj=16687.5)
 
-    @test all(
-        JuMP.value.(get_component(model, "chp.power").exp.out_electricity) .==
-        [2.75, 5.50, 7.00, 8.00, 9.00, 10.00, 5.00, 5.00, 9.00],
-    )
-    @test all(
-        JuMP.value.(get_component(model, "chp.heat").exp.out_heat) .==
-        [5.00, 10.00, 10.00, 10.00, 5.00, 0.00, 0.00, 5.00, 5.00],
-    )
-    @test all(
-        JuMP.value.(get_component(model, "create_gas").exp.value) .==
-        [9.375, 18.75, 22.5, 25.0, 25.0, 25.0, 12.5, 15.0, 25.0],
-    )
+    chp = get_component(model, "chp")
+    gas = get_component(model, "create_gas")
+   
+    @test all(JuMP.value.(chp.power.exp.out_electricity) .== [2.75, 5.50, 7.00, 8.00, 9.00, 10.00, 5.00, 5.00, 9.00])
+    @test all(JuMP.value.(chp.heat.exp.out_heat) .== [5.00, 10.00, 10.00, 10.00, 5.00, 0.00, 0.00, 5.00, 5.00])
+    @test all(JuMP.value.(gas.exp.value) .== [9.375, 18.75, 22.5, 25.0, 25.0, 25.0, 12.5, 15.0, 25.0])
+    @test maximum(abs.(JuMP.shadow_price.(chp.con.isofuel))) ≈ 850.0 atol = 0.1
 end
 
 # model = JuMP.direct_model(HiGHS.Optimizer())

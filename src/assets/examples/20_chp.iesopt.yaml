@@ -6,6 +6,9 @@ config:
     solver:
       name: highs
 
+addons:
+  CHP: {}
+
 carriers:
   electricity: {}
   gas: {}
