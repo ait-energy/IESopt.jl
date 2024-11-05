@@ -46,16 +46,18 @@ _build_priority(::Virtual) = -1  # This means that `Virtual`s are not built.
             (field == :exp) && (return getfield(virtual, :_ccoc).expressions)
             (field == :obj) && (return getfield(virtual, :_ccoc).objectives)
 
+            parameters = getfield(virtual, :_parameters)
+            model = getfield(virtual, :model)
+
             # Helper functions for "object-oriented" calling inside templates.
-            (field == :get) && (return (p, args...) -> _get_parameter_safe(p, virtual._parameters, args...))
-            (field == :set) && (return (p::String, v::Any) -> _set_parameter_safe(p, v, virtual._parameters))
-            (field == :get_ts) && (return (p, args...) -> _get_timeseries_safe(p, virtual._parameters, __model__))
+            (field == :get) && (return (p, args...) -> _get_parameter_safe(p, parameters, args...))
+            (field == :set) && (return (p::String, v::Any) -> _set_parameter_safe(p, v, parameters))
+            (field == :get_ts) && (return (p, args...) -> _get_timeseries_safe(p, parameters, model))
             (field == :set_ts) &&
-                (return (p::String, v::Any) -> _set_timeseries_safe(p, v, virtual._parameters, __model__))
+                (return (p::String, v::Any) -> _set_timeseries_safe(p, v, parameters, model))
 
             # See if we may be trying to find a component that is "inside" this Virtual?
             cname = "$(getfield(virtual, :name)).$field"
-            model = getfield(virtual, :model)
             haskey(_iesopt(model).model.components, cname) && return get_component(model, cname)
 
             return getfield(virtual, field)
