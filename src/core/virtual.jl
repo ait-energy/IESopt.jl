@@ -53,8 +53,7 @@ _build_priority(::Virtual) = -1  # This means that `Virtual`s are not built.
             (field == :get) && (return (p, args...) -> _get_parameter_safe(p, parameters, args...))
             (field == :set) && (return (p::String, v::Any) -> _set_parameter_safe(p, v, parameters))
             (field == :get_ts) && (return (p, args...) -> _get_timeseries_safe(p, parameters, model))
-            (field == :set_ts) &&
-                (return (p::String, v::Any) -> _set_timeseries_safe(p, v, parameters, model))
+            (field == :set_ts) && (return (p::String, v::Any) -> _set_timeseries_safe(p, v, parameters, model))
 
             # See if we may be trying to find a component that is "inside" this Virtual?
             cname = "$(getfield(virtual, :name)).$field"

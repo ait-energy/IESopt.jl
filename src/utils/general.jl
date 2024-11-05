@@ -305,7 +305,7 @@ function _getcsv(
         # If we are not slicing we return the whole table.
         return DataFrames.mapcols(
             v -> v isa AbstractVector{Int64} ? convert(Vector{Float64}, v) : v,
-            CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)::DataFrames.DataFrame
+            CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)::DataFrames.DataFrame,
         )::DataFrames.DataFrame
     end
 
@@ -336,7 +336,7 @@ function _getcsv(
 
     return DataFrames.mapcols(
         v -> v isa AbstractVector{Int64} ? convert(Vector{Float64}, v) : v,
-        identity.(table[from:to, :]::DataFrames.DataFrame)::DataFrames.DataFrame
+        identity.(table[from:to, :]::DataFrames.DataFrame)::DataFrames.DataFrame,
     )::DataFrames.DataFrame
 end
 
