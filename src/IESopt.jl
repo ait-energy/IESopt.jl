@@ -58,7 +58,7 @@ function _build_model!(model::JuMP.Model)
             progress=Progress(length(corder); enabled=_iesopt_config(model).progress::Bool, desc="$(Symbol(f)) ..."),
         ) do component
             if _build_priority(component) >= 0
-                _iesopt(model).debug = component.name
+                _iesopt(model).debug = "$(component.name) :: $(f)"
                 f(component)::Nothing
             end
         end
@@ -177,13 +177,13 @@ function _prepare_model!(model::JuMP.Model)
 end
 
 """
-    run(filename::String; verbosity=nothing, kwargs...)
+    run(filename::AbstractString; verbosity=nothing, kwargs...)
 
 Build, optimize, and return a model.
 
 # Arguments
 
-- `filename::String`: The path to the top-level configuration file.
+- `filename::AbstractString`: The path to the top-level configuration file.
 - `verbosity`: The verbosity level to use. Supports `true` (= verbose mode), `"warning"` (= warnings and above), and
   `false` (suppressing logs).
 
@@ -195,8 +195,8 @@ config file).
 
 Keyword arguments are passed to the [`generate!`](@ref) function.
 """
-function run(filename::String; @nospecialize(verbosity = nothing), @nospecialize(kwargs...))
-    model = generate!(filename; verbosity=verbosity, kwargs...)
+function run(@nospecialize(filename::AbstractString); @nospecialize(verbosity = nothing), @nospecialize(kwargs...))
+    model = generate!(filename; verbosity, kwargs...)
     if haskey(model.ext, :_iesopt_failed_generate)
         @error "Errors in model generation; skipping optimization"
         delete!(model.ext, :_iesopt_failed_generate)
@@ -213,20 +213,20 @@ function run(filename::String; @nospecialize(verbosity = nothing), @nospecialize
 end
 
 """
-    generate!(filename::String; @nospecialize(kwargs...))
+    generate!(filename::AbstractString; @nospecialize(kwargs...))
 
 Generate an IESopt model based on the top-level config in `filename`.
 
 # Arguments
-- `filename::String`: The name of the file to load.
+- `filename::AbstractString`: The name of the file to load.
 - `kwargs...`: Additional keyword arguments that can be passed to the function.
 
 # Returns
 - `model::JuMP.Model`: The generated IESopt model.
 """
-function generate!(filename::String; @nospecialize(kwargs...))
+function generate!(@nospecialize(filename::AbstractString); @nospecialize(kwargs...))
     model = JuMP.Model()::JuMP.Model
-    generate!(model, filename; kwargs...)
+    generate!(model, String(filename); kwargs...)
     return model::JuMP.Model
 end
 
