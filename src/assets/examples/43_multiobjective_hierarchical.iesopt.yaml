@@ -1,0 +1,82 @@
+config:
+  optimization:
+    problem_type: LP+MO
+    snapshots:
+      count: 4
+    objectives:
+      "emissions": ["co2_emissions.exp.value"]               # use the "value" instead of the "cost" of this Profile
+      "aux": ["create_gas.exp.value", "demand.exp.value"]   # an auxiliary third objective, summing up all entries
+    multiobjective:
+      mode: Hierarchical
+      terms: ["total_cost", "emissions", "aux"] # this always needs exactly two objectives
+      settings:
+        MOA.ObjectivePriority: [2, 1, 1]        # higher values = higher priority; same priority = combine using weights
+        MOA.ObjectiveRelativeTolerance: [0.25]  # no need to set the Tol for (all) objectives that are last in the prio
+        MOA.ObjectiveWeight: [1.0, 3.0, 1.0]    # weight the emissions 3x as much as the aux
+    solver:
+      name: highs
+      attributes:
+        solver: ipm
+  # ------------------------------------------------------------------------------------------------------------------ #
+  results:
+    enabled: true
+    in_memory: true
+
+carriers:
+  electricity: {}
+  gas: {}
+  co2: {}
+
+components:
+  node:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 10
+
+  plant_gas:
+    type: Unit
+    inputs: {gas: gas_grid}
+    outputs: {electricity: node, co2: total_co2}
+    conversion: 1 gas -> 0.4 electricity + 0.2 co2
+    capacity: 10 out:electricity
+
+  plant_wind:
+    type: Unit
+    outputs: {electricity: node}
+    conversion: ~ -> 1 electricity
+    capacity: build_wind:value out:electricity
+    availability_factor: [0.9, 0.1, 0.1, 0.1]
+  
+  build_wind:
+    type: Decision
+    cost: 10000
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: node
+    value: [1, 4, 5, 5]
+
+  gas_grid:
+    type: Node
+    carrier: gas
+
+  total_co2:
+    type: Node
+    carrier: co2
+
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: gas_grid
+    mode: create
+    cost: 50.0
+
+  co2_emissions:
+    type: Profile
+    carrier: co2
+    node_from: total_co2
+    mode: destroy
+    cost: 100.0

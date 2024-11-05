@@ -1,0 +1,65 @@
+# This example extends the unit commitment example to utilize varying efficiencies. This can be used to model
+# units running at `min_conversion` to have a low efficiency.
+
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 6
+    solver:
+      name: highs
+
+carriers:
+  electricity: {}
+
+components:
+  grid:
+    type: Node
+    carrier: electricity
+
+  import:
+    type: Profile
+    carrier: electricity
+    node_to: grid
+    cost: 5
+    mode: ranged
+    lb: 0
+    ub: 10
+  
+  plant:
+    type: Unit
+    outputs: {electricity: grid}
+    conversion: ~ -> 0.6 electricity              # Running at full power, the unit has an efficiency of 60%
+    conversion_at_min: ~ -> 0.4 electricity       # Running at min_conversion, the unit has an efficiency of 40%
+    capacity: 20 out:electricity
+    marginal_cost: 50 per out:electricity
+    enable_ramp_up: true
+    ramp_up_limit: 0.3
+    ramp_up_cost: 1
+    enable_ramp_down: true
+    ramp_down_limit: 0.3
+    ramp_down_cost: 1
+    unit_commitment: linear
+    # Important: Without setting the `min_conversion` parameter, `conversion_at_min` can not be used. Furthermore, while
+    #            `min_conversion` seems to be rather straight forward, it is actually complicated as soon as changing efficencies
+    #            are involved. This entails that IESopt will automatically recalculate the correct min_conversion based on
+    #            the setting of `conversion_at_min`, and will inform you about that with an info log.
+    min_conversion: 0.35
+    # Important: These efficiencies heavily depend on the unit commitment. If we are running "linear", startup costs are
+    #            crucial (otherwise the efficiency will not work as intended!). You can try with much lower startup
+    #            costs using a binary unit commitment.
+    startup_cost: 5000
+    is_on_before: 0.0
+
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: grid
+    value: [5, 5, 10, 20, 0, 0]
+
+  market:
+    type: Profile
+    carrier: electricity
+    mode: destroy
+    node_from: grid
+    cost: 5

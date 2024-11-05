@@ -1,0 +1,53 @@
+# CHP: Combined Heat and Power plant.
+# See https://energy.gitpages.ait.ac.at/commons/marketflow/core/modelreference/builtin/chp/ 
+
+parameters:
+  p_max: null
+  h_max: null
+  power_ratio: 0.55
+  power_loss_ratio: 0.20
+  efficiency: 0.40
+  fuel: gas
+  fuel_co2_emission_factor: 0.2
+  fuel_in: null
+  power_out: null
+  heat_out: null
+  co2_out: null
+
+functions:
+  validate: |
+    @check get("p_max") > 0
+    @check get("h_max") > 0
+    @check get("fuel_in") isa String
+    @check get("power_out") isa String
+    @check get("heat_out") isa String
+    @check get("co2_out") isa String
+
+    # More complex checks on the relation between parameters.
+    @check (get("p_max") - get("power_loss_ratio") * get("h_max") > 0)
+
+files:
+  chp_addon: CHP.jl
+
+components:
+  power:
+    type: Unit
+    inputs: {<fuel>: <fuel_in>}
+    outputs: {electricity: <power_out>, co2: <co2_out>}
+    conversion: 1 <fuel> -> <efficiency> electricity + <fuel_co2_emission_factor> co2
+    capacity: <p_max> out:electricity
+    build_priority: 1 # this component will be built before the heat component with default priority 0
+
+  heat:
+    type: Unit
+    inputs: {<fuel>: <fuel_in>}
+    outputs: {heat: <heat_out>, co2: <co2_out>}
+    conversion: 1 <fuel> -> <efficiency>/<power_loss_ratio> heat + <fuel_co2_emission_factor> co2
+    capacity: <h_max> out:heat
+    addon: chp_addon
+    config:
+      cm: <power_ratio>
+      cv: <power_loss_ratio>
+      linked: <self>.power
+
+  # todo: add investment

@@ -1,0 +1,47 @@
+config:
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 4
+  files:
+    data: data.csv
+  paths:
+    files: ./files/31
+    addons: files/31
+
+addons:
+  XOR:
+    bigM: 1
+
+carriers:
+  electricity: {}
+
+components:
+  grid_and_storage:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 1
+    state_initial: 0
+    state_cyclic: disabled
+  
+  buy_id:
+    type: Profile
+    carrier: electricity
+    node_to: grid_and_storage
+    mode: create
+    cost: price_buy@data
+  
+  sell_id:
+    type: Profile
+    carrier: electricity
+    node_from: grid_and_storage
+    mode: destroy
+    # `-price_sell@data` won't work because this looks for a column named "-price_sell@data". It is therefore important
+    # to specify the multiplicative factor fully, even if it is "just making values negative".
+    cost: -1.0 * price_sell@data
+
+

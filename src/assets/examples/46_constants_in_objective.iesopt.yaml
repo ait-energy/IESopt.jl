@@ -1,0 +1,86 @@
+parameters:
+  opex_fom: 1000
+
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 24
+    solver:
+      name: highs
+  files:
+    data: example_data.csv
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    files: files
+
+carriers:
+  electricity: {}
+  h2: {}
+
+components:
+  elec:
+    type: Node
+    carrier: electricity
+
+  h2_south:
+    type: Node
+    carrier: h2
+
+  build_pipeline:
+    type: Decision
+    cost: 1000
+
+  pipeline:
+    type: Connection
+    node_from: h2_north
+    node_to: h2_south
+    lb: 0
+    ub: build_pipeline:value
+  
+  build_storage:
+    type: Decision
+    cost: 100
+
+  h2_north:
+    type: Node
+    carrier: h2
+    has_state: true
+    state_lb: 0
+    state_ub: build_storage:value
+  
+  build_gas:
+    type: Decision
+    cost: 500
+
+  plant_gas:
+    type: Unit
+    outputs: {electricity: elec}
+    conversion: ~ -> 1 electricity
+    capacity: build_gas:value out:electricity
+    marginal_cost: 100 per out:electricity
+  
+  plant_solar:
+    type: Unit
+    outputs: {electricity: elec}
+    conversion: ~ -> 1 electricity
+    capacity: 1 out:electricity
+    availability_factor: 08_pv@data
+    objectives: {total_cost: <opex_fom>}
+  
+  electrolysis:
+    type: Unit
+    inputs: {electricity: elec}
+    outputs: {h2: h2_north}
+    conversion: 1 electricity -> 0.5 h2
+    capacity: 10 out:h2
+
+  demand:
+    type: Profile
+    carrier: h2
+    node_from: h2_south
+    value: 08_demand@data
+
+  

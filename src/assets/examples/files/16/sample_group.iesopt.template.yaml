@@ -1,0 +1,102 @@
+# This describes a sample group of seven different components.
+#
+# Parameters:
+#   - bess_size: Total capacity of the installed BESS.
+#   - bess_power: Rated power for charging/discharging of the BESS.
+
+parameters:
+  bess_size: null    # Sets the maximum amount of energy stored in the BESS.
+  bess_power: null   # Sets the rated power for charging/discharging of the BESS.
+  cop_default: heatpump_cop_gs@default_data
+  real_efficiency_heatpump: 1.0
+  _internal_ts_cop: null
+
+functions:
+  validate: |
+    @check get("bess_size") > 0
+    @check get("bess_power") > 0
+    @check get("real_efficiency_heatpump") > 0
+    @check get("cop_default") isa String
+  prepare: |
+    # We can not set parameters that do not exist here, the following would fail:
+    # set("costs", 2)
+    # Parameters that you need only internally, and do not want to expose to the outside, can be prefixed with `_`.
+    # These CANNOT be set from the outside.
+
+    # We can however set parameters that are not properly defined yet. The lines below check if the parameters are set
+    # to any value and only if not (e.g., if they are still `null`), set them to a default value.
+    (get("bess_size") isa Number) || set("bess_size", 2)
+    (get("bess_power") isa Number) || set("bess_power", 1)
+
+    # Next we can modify a COP from some file.
+    # Note that using `get_ts("heatpump_cop_gs@default_data")` would work too!
+    cop_default = get_ts("cop_default")
+    cop_new = cop_default .* get("real_efficiency_heatpump")
+    
+    set("_internal_ts_cop", "cop_new@a_new_file")
+    set_ts("_internal_ts_cop", cop_new)
+    # We could've also done:
+    # set_ts("cop_new@a_new_file", cop_new)
+    # set("_internal_ts_cop", "cop_new@a_new_file")
+  finalize: |
+    # We could add functionality here (like an addon), or attach an addon onto this component.
+
+    # And we can add custom results, for this Template.
+    @add_result "setpoint" (
+      access("bess.discharging").exp.out_electricity -
+      access("bess.charging").exp.in_electricity
+    )
+    # which then allows: `model.ext[:iesopt].results.components["group"].res.setpoint`
+    
+
+# Adding files is possible (but not mandatory) here.
+# files: {}
+
+components:
+  grid:
+    type: Node
+    carrier: electricity
+  
+  buy_elec:
+    type: Profile
+    carrier: electricity
+    node_to: <self>.grid
+    mode: create
+    cost: 100
+  
+  heat:
+    type: Node
+    carrier: heat
+
+  demand:
+    type: Profile
+    carrier: heat
+    node_from: <self>.heat
+    value: 5
+  
+  heatpump:
+    type: Heatpump
+    elec_from: <self>.grid
+    heat_to: <self>.heat
+    capacity: 5 out:heat
+    COP: <_internal_ts_cop>
+
+  wind:
+    type: Windturbine
+    capacity: 1
+    elec_to: <self>.grid
+    availability_factor: wind_availability_factor@default_data
+  
+  pv:
+    type: Photovoltaic
+    capacity: 1
+    elec_to: <self>.grid
+    availability_factor: pv_availability_factor@default_data
+  
+  bess:
+    type: BESS
+    elec_from: <self>.grid
+    elec_to: <self>.grid
+    rated_power_charge: <bess_power>
+    rated_power_discharge: <bess_power>
+    max_state: <bess_size>

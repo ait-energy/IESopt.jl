@@ -1,0 +1,91 @@
+# Comments indicate points of this model file that changed compared to the previous examples. All other elements are not
+# explained/described anymore.
+# This example constructs a simple model that produces hydrogen from excess solar energy and tries to only import
+# as little energy as possible (this is here done by only assigning a cost to H2 import).
+
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 168
+    solver:
+      name: highs
+  results:
+    enabled: true
+    memory_only: true
+
+# We not only define units but also colors, that can be later picked up by the standardized visualization tools. Observe
+# the fact, that the hexcode is in "", since a `#` counts as starting an in-line comment. Also we use the "block" format
+# that YAML supports instead of the in-line format that we used up until now. These are exactly the same.
+carriers:
+  electricity:
+    unit: MWh
+    color: "rgba(50, 94, 23, 0.7)"
+  h2:
+    unit: MWh
+    color: "rgba(3, 36, 252, 0.7)"
+  solar:
+    unit: MWh
+    color: "rgba(255, 196, 0, 0.7)"
+
+components:
+  elec_grid:
+    type: Node
+    carrier: electricity
+
+  h2_storage:
+    type: Node
+    carrier: h2
+    has_state: true
+    state_cyclic: geq
+    state_lb: 0
+    state_ub: 50
+  
+  # While core components need a unique name, it is allowed to use a name for a core component that is used by a
+  # carrier. While this is obviously NOT recommended, it is possible and can sometimes 
+  solar:
+    type: Node
+    carrier: solar
+  
+  plant_gas:
+    type: Unit
+    inputs: {h2: h2_storage}
+    outputs: {electricity: elec_grid}
+    conversion: 1 h2 -> 0.8 electricity
+    capacity: 10 out:electricity
+  
+  plant_pv:
+    type: Unit
+    inputs: {solar: solar}
+    outputs: {electricity: elec_grid}
+    conversion: 1 solar -> 1 electricity
+    capacity: 5 out:electricity
+    availability_factor: [0.0, 0.0, 0.02, 0.07, 0.16, 0.26, 0.45, 0.66, 0.76, 0.88, 1.0, 1.0, 1.0, 0.95, 0.81, 0.66, 0.44, 0.26, 0.16, 0.06, 0.02, 0.01, 0.0, 0.0, 0.0, 0.01, 0.02, 0.06, 0.14, 0.26, 0.47, 0.63, 0.75, 0.88, 1.0, 1.0, 1.0, 1.0, 0.75, 0.61, 0.45, 0.25, 0.14, 0.07, 0.02, 0.0, 0.0, 0.0, 0.0, 0.01, 0.02, 0.07, 0.15, 0.26, 0.44, 0.61, 0.75, 1.0, 1.0, 1.0, 1.0, 0.88, 0.77, 0.65, 0.45, 0.27, 0.16, 0.07, 0.03, 0.01, 0.0, 0.0, 0.0, 0.01, 0.02, 0.07, 0.16, 0.3, 0.42, 0.59, 0.83, 0.88, 1.0, 1.0, 1.0, 0.9, 0.78, 0.57, 0.43, 0.28, 0.16, 0.06, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.06, 0.14, 0.26, 0.44, 0.57, 0.85, 0.96, 0.97, 1.0, 1.0, 1.0, 0.79, 0.64, 0.41, 0.26, 0.14, 0.07, 0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.07, 0.16, 0.3, 0.43, 0.63, 0.78, 0.9, 1.0, 1.0, 1.0, 0.91, 0.74, 0.58, 0.44, 0.28, 0.14, 0.07, 0.03, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02, 0.07, 0.16, 0.28, 0.46, 0.66, 0.84, 0.9, 1.0, 1.0, 1.0, 0.97, 0.86, 0.63, 0.45, 0.27, 0.15, 0.06, 0.02, 0.0, 0.0, 0.0]
+
+  # Up until now we only ever restricted the output capacity. This time we cap the input capacity.
+  electrolyser:
+    type: Unit
+    inputs: {electricity: elec_grid}
+    outputs: {h2: h2_storage}
+    conversion: 1 electricity -> 0.7 h2
+    capacity: 10 in:electricity
+
+  # These profiles define a full "model boundary", allowing us to analyze the model easily afterwards.
+  create_solar:
+    type: Profile
+    mode: create
+    carrier: solar
+    node_to: solar
+  
+  buy_h2:
+    type: Profile
+    mode: create
+    carrier: h2
+    node_to: h2_storage
+    cost: 100
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: elec_grid
+    value: [3.96, 4.24, 0.06, 3.36, 2.34, 0.22, 0.57, 4.41, 4.91, 3.01, 3.78, 4.36, 4.26, 2.2, 3.71, 4.35, 4.88, 2.25, 2.63, 2.15, 0.92, 4.18, 4.88, 2.85, 0.17, 2.48, 4.23, 4.72, 4.86, 1.46, 4.81, 1.94, 4.52, 4.77, 1.84, 1.27, 2.13, 4.15, 4.09, 1.16, 1.87, 2.18, 3.42, 3.7, 0.89, 0.93, 1.15, 2.62, 1.08, 1.72, 1.2, 0.06, 2.46, 4.73, 1.08, 0.41, 1.2, 0.53, 1.51, 2.59, 2.7, 4.83, 2.69, 0.51, 2.43, 3.2, 4.01, 0.21, 2.72, 1.5, 2.92, 2.51, 1.54, 2.63, 3.59, 4.86, 4.64, 4.88, 3.69, 3.64, 0.16, 3.4, 2.1, 3.87, 1.85, 3.6, 3.24, 3.61, 2.12, 0.43, 3.6, 3.94, 2.8, 0.78, 3.18, 3.05, 3.02, 4.14, 1.25, 3.05, 0.12, 3.54, 1.45, 1.53, 2.06, 0.23, 0.01, 3.47, 0.23, 3.21, 0.73, 3.33, 4.84, 0.89, 3.6, 4.87, 1.47, 3.48, 0.64, 2.77, 1.66, 2.79, 2.64, 4.73, 2.75, 0.44, 4.5, 2.7, 2.87, 1.76, 2.21, 2.48, 3.83, 3.81, 1.13, 2.53, 1.54, 1.32, 0.6, 4.25, 4.04, 2.23, 1.58, 4.9, 4.78, 2.85, 2.1, 0.2, 2.97, 2.26, 3.91, 0.68, 1.02, 1.61, 0.98, 4.5, 1.82, 2.41, 3.06, 3.05, 1.64, 0.03, 4.39, 3.03, 1.8, 0.37, 1.56, 2.17]

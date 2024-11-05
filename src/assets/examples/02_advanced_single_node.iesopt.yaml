@@ -1,0 +1,91 @@
+# Comments indicate points of this model file that changed compared to the previous examples. All other elements are not
+# explained/described anymore. See also: 01_basic_single_node.yaml
+
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 4
+    solver:
+      name: highs
+
+carriers:
+  electricity: {}
+  gas: {}
+  co2: {}
+
+components:
+  # This is the single node power grid that connects everything. It now does **not** include any storage itself.
+  node:
+    type: Node
+    carrier: electricity
+  
+  # This models the storage of a simple battery energy storage system, extending the previous example without losses.
+  # It features bounds that indicate, that the battery can only be used inside a 10%-90% SoC, and will be charged and
+  # discharged by separate units.
+  bess:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 1
+    state_ub: 9
+
+  # This is the direction of the inverter that is used to charge the BESS with an efficiency of 90% and a limit of 3.
+  inverter_charge:
+    type: Unit
+    inputs: {electricity: node}
+    outputs: {electricity: bess}
+    capacity: 3 in:electricity
+    conversion: 1 electricity -> 0.9 electricity
+  
+  # This is the direction of the inverter that is used to discharge the BESS with an efficiency of 90% and a limit of 3.
+  inverter_discharge:
+    type: Unit
+    inputs: {electricity: bess}
+    outputs: {electricity: node}
+    capacity: 3 out:electricity
+    conversion: 1 electricity -> 0.9 electricity
+
+  # The wind power plant now features a (low) marginal cost of generation. 
+  plant_wind:
+    type: Unit
+    outputs: {electricity: node}
+    conversion: ~ -> 1 electricity
+    capacity: 10 out:electricity
+    availability_factor: [0.9, 0.1, 0.1, 0.1]
+    marginal_cost: 1.0 per out:electricity
+  
+  plant_gas:
+    type: Unit
+    inputs: {gas: gas_grid}
+    outputs: {electricity: node, co2: total_co2}
+    conversion: 1 gas -> 0.4 electricity + 0.2 co2
+    capacity: 10 out:electricity
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: node
+    value: [1, 4, 5, 5]
+  
+  gas_grid:
+    type: Node
+    carrier: gas
+  
+  total_co2:
+    type: Node
+    carrier: co2
+
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: gas_grid
+    mode: create
+    cost: 50.0
+  
+  co2_emissions:
+    type: Profile
+    carrier: co2
+    node_from: total_co2
+    mode: destroy
+    cost: 100.0

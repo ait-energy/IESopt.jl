@@ -1,0 +1,58 @@
+# ::: ------------------------------------------------------------------------------------------------------------ ::: #
+# ::: SECTION | MAIN CONFIGURATION                                                                                 ::: #
+# ::: ------------------------------------------------------------------------------------------------------------ ::: #
+config:
+  name:
+    model: CustomResults
+    scenario: SomeScenario_$TIME$
+  # ------------------------------------------------------------------------------------------------------------------ #
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 24
+    solver:
+      name: highs
+  # ------------------------------------------------------------------------------------------------------------------ #
+  files:
+    data: example_data.csv
+  # ------------------------------------------------------------------------------------------------------------------ #
+  results:
+    enabled: true
+    memory_only: true
+  # ------------------------------------------------------------------------------------------------------------------ #
+  paths:
+    files: files/
+    results: out/
+    templates: files/48
+
+# ::: ------------------------------------------------------------------------------------------------------------ ::: #
+# ::: SECTION | ENERGY CARRIERS                                                                                    ::: #
+# ::: ------------------------------------------------------------------------------------------------------------ ::: #
+carriers:
+  electricity: {}
+
+# ::: ------------------------------------------------------------------------------------------------------------ ::: #
+# ::: SECTION | MODEL COMPONENTS                                                                                   ::: #
+# ::: ------------------------------------------------------------------------------------------------------------ ::: #
+components:
+  grid:
+    type: Node
+    carrier: electricity
+
+  generator:
+    type: Unit
+    outputs: {electricity: grid}
+    conversion: ~ -> 1 electricity
+    capacity: 10 out:electricity
+    marginal_cost: 10 per out:electricity
+    availability_factor: 07_plant_wind_availability_factor@data
+  
+  storage:
+    type: CustomStorage
+    connect_to: grid
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: grid
+    value: 4

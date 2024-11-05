@@ -1,0 +1,3 @@
+name,type,inputs,outputs,conversion,capacity,availability_factor
+plant_wind,Unit,"{'wind': 'wind'}","{'electricity': 'node2'}",1 wind -> 1 electricity,10 out:electricity,07_plant_wind_availability_factor@data
+plant_gas,Unit,"{'gas': 'gas_grid'}","{'electricity': 'node1', 'co2': 'total_co2'}",1 gas -> 0.4 electricity + 0.2 co2,10 out:electricity

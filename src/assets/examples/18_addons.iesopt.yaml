@@ -1,0 +1,53 @@
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 6
+    solver:
+      name: highs
+  files:
+    new_addon: addon.jl
+  paths:
+    addons: files/18/
+
+carriers:
+  electricity: {}
+
+components:
+  node:
+    type: Node
+    carrier: electricity
+  
+  plant_gas1:
+    type: Unit
+    # This can be used to store arbitrary configurations
+    config:
+      # This is a parameter that will be used by the addon (the name is arbitrary).
+      max_sum_energy: 4
+    # This is where we specify an addon file (a .jl file with a specific structure) to be added.
+    addon: new_addon
+    outputs: {electricity: node}
+    conversion: ~ -> 1 electricity
+    capacity: 1/(1.0/36)/9 out:electricity
+
+  plant_gas2:
+    type: Unit
+    config:
+      max_sum_energy: 4
+    addon: new_addon
+    outputs: {electricity: node}
+    conversion: ~ -> 1 electricity
+    capacity: 6 out:electricity
+
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: node
+    value: [5, 5, 3, 5, 10, 10]
+
+  import:
+    type: Profile
+    carrier: electricity
+    node_to: node
+    mode: create
+    cost: [10, 9, 8, 7, 6, 5]

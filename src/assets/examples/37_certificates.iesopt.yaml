@@ -1,0 +1,126 @@
+config:
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 8760
+  files:
+    data: example_data.csv
+  paths:
+    files: files
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+  gas: {}
+  co2: {}
+  wind: {}
+  certificate: {}    # This keeps track of each "green" MWh of gas being produced or consumed
+
+components:
+  node1:
+    type: Node
+    carrier: electricity
+  
+  node2:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 10
+
+  conn:
+    type: Connection
+    capacity: 5
+    node_from: node1
+    node_to: node2
+
+  availability:
+    type: Profile
+    mode: create
+    carrier: wind
+    node_to: wind
+
+  wind:
+    type: Node
+    carrier: wind
+  
+  plant_wind:
+    type: Unit
+    inputs: {wind: wind}
+    outputs: {electricity: node2}
+    conversion: 1 wind -> 1 electricity
+    capacity: 20 out:electricity
+    availability_factor: 07_plant_wind_availability_factor@data
+
+  gas_certificates:
+    type: Node
+    carrier: certificate
+    nodal_balance: sum      # Enforce sum(...) = 0 over multiple timesteps, instead of for each
+    sum_window_size: 8760   # over the whole year
+
+  # Depending on the solver of choice, the following method can be quite some time faster; on the other hand it only
+  # allows keeping a stock over the whole period, and does not allow for more fine grained rolling windows.
+  # gas_certificates:
+  #   type: Node
+  #   carrier: certificate
+  #   has_state: true
+  #   state_cyclic: geq
+  #   state_lb: 0
+
+  # todo: split that into two example files
+
+  electrolysis:
+    type: Unit
+    inputs: {electricity: node2}
+    outputs: {gas: gas_grid, certificate: gas_certificates}
+    # Each unit of gas (hydrogen) produced is considered "green" from this unit
+    conversion: 1 electricity -> 0.65 gas + 0.65 certificate
+    capacity: 10 in:electricity
+  
+  plant_gas:
+    type: Unit
+    inputs: {gas: gas_grid, certificate: gas_certificates}
+    outputs: {electricity: node1, co2: total_co2}
+    # For each unit of gas, 50% have to be covered be "green" gas
+    conversion: 1 gas + 0.5 certificate -> 0.4 electricity + 0.2 co2
+    # If you want to see the difference, activate the following conversion instead:
+    # conversion: 1 gas + 0 certificate -> 0.4 electricity + 0.2 co2
+    capacity: 10 out:electricity
+  
+  demand1:
+    type: Profile
+    carrier: electricity
+    node_from: node1
+    value: 07_demand1_value@data
+  
+  demand2:
+    type: Profile
+    carrier: electricity
+    node_from: node2
+    value: 07_demand2_value@data
+
+  gas_grid:
+    type: Node
+    carrier: gas
+  
+  total_co2:
+    type: Node
+    carrier: co2
+
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: gas_grid
+    mode: create
+    cost: 50.0
+  
+  co2_emissions:
+    type: Profile
+    carrier: co2
+    node_from: total_co2
+    mode: destroy
+    cost: 100.0

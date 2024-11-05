@@ -1,0 +1,6 @@
+name,type,carrier,has_state,state_lb,state_ub
+node1,Node,electricity,,,
+node2,Node,electricity,true,0,10
+wind,Node,wind,,,
+gas_grid,Node,gas,,,
+total_co2,Node,co2,,,

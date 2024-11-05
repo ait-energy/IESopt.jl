@@ -1,0 +1,104 @@
+# This example is similar to 03_basic_two_nodes.yaml.
+# Here we want to introduce losses to the connection between the two nodes.
+# Comments indicate points of this model that changed compared to 03_basic_two_nodes.yaml.
+# All other elements are not described anymore.
+
+config:
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 4
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+  gas: {}
+  co2: {}
+
+components:
+  node1:
+    type: Node
+    carrier: electricity
+  
+  node2:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 10
+
+  # IESopt only allows specifying losses on directed connections, i.e. connections with a
+  # nonnegative lower bound.
+  # Hence, we have to replace the bidirectional lossless connection between the two nodes in
+  # 03_basic_two_nodes.yaml with two lossy connections in each direction 
+  
+  # A connection that allows flows from node1 to node2 with losses of 0.01 or 1%.
+  conn1:
+    type: Connection
+    lb: 0
+    ub: 5
+    loss: 0.01
+    node_from: node1
+    node_to: node2
+
+  # A connection that allows flows from node2 to node1 with dynamic losses between 1% and 3%.
+  conn2:
+    type: Connection
+    lb: 0
+    ub: 5
+    loss: [0.01, 0.02, 0.03, 0.01]
+    node_from: node2
+    node_to: node1
+  
+  plant_wind:
+    type: Unit
+    outputs: {electricity: node2}
+    conversion: ~ -> 1 electricity
+    capacity: 10 out:electricity
+    availability_factor: [0.9, 0.0, 0.9, 0.0]
+  
+  plant_gas:
+    type: Unit
+    inputs: {gas: gas_grid}
+    outputs: {electricity: node1, co2: total_co2}
+    conversion: 1 gas -> 0.4 electricity + 0.2 co2
+    capacity: 10 out:electricity
+  
+  demand1:
+    type: Profile
+    carrier: electricity
+    node_from: node1
+    value: [3, 3, 3, 3]
+  
+  demand2:
+    type: Profile
+    carrier: electricity
+    node_from: node2
+    value: [4, 3, 1, 5]
+
+  gas_grid:
+    type: Node
+    carrier: gas
+  
+  total_co2:
+    type: Node
+    carrier: co2
+
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: gas_grid
+    mode: create
+    cost: 50.0
+  
+  co2_emissions:
+    type: Profile
+    carrier: co2
+    node_from: total_co2
+    mode: destroy
+    cost: 100.0
+

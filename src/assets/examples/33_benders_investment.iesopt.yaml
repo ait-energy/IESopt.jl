@@ -1,0 +1,108 @@
+parameters:
+  snapshot_count: 35040
+
+config:
+  optimization:
+    problem_type: MILP
+    solver:
+      name: highs
+    snapshots:
+      count: <snapshot_count>
+  files:
+    data: data.csv
+  paths:
+    files: ./files/33
+
+carriers:
+  electricity: {}
+
+components:
+  invest1_1:
+    type: Decision
+    cost: 35300
+    ub: 10
+
+  invest1_2:
+    type: Decision
+    cost: 75300
+    ub: 40
+
+  invest1_3:
+    type: Decision
+    cost: 1300
+    ub: 5
+
+  invest1_4:
+    type: Decision
+    cost: 25300
+    ub: 15
+
+  invest1_5:
+    type: Decision
+    cost: 18000
+    ub: 30
+
+  invest2_1:
+    type: Decision
+    cost: 1590
+    ub: 25
+  
+  invest2_2:
+    type: Decision
+    cost: 41590
+    ub: 15
+
+  invest2_3:
+    type: Decision
+    cost: 55000
+    ub: 10
+
+  invest2_4:
+    type: Decision
+    cost: 3590
+    ub: 20
+
+  invest2_5:
+    type: Decision
+    cost: 415900
+    ub: 30
+
+  invest_storage:
+    type: Decision
+    ub: 1000
+    cost: 20000
+
+  grid:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: invest_storage:value
+    constraint_safety: false
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: grid
+    value: demand@data
+  
+  shedding:
+    type: Profile
+    carrier: electricity
+    node_to: grid
+    mode: create
+    cost: 10000
+  
+  res1:
+    type: Unit
+    outputs: {electricity: grid}
+    conversion: ~ -> 1 electricity
+    capacity: invest1_1:value + invest1_2:value + invest1_3:value + invest1_4:value + invest1_5:value out:electricity
+    availability_factor: res1@data
+
+  res2:
+    type: Unit
+    outputs: {electricity: grid}
+    conversion: ~ -> 1 electricity
+    capacity: invest2_1:value + invest2_2:value + invest2_3:value + invest2_4:value + invest2_5:value out:electricity
+    availability_factor: res2@data

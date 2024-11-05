@@ -1,0 +1,67 @@
+# This example showcases advanced unit commitment.
+
+config:
+  optimization:
+    problem_type: MILP
+    solver:
+      name: highs
+    snapshots:
+      count: 8
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+
+components:
+  grid:
+    type: Node
+    carrier: electricity
+
+  res_energy:
+    type: Profile
+    carrier: electricity
+    node_to: grid
+    mode: ranged
+    lb: 0
+    ub: 10
+
+  # This just allows getting expensive energy to cover the demand if the plant CAN NOT produce.
+  market_energy:
+    type: Profile
+    carrier: electricity
+    node_to: grid
+    mode: create
+    cost: 500
+
+  # We produce electricity here.
+  plant:
+    type: Unit
+    outputs: {electricity: grid}
+    conversion: ~ -> 1 electricity
+    capacity: 20 out:electricity
+    marginal_cost: 100 per out:electricity
+    unit_commitment: binary # you can change to `linear` and observe that this... does not really "work" as one would expect
+    min_conversion: 0.5
+    startup_cost: 1000
+
+    # This specifies how min up/down times are handled.
+    min_on_time: 4
+    min_off_time: 3      # try out 4 here and look at the `ison` state of `plant`!
+    on_time_before: 4
+    is_on_before: 1
+
+    # You can use the following lines instead to test having the plant OFF before.
+    # min_on_time: 4
+    # min_off_time: 4
+    # off_time_before: 2
+    # is_on_before: 0
+
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: grid
+    value: [10, 20, 10, 10, 10, 20, 30, 10]
+    # If you use the second block above, use this value:
+    # value: [10, 20, 20, 10, 10, 10, 10, 13.9]   # try out `14.1` for the last index => the plant will be cheaper to keep on instead of buying electricity

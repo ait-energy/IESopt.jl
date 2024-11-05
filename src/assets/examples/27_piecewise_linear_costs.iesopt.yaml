@@ -1,0 +1,50 @@
+config:
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 1
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+
+components:
+  node:
+    type: Node
+    carrier: electricity
+  
+  # The following decision variables are all limited to "10" (the last one is not constrained), with increasing costs.
+  # Adding those constructs a piecewise linear convex function.
+  build_gas_1:
+    type: Decision
+    ub: 10
+    cost: 10
+
+  build_gas_2:
+    type: Decision
+    ub: 10
+    cost: 20
+
+  build_gas_3:
+    type: Decision
+    cost: 30
+
+  plant_gas:
+    type: Unit
+    outputs: {electricity: node}
+    conversion: ~ -> 1 electricity
+    # The following constructs the piecewise linear function, including a constant offset of 5 (given as calculation!).
+    # We expect the first 5 to be "free", the next 10 to cost "10 each", then "20 each", and the remaining 5 (so that
+    # the demand of 30 can be covered) "30 each". That makes total sytem cost of 100 + 200 + 150 = 450.
+    capacity: 10.0/2 + build_gas_1:value + build_gas_2:value + build_gas_3:value out:electricity
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: node
+    value: 30
+  

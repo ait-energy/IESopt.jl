@@ -1,0 +1,31 @@
+# This example showcases the usage of non-core components and component containers.
+
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 168
+    solver:
+      name: highs
+  files:
+    data: example_data.csv
+    default_data: _default.csv
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    files: files
+    # Add paths to additional components here (the CORE "./components" directory is being used automatically).
+    templates: files/16
+
+carriers:
+  electricity: {}
+  heat: {}
+
+components:
+  group:
+    # Specify a non-core type here - this depends on a file "16_sample_group.iesopt.template.yaml" to exist.
+    type: sample_group
+    # Set "user defined" parameters in the same way you would set core parameters.
+    bess_power: 2
+    bess_size: 10

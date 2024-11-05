@@ -1,0 +1,58 @@
+# Comments indicate points of this model file that changed compared to the previous examples. All other elements are not
+# explained/described anymore. See also: 02_advanced_single_node.yaml
+
+config:
+  optimization:
+    problem_type: MILP
+    snapshots:
+      count: 4
+    solver:
+      name: highs
+  files:
+    data: example_data.csv
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    files: files
+
+carriers:
+  electricity: {}
+  gas: {}
+  co2: {}
+
+components:
+  node1:
+    type: Node
+    carrier: electricity
+  
+  node2:
+    type: Node
+    carrier: electricity
+
+  conn:
+    type: Connection
+    capacity: 17_capacity@data
+    node_from: node1
+    node_to: node2
+  
+  plant_wind:
+    type: Unit
+    outputs: {electricity: node1}
+    conversion: ~ -> 1 electricity
+    capacity: 10 out:electricity
+    availability_factor: 1
+  
+  demand1:
+    type: Profile
+    carrier: electricity
+    node_from: node2
+    value: 5
+
+  buy_elec:
+    type: Profile
+    carrier: electricity
+    node_to: node2
+    mode: create
+    cost: 50.0
+  
