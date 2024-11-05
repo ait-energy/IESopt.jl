@@ -78,7 +78,7 @@ end
 
 function _ConfigSnapshots(config::Dict{String, Any})
     count = config["count"]
-    if _is_precompiling()
+    if ccall(:jl_generating_output, Cint, ()) == 1  # == is precompiling?
         count = min(4, count)
         @warn "Detected precompilation... limiting Snapshot count" original = config["count"] new = count
     end
