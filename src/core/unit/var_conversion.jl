@@ -42,16 +42,16 @@ function _unit_var_conversion!(unit::Unit)
         )
     end
 
-    return _unit_var_conversion_connect!(unit)
+    return _connect_unit_var_conversion!(unit)
 end
 
-function _unit_var_conversion_connect!(unit::Unit)
+function _connect_unit_var_conversion!(unit::Unit)
     # Pre-calculate the Unit's conversion limits once.
     limits = _unit_capacity_limits(unit)
 
     # Properly connect in- and outputs based on conversion rule.
     if isnothing(unit.conversion_at_min)
-        _unit_var_conversion_connect!(unit, limits)
+        _connect_unit_var_conversion!(unit, limits)
     else
         incremental_efficiencies = Dict(
             dir => Dict(
@@ -61,13 +61,13 @@ function _unit_var_conversion_connect!(unit::Unit)
                 ) for (carrier, value) in unit.conversion_dict[dir]
             ) for dir in [:in, :out]
         )
-        _unit_var_conversion_connect!(unit, limits, incremental_efficiencies)
+        _connect_unit_var_conversion!(unit, limits, incremental_efficiencies)
     end
 
     return nothing
 end
 
-function _unit_var_conversion_connect!(unit::Unit, limits::Dict, incremental_efficiencies::Dict)
+function _connect_unit_var_conversion!(unit::Unit, limits::Dict, incremental_efficiencies::Dict)
     model = unit.model
     components = _iesopt(model).model.components
 
@@ -106,7 +106,7 @@ function _unit_var_conversion_connect!(unit::Unit, limits::Dict, incremental_eff
     return nothing
 end
 
-function _unit_var_conversion_connect!(unit::Unit, limits::Dict)
+function _connect_unit_var_conversion!(unit::Unit, limits::Dict)
     # There is just a single efficiency to care about.
     model = unit.model
 
