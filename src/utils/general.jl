@@ -236,7 +236,7 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
         return _getcsv(model, filepath; sink=sink, slice=slice)
     elseif endswith(filename, ".jl")
         path = path === :auto ? :addons : path
-        core_addon_dir = _PATHS[:addons]
+        core_addon_dir = Assets.get_path("addons")
         filepath_local = abspath(getfield(_iesopt_config(model).paths, path), filename)
         filepath_core = abspath(core_addon_dir, filename)
 

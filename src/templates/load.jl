@@ -54,7 +54,7 @@ function _scan_all_templates(model::JuMP.Model)
 
     # Scan for templates in template folder and core internal templates.
     all_template_files = Set{String}()
-    for dir in [_iesopt_config(model).paths.templates, _PATHS[:templates]]
+    for dir in [_iesopt_config(model).paths.templates, Assets.get_path("templates")]
         for (root, _, files) in walkdir(dir)
             isempty(files) && continue
             for filename in files

@@ -2,7 +2,7 @@
 
 julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "9607dd83595c424ac800baa2c8a1382aa8a1b1e7"
+project_hash = "5e50ed52f6f24ef71d4306b4949dd078d8ad289b"
 
 [[deps.Aqua]]
 deps = ["Compat", "Pkg", "Test"]
@@ -113,9 +113,9 @@ version = "1.11.0"
 
 [[deps.ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions"]
-git-tree-sha1 = "cf0fe81336da9fb90944683b8c41984b08793dad"
+git-tree-sha1 = "a9ce73d3c827adab2d70bf168aaece8cce196898"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
-version = "0.10.36"
+version = "0.10.37"
 
     [deps.ForwardDiff.extensions]
     ForwardDiffStaticArraysExt = "StaticArrays"
@@ -125,20 +125,15 @@ version = "0.10.36"
 
 [[deps.HiGHS]]
 deps = ["HiGHS_jll", "MathOptInterface", "PrecompileTools", "SparseArrays"]
-git-tree-sha1 = "5fe8cdf06815d5b61f219d6871fc9a624111017d"
+git-tree-sha1 = "bad103266198176b0f88468523d7bbc33a762844"
 uuid = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"
-version = "1.10.2"
+version = "1.11.0"
 
 [[deps.HiGHS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
 git-tree-sha1 = "c12314e192631fc302078e27a06da5ab51770e3b"
 uuid = "8fd58aa0-07eb-5a78-9b36-339c94fd15ea"
 version = "1.8.0+0"
-
-[[deps.IESoptLib]]
-git-tree-sha1 = "89c534fc5f2a9a7d2f3293a8106d2b63fdb8b487"
-uuid = "b98f706d-40ec-4ce6-a66c-1c6e71d3cef6"
-version = "0.3.0"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]

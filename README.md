@@ -81,8 +81,7 @@ poetry add iesopt
 
 ## Usage
 
-IESopt requires a configured model to run. You can start with the extensive [first model tutorial](https://ait-energy.github.io/IESopt.jl/dev/pages/tutorials/first_model/), or checkout [IESoptLib](https://github.com/ait-energy/IESoptLib.jl) which
-includes many more examples.
+IESopt requires a configured model to run. You can start with the extensive [first model tutorial](https://ait-energy.github.io/IESopt.jl/dev/pages/tutorials/first_model/).
 
 ### Basic usage
 

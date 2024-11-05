@@ -3,9 +3,8 @@ using IESopt, Suppressor
 using Test, Aqua, JET
 import JuMP
 
-const PATH_TEST = IESopt._PATHS[:test]
-const PATH_EXAMPLES = IESopt._PATHS[:examples]
-const PATH_TESTFILES = normpath(PATH_TEST, "test_files")
+const PATH_EXAMPLES = IESopt.Assets.get_path("examples")
+const PATH_TESTFILES = @path normpath(@__DIR__, "test_files")
 const PATH_CURRENT = pwd()
 
 @testset "IESopt.jl" verbose = true begin
@@ -26,9 +25,6 @@ const PATH_CURRENT = pwd()
     end
 
     @testset "Examples (IESopt.jl)" begin
-        if isnothing(IESopt.Library)
-        else
-            include("src/examples.jl")
-        end
+        include("src/examples.jl")
     end
 end

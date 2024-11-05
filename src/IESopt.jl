@@ -11,21 +11,11 @@ using PrecompileTools: @setup_workload, @compile_workload, @recompile_invalidati
 # This is a workaround for an issue introduced by Julia 1.11.0, and seems to now be necessary to use `Base.Docs`
 import REPL
 
-# Setup `IESoptLib.jl` and `HiGHS.jl`.
-import IESoptLib
-const Library = IESoptLib
-import HiGHS
+# Load the assets module.
+include("assets/Assets.jl")
 
-# Constant paths that might be used somewhere.
-const _dummy_path = normpath(@__DIR__, "utils", "dummy")
-const _PATHS = Dict{Symbol, String}(
-    :src => normpath(@__DIR__),
-    :addons => isnothing(Library) ? _dummy_path : Library.get_path(:addons),
-    :examples => isnothing(Library) ? _dummy_path : Library.get_path(:examples),
-    :docs => normpath(@__DIR__, "..", "docs"),
-    :test => normpath(@__DIR__, "..", "test"),
-    :templates => isnothing(Library) ? _dummy_path : Library.get_path(:templates),
-)
+# Setup `HiGHS.jl`, since this is the default solver that users may want to use.
+import HiGHS
 
 # Currently we have a proper automatic resolver for the following solver interfaces:
 const _ALL_SOLVER_INTERFACES = ["HiGHS", "Gurobi", "Cbc", "GLPK", "CPLEX", "Ipopt", "SCIP"]

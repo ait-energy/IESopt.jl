@@ -5,13 +5,13 @@ use of the existing `CoreComponent`s, and combines them in multiple ways, which 
 without having to write any mathematical model yourself.
 
 This tutorial will guide you through the process of creating a new template, and we will do that on the example of
-creating the `HeatPump` template (a template shipped via IESoptLib).
+creating the `HeatPump` template.
 
 ## The basic structure
 
 A template is defined by a YAML file, similar to the `config.iesopt.yaml` file that you already know. First, we need to
 think about the parameters that we want to define for our heat pump. Let's create a new file for that. The pre-defined
-one in IESoptLib is called `HeatPump`, so we need a different name: Templates must always have a unique name.
+one is called `HeatPump`, so we need a different name: Templates must always have a unique name.
 
 Possiblities for that could be:
 
