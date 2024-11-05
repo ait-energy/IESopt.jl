@@ -1,0 +1,22 @@
+# Basic PV model.
+#
+# The default availability factor is based on data obtained from renewables.ninja, at Vienna (48.2084/16.3725), using
+# the default parameters (year = 2019; system loss = 0.1; tracking = no; tilt = 35; azimuth = 180).
+#
+# Parameters:
+#   - elec_to: `Node` to feed electricity to.
+#   - capacity: Capacity of this PV.
+#   - availability_factor: Availability factor (default based on renewables.ninja; hourly resolution for one year).
+#   - results_generation: Pass a valid result file name to this, to extract per-snapshot generation from this PV.
+
+parameters:
+  elec_to: null
+  capacity: null
+  availability_factor: null
+
+component:
+  type: Unit
+  conversion: ~ -> 1 electricity
+  outputs: {electricity: <elec_to>}
+  availability_factor: <availability_factor>
+  capacity: <capacity> out:electricity

@@ -48,8 +48,13 @@ end
     TestExampleModule.check(; obj=2131435.8)
 end
 
-@testitem "16_noncore_components" tags = [:examples] setup = [TestExampleModule] begin
-    TestExampleModule.check(; obj=4372.2)
+@testitem "16_noncore_components" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    model = TestExampleModule.check(; obj=4372.2)
+    
+    sp = JuMP.value.(get_component(model, "group").exp.setpoint)
+    
+    @test sum(sp) ≈ -0.25 atol = 0.01
+    @test sum(abs.(sp)) ≈ 4.75 atol = 0.01
 end
 
 @testitem "17_varying_connection_capacity" tags = [:examples] setup = [TestExampleModule] begin

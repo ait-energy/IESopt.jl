@@ -1,0 +1,72 @@
+# # Basic Battery Energy Storage System model.
+# This does not support heat, nor automatically capturing total losses.
+#
+# ## Parameters
+#   - `elec_from`: Component of type `Node` that this BESS draws energy from.
+#   - elec_to: Component of type `Node` that this BESS feeds energy into.
+#   - `rated_power_charge`: Maximum power of charging.
+#   - `rated_power_discharge`: Maximum power of discharging.
+#   - max_state: Maximum amount of energy stored.
+#   - efficiency_charge: Efficiency of charging (default = 0.95).
+#   - efficiency_discharge: Efficiency of discharging (default = 0.95).
+#   - standby_loss: Per snapshot passive standby loss (default = 0.0005).
+#   - marginal_cost: Marginal cost of charging/discharging one unit of electricity (default = 0).
+#
+# ## Components
+#   - charging: `Unit` that handles charging.
+#   - discharging: `Unit` that handles discharging.
+#   - state: Stateful `Node` that acts as storage.
+#
+# ## Usage
+# ```yaml
+# my_bess:
+#   type: BESS
+#   elec_from: node1
+#   elec_to: node2
+# ```
+#
+# ## Details
+# Include information about the detailed internal approach here.
+
+parameters:
+  elec_from: null
+  elec_to: null
+  rated_power_charge: null
+  rated_power_discharge: null
+  max_state: null
+  efficiency_charge: 0.95
+  efficiency_discharge: 0.95
+  standby_loss: 0.0005
+  marginal_cost: 0
+  state_initial: null
+  state_cyclic: eq
+
+files: {}
+
+components:
+  charging:
+    type: Unit
+    inputs: {electricity: <elec_from>}
+    outputs: {electricity: <self>.state}
+    conversion: 1 electricity -> <efficiency_charge> electricity
+    # For components that use the same carrier as in- and output, one must specify which one the capacity refers to.
+    capacity: <rated_power_charge> in:electricity
+    marginal_cost: <marginal_cost> per in:electricity
+  
+  discharging:
+    type: Unit
+    inputs: {electricity: <self>.state}
+    outputs: {electricity: <elec_to>}
+    conversion: 1 electricity -> <efficiency_discharge> electricity
+    capacity: <rated_power_discharge> out:electricity
+    marginal_cost: <marginal_cost> per in:electricity
+
+  state:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: <max_state>
+    state_percentage_loss: <standby_loss>
+    state_initial: <state_initial>
+    state_cyclic: <state_cyclic>

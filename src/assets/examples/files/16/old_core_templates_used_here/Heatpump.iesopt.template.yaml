@@ -1,0 +1,25 @@
+# Basic heatpump model.
+#
+# Keep in mind that when specifying the `capacity` in `electricity`, the maximum available heat output will vary, while
+# if specifying it in `heat` the maximum output will stay fixed (at that given value), while the maximum `electricity`
+# drawn from the input will vary.
+#
+# Parameters:
+#   - elec_from: `Node` to take electricity from.
+#   - heat_to: `Node` to feed heat to.
+#   - capacity: Capacity of the heatpump (needs to include carrier).
+#   - COP: The COP (default is based on a ground-source heatpump from the When2Heat dataset; hourly resolution for a
+#          year. Set COP to `heatpump_cop_as@__default` for a similar air-source timeseries.
+
+parameters:
+  elec_from: null
+  heat_to: null
+  capacity: null
+  COP: null
+
+component:
+  type: Unit
+  inputs: {electricity: <elec_from>}
+  outputs: {heat: <heat_to>}
+  conversion: 1 electricity -> <COP> heat
+  capacity: <capacity>

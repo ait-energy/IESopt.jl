@@ -13,40 +13,38 @@ parameters:
 
 functions:
   validate: |
-    @check get("bess_size") > 0
-    @check get("bess_power") > 0
-    @check get("real_efficiency_heatpump") > 0
-    @check get("cop_default") isa String
+    @check this.get("bess_size") > 0
+    @check this.get("bess_power") > 0
+    @check this.get("real_efficiency_heatpump") > 0
+    @check this.get("cop_default") isa String
   prepare: |
     # We can not set parameters that do not exist here, the following would fail:
-    # set("costs", 2)
+    # this.set("costs", 2)
     # Parameters that you need only internally, and do not want to expose to the outside, can be prefixed with `_`.
     # These CANNOT be set from the outside.
 
     # We can however set parameters that are not properly defined yet. The lines below check if the parameters are set
     # to any value and only if not (e.g., if they are still `null`), set them to a default value.
-    (get("bess_size") isa Number) || set("bess_size", 2)
-    (get("bess_power") isa Number) || set("bess_power", 1)
+    isnothing(this.get("bess_size")) && this.set("bess_size", 2)
+    isnothing(this.get("bess_power")) && this.set("bess_power", 1)
 
     # Next we can modify a COP from some file.
-    # Note that using `get_ts("heatpump_cop_gs@default_data")` would work too!
-    cop_default = get_ts("cop_default")
-    cop_new = cop_default .* get("real_efficiency_heatpump")
+    # Note that using `this.get_ts("heatpump_cop_gs@default_data")` would work too!
+    cop_default = this.get_ts("cop_default")
+    cop_new = cop_default .* this.get("real_efficiency_heatpump")
     
-    set("_internal_ts_cop", "cop_new@a_new_file")
-    set_ts("_internal_ts_cop", cop_new)
+    this.set("_internal_ts_cop", "cop_new@a_new_file")
+    this.set_ts("_internal_ts_cop", cop_new)
     # We could've also done:
-    # set_ts("cop_new@a_new_file", cop_new)
-    # set("_internal_ts_cop", "cop_new@a_new_file")
+    # this.set_ts("cop_new@a_new_file", cop_new)
+    # this.set("_internal_ts_cop", "cop_new@a_new_file")
   finalize: |
     # We could add functionality here (like an addon), or attach an addon onto this component.
 
     # And we can add custom results, for this Template.
-    @add_result "setpoint" (
-      access("bess.discharging").exp.out_electricity -
-      access("bess.charging").exp.in_electricity
-    )
-    # which then allows: `model.ext[:iesopt].results.components["group"].res.setpoint`
+    this.exp.setpoint = this.bess.discharging.exp.out_electricity - this.bess.charging.exp.in_electricity
+
+    # Which then allows: `get_component(model, "group").exp.setpoint`, assuming the component is named "group".
     
 
 # Adding files is possible (but not mandatory) here.
