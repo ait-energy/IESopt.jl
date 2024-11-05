@@ -1,6 +1,6 @@
 function _load_template(model::JuMP.Model, filename::String; read_file::Bool=false)
     name = _get_template_name(filename)
-    read_file && @info "Loading template file" name
+    read_file && @info "Loading template file" name filename
 
     template = CoreTemplate(;
         model=model,
