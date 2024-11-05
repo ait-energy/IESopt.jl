@@ -111,7 +111,7 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict)
     model = unit.model
 
     components = _iesopt(model).model.components
-    unit_var_conversion = unit.var.conversion
+    unit_var_conversion = unit.var.conversion::Vector{JuMP.VariableRef}
 
     input_totals = Dict{Carrier, Vector{JuMP.AffExpr}}(
         carrier => _total(unit, :in, carrier.name) for carrier in keys(unit.conversion_dict[:in])
@@ -122,8 +122,7 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict)
 
     _a = collect(_get(limits[:min], t) for t in get_T(model))
     _b = collect(access(unit.capacity, t) for t in get_T(model))
-    # TODO: this should be avoidable by doing unit.var.conversion?
-    _c::Vector{JuMP.VariableRef} = unit.var.conversion
+    _c = unit_var_conversion
 
     _mode::Symbol, _term1::Vector{JuMP.AffExpr}, _term2::Vector{Float64} = (
         if _a[1] isa Number

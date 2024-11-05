@@ -295,12 +295,21 @@ function _getcsv(
 )
     @info "Trying to load CSV" filename
 
-    # Read the entire file. CSV.jl's `skipto` only makes it worse.
-    # See: https://github.com/JuliaData/CSV.jl/issues/959
-    table = CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)
+    # NOTES:
+    # - Read the entire file. CSV.jl's `skipto` only makes it worse.
+    #   See: https://github.com/JuliaData/CSV.jl/issues/959
+    # - The conversion to Float64 prevents Int64 columns being passed on.
+    # - Using `identity` to "downcast" from `Union{Float64, Missing}` to `Float64`.
 
-    # If we are not slicing we return the whole table
-    slice || return table::DataFrames.DataFrame
+    if !slice
+        # If we are not slicing we return the whole table.
+        return DataFrames.mapcols(
+            v -> v isa AbstractVector{Int64} ? convert(Vector{Float64}, v) : v,
+            CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)::DataFrames.DataFrame
+        )::DataFrames.DataFrame
+    end
+
+    table = CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)::DataFrames.DataFrame
 
     # Get some snapshot config parameters
     offset = _iesopt_config(model).optimization.snapshots.offset::Int64
@@ -325,7 +334,10 @@ function _getcsv(
         @critical "Trying to access data with out-of-bounds or empty range" filename from to nrows
     end
 
-    return table[from:to, :]::DataFrames.DataFrame
+    return DataFrames.mapcols(
+        v -> v isa AbstractVector{Int64} ? convert(Vector{Float64}, v) : v,
+        identity.(table[from:to, :]::DataFrames.DataFrame)::DataFrames.DataFrame
+    )::DataFrames.DataFrame
 end
 
 function _getfromcsv(model::JuMP.Model, file::String, column::String)

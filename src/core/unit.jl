@@ -526,6 +526,8 @@ end
 function _unit_capacity_limits(unit::Unit)
     # TODO: Refactor this to return a proper Expression.
 
+    # TODO: "online conversion" is often immediately converted to an AffExpr, but could stay a VariableRef, fix this!
+
     # Get correct maximum.
     if !_isempty(unit.availability_factor)
         max_conversion = min.(1.0, access(unit.availability_factor, NonEmptyNumericalExpressionValue))
@@ -562,10 +564,9 @@ function _unit_capacity_limits(unit::Unit)
     end
 
     return Dict{Symbol, Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}}}(
-        :min =>
-            unit.min_conversion .* (
-                unit.adapt_min_to_availability ? online_conversion : unit.var.ison
-            )::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
+        :min => (
+            unit.min_conversion .* (unit.adapt_min_to_availability ? online_conversion : unit.var.ison)
+        )::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
         :online => online_conversion::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
         :max => max_conversion::NonEmptyNumericalExpressionValue,
     )

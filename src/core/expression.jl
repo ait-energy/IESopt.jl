@@ -254,6 +254,7 @@ function _finalize(e::Expression)
         # TODO: cache this
         if contains(extract, "@")
             col, file = string.(split(extract, "@"))
+            # NOTE: Using `identity` here to "downcast" from `Union{Float64, Missing}` to `Float64`.
             push!(extractions, identity.(_getfromcsv(e.model, file, col))::Vector{Float64})
             e.temporal = true
         else
