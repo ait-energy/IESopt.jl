@@ -54,7 +54,7 @@ import ZipFile
 import Printf
 import Dates
 
-@testitem "assets" tags=[:unittest] begin
+@testitem "assets" tags = [:unittest] begin
     ex_cfg_file = "01_basic_single_node.iesopt.yaml"
 
     @test Assets.get_path("templates") isa Assets.RelocatableFolders.Path

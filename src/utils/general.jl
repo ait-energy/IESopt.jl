@@ -503,18 +503,24 @@ end
 
 _is_valid_template_name(s::String) = !isnothing(match(r"""^[A-Z][A-Za-z]+$""", s))
 
-@testitem "is_valid_template_name" tags=[:unittest, :utils] begin
-    items = [("", false), ("fooBar", false), ("foobar", false), ("Foo_Bar", false), ("Foo-Bar", false), ("FooBar-", false), ("FooBar1", false), ("F", false), ("FooBar", true), ("Foobar", true)]
-    for (name, result) in items
+@testitem "is_valid_template_name" tags = [:unittest, :utils] begin
+    set = zip(
+        ["", "fooBar", "foobar", "Foo_Bar", "Foo-Bar", "FooBar-", "FooBar1", "F", "FooBar", "Foobar"],
+        [false, false, false, false, false, false, false, false, true, true],
+    )
+    for (name, result) in set
         @test IESopt._is_valid_template_name(name) == result
     end
 end
 
 _is_valid_component_name(s::String) = !isnothing(match(r"""^[a-z][a-z_.0-9]*[a-z0-9]$""", s))
 
-@testitem "is_valid_component_name" tags=[:unittest, :utils] begin
-    items = [("", false), ("1foobar", false), ("_foobar", false), ("foobar_", false), ("foo-bar", false), ("foobar.", false), ("fooBar", false), ("f", false), ("foo_Bar", false), ("f1", true), ("foo_bar", true), ("foo", true), ("fb", true)]
-    for (name, result) in items
+@testitem "is_valid_component_name" tags = [:unittest, :utils] begin
+    set = zip(
+        ["1foobar", "_foobar", "foobar_", "foo-bar", "foobar.", "fooBar", "f", "foo_Bar", "f1", "foo_bar", "foo", "fb"],
+        [false, false, false, false, false, false, false, false, false, true, true, true, true],
+    )
+    for (name, result) in set
         @test IESopt._is_valid_component_name(name) == result
     end
 end
