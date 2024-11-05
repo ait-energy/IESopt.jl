@@ -50,9 +50,9 @@ end
 
 @testitem "16_noncore_components" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     model = TestExampleModule.check(; obj=4372.2)
-    
+
     sp = JuMP.value.(get_component(model, "group").exp.setpoint)
-    
+
     @test sum(sp) ≈ -0.25 atol = 0.01
     @test sum(abs.(sp)) ≈ 4.75 atol = 0.01
 end
@@ -61,8 +61,12 @@ end
     TestExampleModule.check(; obj=300.0)
 end
 
-@testitem "18_addons" tags = [:examples] setup = [TestExampleModule] begin
-    TestExampleModule.check(; obj=85.0)
+@testitem "18_addons" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    model = TestExampleModule.check(; obj=51.0)
+
+    units = get_components(model; tagged=["ModifyMe"])
+    @test all(JuMP.shadow_price.(units[1].con.example18) .≈ [-1, 0, 0, -1, -4])
+    @test all(JuMP.shadow_price.(units[2].con.example18) .≈ [-2, 0, -1, -1, -5])
 end
 
 @testitem "25_global_parameters" tags = [:examples] setup = [TestExampleModule] begin
@@ -137,9 +141,9 @@ end
 @testitem "snapshots (22 and 23)" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     model = TestExampleModule.run("22_snapshot_weights")
     @test all(JuMP.value.(get_component(model, "buy").exp.value) .≈ [10.0, 6.0, 6.0, 0.0, 7.0, 4.0])
-    
+
     obj_val_example_22 = JuMP.objective_value(model)
-    
+
     TestExampleModule.check("23_snapshots_from_csv"; obj=obj_val_example_22)
 end
 

@@ -5,10 +5,11 @@ config:
       count: 6
     solver:
       name: highs
-  files:
-    new_addon: addon.jl
   paths:
     addons: files/18/
+
+addons:
+  Example18: {active: true}
 
 carriers:
   electricity: {}
@@ -24,8 +25,8 @@ components:
     config:
       # This is a parameter that will be used by the addon (the name is arbitrary).
       max_sum_energy: 4
-    # This is where we specify an addon file (a .jl file with a specific structure) to be added.
-    addon: new_addon
+    # Tag this Unit, which we can later use to find it in the addon.
+    tags: ModifyMe
     outputs: {electricity: node}
     conversion: ~ -> 1 electricity
     capacity: 1/(1.0/36)/9 out:electricity
@@ -33,11 +34,12 @@ components:
   plant_gas2:
     type: Unit
     config:
-      max_sum_energy: 4
-    addon: new_addon
+      max_sum_energy: 4  # we can pass a different value here
+    tags: [ModifyMe]  # or we can use a list of tags
     outputs: {electricity: node}
     conversion: ~ -> 1 electricity
-    capacity: 6 out:electricity
+    capacity: 3 out:electricity
+    marginal_cost: 1 per out:electricity
 
   demand:
     type: Profile
@@ -45,7 +47,16 @@ components:
     node_from: node
     value: [5, 5, 3, 5, 10, 10]
 
-  import:
+  import_cheap:
+    type: Profile
+    carrier: electricity
+    node_to: node
+    mode: ranged
+    lb: 0
+    ub: 4
+    cost: [3, 2, 1, 7, 1, 2]
+
+  import_expensive:
     type: Profile
     carrier: electricity
     node_to: node
