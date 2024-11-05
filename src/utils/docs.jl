@@ -121,8 +121,9 @@ function _finalize_docstring(datatype::Type)
     multidoc = Base.Docs.meta(@__MODULE__)[binding]
     old_data = multidoc.docs[Union{}].data
 
+    original_docstr = (@doc datatype)
     multidoc.docs[Union{}] = Base.Docs.docstr("""
-    $(Base.Docs.doc(datatype))
+    $(original_docstr)
 
     $(_docs_make_parameters(datatype))
 
