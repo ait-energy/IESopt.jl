@@ -518,7 +518,7 @@ _is_valid_component_name(s::String) = !isnothing(match(r"""^[a-z][a-z_.0-9]*[a-z
 @testitem "is_valid_component_name" tags = [:unittest, :utils] begin
     set = zip(
         ["1foobar", "_foobar", "foobar_", "foo-bar", "foobar.", "fooBar", "f", "foo_Bar", "f1", "foo_bar", "foo", "fb"],
-        [false, false, false, false, false, false, false, false, false, true, true, true, true],
+        [false, false, false, false, false, false, false, false, true, true, true, true],
     )
     for (name, result) in set
         @test IESopt._is_valid_component_name(name) == result
