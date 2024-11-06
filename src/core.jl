@@ -193,6 +193,7 @@ _component_type(::Decision) = :Decision
 _component_type(::Node) = :Node
 _component_type(::Profile) = :Profile
 _component_type(::Unit) = :Unit
+_component_type(::Virtual) = :Virtual
 
 _build_priority(@nospecialize(cc::_CoreComponent)) = _build_priority(cc.build_priority, 0.0)
 _build_priority(::Nothing, default) = default
@@ -275,6 +276,18 @@ struct _CoreComponentResult <: _CoreComponent
 end
 
 @recompile_invalidations begin
+    function Base.show(io::IO, cc::_CoreComponentResult)
+        str_show = """:: CoreComponentResult (of $(cc.__type)) ::"""
+        
+        fields = cc.__fields
+        for field in fields[1:(end - 1)]
+            str_show *= "\n├ $field: $(getproperty(cc, field))"
+        end
+        str_show *= "\n└ $(fields[end]): $(getproperty(cc, fields[end]))"
+
+        return print(io, str_show)
+    end
+
     function Base.getproperty(ccr::_CoreComponentResult, field::Symbol)
         try
             (field == :var) && (return getfield(ccr, :_ccorc).variables)
