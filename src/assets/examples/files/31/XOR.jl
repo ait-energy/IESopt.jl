@@ -1,52 +1,40 @@
-module GlobalAddon_XOR
+module IESoptAddon_ExampleXOR
 
-import IESopt
-const JuMP = IESopt.JuMP
+using IESopt
+import JuMP
 
-# We can use a global struct like this to keep a reference to the model (or other stuff):
-struct _Settings
-    model::JuMP.Model
-    bigM::Float64
-end
-
-function initialize!(model::JuMP.Model, config::Dict{String, Any})
+function initialize!(model::JuMP.Model, config::Dict)
     # We can use standard Julia logging, but make sure to include the proper `[...]` prefix.
-    @info "[GlobalAddon_XOR] Initializing"
+    @info "[IESoptAddon_ExampleXOR] Initializing"
 
     if !haskey(config, "bigM")
-        @error "[GlobalAddon_XOR] Missing <bigM> parameter"
-        return nothing
+        @error "[IESoptAddon_ExampleXOR] Missing <bigM> parameter"
+        return false
     end
 
-    # Remember the model, as well as the big M.
-    settings = _Settings(model, config["bigM"])
-
-    return settings
+    return true
 end
 
-# The following functions are called after they were called for all core components.
-
-function setup!(model::JuMP.Model, settings::_Settings) end
-
-function construct_expressions!(model::JuMP.Model, settings::_Settings) end
-
-function construct_variables!(model::JuMP.Model, settings::_Settings)
-    # We can access the model, as well as the set of all Snapshots like this:
-    T = model.ext[:iesopt].model.T
-
+function construct_variables!(model::JuMP.Model, config::Dict)
     # Create the variable controlling the "XOR exchange" as binary.
-    JuMP.@variable(model, exchange[t in T], Bin)
+    JuMP.@variable(model, exchange[t in get_T(model)], Bin)
+
+    # As you can see we are not attaching it to any component. This may be bad, but since it's  a JuMP model we can
+    # basically do whatever JuMP supports. Here, it actually registers `model[:exchange]` as a variable in the JuMP
+    # model.
+
+    return true
 end
 
-function construct_constraints!(model::JuMP.Model, settings::_Settings)
-    T = model.ext[:iesopt].model.T
+function construct_constraints!(model::JuMP.Model, config::Dict)
+    T = get_T(model)
 
     # Prepare the chosen bigM.
-    bigM = settings.bigM
+    bigM = config["bigM"]
 
     # Prepare the components that we want to access.
-    buy_id = IESopt.component(model, "buy_id")
-    sell_id = IESopt.component(model, "sell_id")
+    buy_id = get_component(model, "buy_id")
+    sell_id = get_component(model, "sell_id")
 
     # Prepare the exchange variable that we constructed earlier by accessing it directly from the JuMP model.
     exchange = model[:exchange]
@@ -54,8 +42,8 @@ function construct_constraints!(model::JuMP.Model, settings::_Settings)
     # It is allowed to either buy OR sell during each Snapshot.
     JuMP.@constraint(model, [t in T], buy_id.exp.value[t] <= exchange[t] * bigM)
     JuMP.@constraint(model, [t in T], sell_id.exp.value[t] <= (1.0 - exchange[t]) * bigM)
-end
 
-function construct_objective!(model::JuMP.Model, settings::_Settings) end
+    return true
+end
 
 end
