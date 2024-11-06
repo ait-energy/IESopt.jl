@@ -6,8 +6,6 @@ using IESopt
 const PATH_TESTFILES = normpath(@__DIR__, "test_files")
 const PATH_CURRENT = pwd()
 
-# filter(f -> Base.isexported(IESopt, f) && Base.hasdoc(IESopt, f), names(IESopt))
-
 @testset "IESopt.jl" verbose = true begin
     @testset "Code quality" verbose = true begin
         @testset "Aqua.jl" verbose = true begin
