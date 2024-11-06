@@ -760,7 +760,7 @@ function to_table(model::JuMP.Model; path::String="./out", write_to_file::Bool=t
 end
 
 # This is directly taken from JuMP.jl and exports all internal symbols that do not start with an underscore (roughly).
-const _EXCLUDE_SYMBOLS = [Symbol(@__MODULE__), :eval, :include]
+const _EXCLUDE_SYMBOLS = [Symbol(@__MODULE__), :eval, :include, :MOI]
 for sym in names(@__MODULE__; all=true)
     sym_string = string(sym)
     if sym in _EXCLUDE_SYMBOLS || startswith(sym_string, "_") || startswith(sym_string, "@_")

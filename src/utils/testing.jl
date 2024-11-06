@@ -36,3 +36,14 @@ end
         return m
     end
 end
+
+@testitem "docstrings" tags = [:general] begin
+    public_wo_docstr = filter(f -> Base.isexported(IESopt, f) && !Base.hasdoc(IESopt, f), names(IESopt))
+
+    if !isempty(public_wo_docstr)
+        println("Missing docstrings for:\n")
+        println(join(string.(public_wo_docstr), "\n"))
+    end
+
+    @test isempty(public_wo_docstr)
+end
