@@ -327,10 +327,6 @@ function _isvalid(unit::Unit)
         @warn "Setting <min_conversion> while <unit_commitment> is off can lead to issues" unit = unit.name
     end
 
-    if (unit.enable_ramp_up || unit.enable_ramp_down) && (access(unit.unit_count, Float64) != 1)
-        @warn "Active ramps do not work as expected with <unit_count> different from 1" unit = unit.name
-    end
-
     # A Unit can not be up/and down before the time horizon.
     if (unit.on_time_before != 0) && (unit.off_time_before != 0)
         @critical "A Unit can not be up and down before starting the optimization" unit = unit.name
@@ -344,9 +340,15 @@ function _isvalid(unit::Unit)
         @critical "A Unit can not be off before the optimization and have up time" unit = unit.name
     end
 
-    # todo: resolve the issue and then remove this
-    if (access(unit.unit_count, Float64) != 1) && (!isnothing(unit.min_on_time) || !isnothing(unit.min_off_time))
-        @critical "min_on_time/min_off_time is currently not supported for Units with `unit.count > 1`" unit = unit.name
+    if (!_isfixed(unit.unit_count) && !_isempty(unit.unit_count)) || (access(unit.unit_count, Float64) != 1)
+        # todo: resolve the issue and then remove this
+        if !isnothing(unit.min_on_time) || !isnothing(unit.min_off_time)
+            @critical "min_on_time/min_off_time is currently not supported for Units with `unit.count > 1`" unit = unit.name
+        end
+
+        if unit.enable_ramp_up || unit.enable_ramp_down
+            @warn "Active ramps do not work as expected with <unit_count> different from 1" unit = unit.name
+        end
     end
 
     # todo: resolve the issue and then remove this
@@ -551,24 +553,20 @@ function _unit_capacity_limits(unit::Unit)
         online_conversion = max_conversion
     else
         online_conversion = max_conversion .* unit.var.ison     # var_ison already includes unit.unit_count
-        max_conversion = max_conversion .* access(unit.unit_count, Float64)
+        max_conversion = max_conversion .* access(unit.unit_count, NonEmptyScalarExpressionValue)
     end
 
     if isnothing(unit.min_conversion)
         # We are not limiting the min conversion.
-        return Dict{Symbol, Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}}}(
-            :min => 0.0,
-            :online => online_conversion::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
-            :max => max_conversion::NonEmptyNumericalExpressionValue,
-        )
+        min_conversion = 0.0
+    else
+        min_conversion = (unit.min_conversion .* (unit.adapt_min_to_availability ? online_conversion : unit.var.ison))
     end
 
-    return Dict{Symbol, Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}}}(
-        :min => (
-            unit.min_conversion .* (unit.adapt_min_to_availability ? online_conversion : unit.var.ison)
-        )::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
-        :online => online_conversion::Union{NonEmptyNumericalExpressionValue, JuMP.AffExpr, Vector{JuMP.AffExpr}},
-        :max => max_conversion::NonEmptyNumericalExpressionValue,
+    return Dict{Symbol, NonEmptyExpressionValue}(
+        :min => min_conversion::NonEmptyExpressionValue,
+        :online => online_conversion::NonEmptyExpressionValue,
+        :max => max_conversion::NonEmptyExpressionValue,
     )
 end
 
