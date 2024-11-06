@@ -39,6 +39,10 @@ import Markdown
 # Everything JuMP / optimization related.
 import JuMP, JuMP.@variable, JuMP.@expression, JuMP.@constraint, JuMP.@objective
 import MultiObjectiveAlgorithms as MOA
+
+"""
+MathOptInterface.jl
+"""
 const MOI = JuMP.MOI
 
 # File (and filesystem/git) and data format handling.

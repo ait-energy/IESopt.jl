@@ -67,7 +67,7 @@ function _connection_var_flow!(connection::Connection)
         cvf = connection.var.flow::Vector{JuMP.VariableRef}
         nfei = components[connection.node_from].exp.injection::Vector{JuMP.AffExpr}
         ntei = components[connection.node_to].exp.injection::Vector{JuMP.AffExpr}
-        loss = prepare(connection.loss; default=0.0)
+        loss = _prepare(connection.loss; default=0.0)
 
         @inbounds @simd for t in get_T(model)
             JuMP.add_to_expression!(nfei[t], cvf[t], -1.0)

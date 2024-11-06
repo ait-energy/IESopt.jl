@@ -228,7 +228,7 @@ end
 # _get(e::Expression) = e.value
 # _get(e::Expression, t::_ID) = (e.value isa Vector) ? e.value[t] : e.value
 
-function prepare(e::Expression; default::Float64)
+function _prepare(e::Expression; default::Float64)
     if e.empty
         return _convert_to_expression(e.model, default)::Expression
     else
@@ -236,7 +236,18 @@ function prepare(e::Expression; default::Float64)
     end
 end
 
+"""
+    access(e::Expression)
+
+Access the value of an `Expression` object.
+"""
 access(e::Expression) = e.value
+
+"""
+    access(e::Expression, t::_ID)
+
+Access the value of an `Expression` object at a specific snapshot index `t`.
+"""
 function access(e::Expression, t::_ID)
     if e.value isa Vector{JuMP.AffExpr}
         return (e.value::Vector{JuMP.AffExpr})[t]::JuMP.AffExpr
@@ -246,7 +257,19 @@ function access(e::Expression, t::_ID)
         return e.value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Float64}
     end
 end
+
+"""
+    access(e::Expression, T::Type)
+
+Access the value of an `Expression` object, and type assert to `T`.
+"""
 access(e::Expression, @nospecialize(T::Type)) = access(e)::T
+
+"""
+    access(e::Expression, t::_ID, T::Type)
+
+Access the value of an `Expression` object at a specific snapshot index `t`, and type assert to `T`.
+"""
 access(e::Expression, t::_ID, @nospecialize(T::Type)) = access(e, t)::T
 
 function _finalize(e::Expression)

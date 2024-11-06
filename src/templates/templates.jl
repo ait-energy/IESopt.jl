@@ -53,7 +53,7 @@ function _analyse(template::CoreTemplate)
     )
 end
 
-function create_docs(template::CoreTemplate)
+function _create_docs(template::CoreTemplate)
     info = analyse(template)
     # TODO
     return info.docs

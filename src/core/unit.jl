@@ -569,6 +569,3 @@ function _unit_capacity_limits(unit::Unit)
         :max => max_conversion::NonEmptyExpressionValue,
     )
 end
-
-# todo: Why is `total` being indexed using carrier names (strings)?
-get_total(unit::Unit, direction::String, carrier::String) = _total(unit, Symbol(direction), carrier)

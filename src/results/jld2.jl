@@ -107,6 +107,17 @@ function _save_results(model::JuMP.Model)
     @info "Results saved to JLD2" file = abspath(filepath)
 end
 
+"""
+    load_results(filename::String)
+
+Load results from a JLD2 file.
+
+# Arguments
+- `filename::String`: The path to the JLD2 file.
+
+# Returns
+- `results`: The IESopt result object.
+"""
 function load_results(filename::String)
     return JLD2.load(filename)
 end

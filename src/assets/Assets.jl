@@ -1,3 +1,8 @@
+"""
+    Assets
+
+Assets module for IESopt.jl, containing path handling (relocatable) for assets: addons, examples, templates.
+"""
 module Assets
 
 using RelocatableFolders
