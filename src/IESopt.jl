@@ -545,7 +545,8 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
     if _iesopt_config(model).optimization.solver.log
         # todo: replace this with a more general approach
         try
-            log_file = abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).solverlog")
+            lcsn = lowercase(JuMP.solver_name(model))
+            log_file = abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).$(lcsn).log")
             rm(log_file; force=true)
             if JuMP.solver_name(model) == "Gurobi"
                 @info "Logging solver output" log_file

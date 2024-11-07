@@ -40,9 +40,10 @@ function _get_hash(model::JuMP.Model)
 end
 
 function _get_solver_log(model::JuMP.Model)
-    file = abspath(_iesopt_config(model).paths.results, "solver.log")
-    isfile(file) || return ""
-    return read(file, String)
+    lcsn = lowercase(JuMP.solver_name(model))
+    log_file = abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).$(lcsn).log")
+    isfile(log_file) || return ""
+    return read(log_file, String)
 end
 
 function _get_iesopt_log(model::JuMP.Model)

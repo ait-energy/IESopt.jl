@@ -68,7 +68,7 @@ function _attach_logger!(model::JuMP.Model)
     if _iesopt_config(model).optimization.high_performance
         _iesopt(model).logger = logger
     else
-        log_file = "$(_iesopt_config(model).names.scenario).log"
+        log_file = "$(_iesopt_config(model).names.scenario).iesopt.log"
         log_path = normpath(mkpath(_iesopt_config(model).paths.results), log_file)
         try
             _iesopt(model).logger = LoggingExtras.TeeLogger(logger, _FileLogger(log_path))
