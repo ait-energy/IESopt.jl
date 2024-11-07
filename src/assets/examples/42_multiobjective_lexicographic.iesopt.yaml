@@ -19,7 +19,7 @@ config:
   # ------------------------------------------------------------------------------------------------------------------ #
   results:
     enabled: true
-    in_memory: true
+    memory_only: true
 
 # Note:
 # If you are using all permutations, remember to also define the relative tolerance for the last objective.

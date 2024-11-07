@@ -20,7 +20,7 @@ config:
   # ------------------------------------------------------------------------------------------------------------------ #
   results:
     enabled: true
-    in_memory: true
+    memory_only: true
 
 carriers:
   electricity: {}
