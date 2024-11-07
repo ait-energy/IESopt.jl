@@ -21,9 +21,9 @@ function _ConfigResults(config::Dict{String, Any})
         @error "The `$(entry)` entry in `results` is deprecated will not work as expected"
     end
 
-    memory_only = get(config, "memory_only", false)
+    memory_only = get(config, "memory_only", true)
     compress = get(config, "compress", false)
-    included_modes = lowercase(get(config, "include", memory_only ? "none" : "all"))
+    included_modes = lowercase(get(config, "include", memory_only ? "none" : "input+log"))
     included_modes = string.(replace(included_modes, "all" => "input+git+log"))
 
     if memory_only
