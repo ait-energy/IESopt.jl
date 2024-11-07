@@ -278,7 +278,7 @@ end
 @recompile_invalidations begin
     function Base.show(io::IO, cc::_CoreComponentResult)
         str_show = """:: CoreComponentResult (of $(cc.__type)) ::"""
-        
+
         fields = cc.__fields
         for field in fields[1:(end - 1)]
             str_show *= "\n├ $field: $(getproperty(cc, field))"

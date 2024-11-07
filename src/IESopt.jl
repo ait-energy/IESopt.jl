@@ -255,7 +255,7 @@ function generate!(model::JuMP.Model, filename::String; @nospecialize(kwargs...)
 
     try
         # Validate before parsing.
-        # !validate(filename) && return nothing
+        !validate(filename) && return nothing
 
         # Parse & build the model.
         parse!(model, filename; kwargs...) || return model
@@ -546,7 +546,8 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
         # todo: replace this with a more general approach
         try
             lcsn = lowercase(JuMP.solver_name(model))
-            log_file = abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).$(lcsn).log")
+            log_file =
+                abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).$(lcsn).log")
             rm(log_file; force=true)
             if JuMP.solver_name(model) == "Gurobi"
                 @info "Logging solver output" log_file

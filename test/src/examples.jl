@@ -120,7 +120,7 @@ end
 
     chp = get_component(model, "chp")
     gas = get_component(model, "create_gas")
-   
+
     @test all(JuMP.value.(chp.power.exp.out_electricity) .== [2.75, 5.50, 7.00, 8.00, 9.00, 10.00, 5.00, 5.00, 9.00])
     @test all(JuMP.value.(chp.heat.exp.out_heat) .== [5.00, 10.00, 10.00, 10.00, 5.00, 0.00, 0.00, 5.00, 5.00])
     @test all(JuMP.value.(gas.exp.value) .== [9.375, 18.75, 22.5, 25.0, 25.0, 25.0, 12.5, 15.0, 25.0])

@@ -24,7 +24,7 @@ function construct_constraints!(model::JuMP.Model, config::Dict)
     # - Most of the time its best, to separate single steps of your model modifications into separate functions.
     #   This means, we are calling `link_units` for every CHP component in the model.
 
-    return all(link_units.(get_components(model, tagged="CHP")))
+    return all(link_units.(get_components(model; tagged="CHP")))
 
     # The above is a shorthand for the following:
     #

@@ -343,7 +343,8 @@ function _isvalid(unit::Unit)
     if (!_isfixed(unit.unit_count) && !_isempty(unit.unit_count)) || (access(unit.unit_count, Float64) != 1)
         # todo: resolve the issue and then remove this
         if !isnothing(unit.min_on_time) || !isnothing(unit.min_off_time)
-            @critical "min_on_time/min_off_time is currently not supported for Units with `unit.count > 1`" unit = unit.name
+            @critical "min_on_time/min_off_time is currently not supported for Units with `unit.count > 1`" unit =
+                unit.name
         end
 
         if unit.enable_ramp_up || unit.enable_ramp_down
