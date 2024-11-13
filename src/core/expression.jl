@@ -263,14 +263,22 @@ end
 
 Access the value of an `Expression` object, and type assert to `T`.
 """
-access(e::Expression, @nospecialize(T::Type)) = access(e)::T
+function access(e::Expression, ::Type{T})::T where {T}
+    return access(e)::T
+end
+
+function access(e::Expression, ::Type{T})::T where {T <: Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Float64}}
+    return e.value::T
+end
 
 """
     access(e::Expression, t::_ID, T::Type)
 
 Access the value of an `Expression` object at a specific snapshot index `t`, and type assert to `T`.
 """
-access(e::Expression, t::_ID, @nospecialize(T::Type)) = access(e, t)::T
+function access(e::Expression, t::_ID, ::Type{T})::T where {T}
+    return access(e, t)::T
+end
 
 function _finalize(e::Expression)
     e.empty && return nothing
