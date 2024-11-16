@@ -3,17 +3,18 @@ struct _ConfigResults
     memory_only::Bool
     compress::Bool
     include::Set{Symbol}
+    backend::Symbol
 end
 
 function _ConfigResults(config::Dict{String, Any})
     if isempty(config)
-        return _ConfigResults(true, true, false, Set())
+        return _ConfigResults(true, true, false, Set(), :none)
     end
 
     enabled = get(config, "enabled", !get(config, "disabled", false))
     if !enabled
         @warn "Automatic result extraction disabled"
-        return _ConfigResults(false, false, false, Set())
+        return _ConfigResults(false, false, false, Set(), :none)
     end
 
     for entry in ["document", "settings", "groups"]
@@ -25,6 +26,7 @@ function _ConfigResults(config::Dict{String, Any})
     compress = get(config, "compress", false)
     included_modes = lowercase(get(config, "include", memory_only ? "none" : "input+log"))
     included_modes = string.(replace(included_modes, "all" => "input+git+log"))
+    backend = Symbol(get(config, "backend", "duckdb"))
 
     if memory_only
         if compress
@@ -32,5 +34,5 @@ function _ConfigResults(config::Dict{String, Any})
         end
     end
 
-    return _ConfigResults(enabled, memory_only, compress, Set(Symbol.(split(included_modes, '+'))))
+    return _ConfigResults(enabled, memory_only, compress, Set(Symbol.(split(included_modes, '+'))), backend)
 end
