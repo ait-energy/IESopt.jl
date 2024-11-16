@@ -28,7 +28,7 @@ function _precompile_traces()
     traces_file = (RelocatableFolders.@path normpath(@__DIR__, "traces.jl"))::RelocatableFolders.Path
     traces = read(traces_file, String)
 
-    statements = JuliaSyntax.parse(
+    statements = JuliaSyntax.parsestmt(
         Expr,
         """
 let

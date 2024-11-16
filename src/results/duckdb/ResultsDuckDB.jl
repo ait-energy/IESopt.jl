@@ -154,7 +154,7 @@ function db_create_table(db::DuckDB.DB, model::JuMP.Model, ::AttrExtractMeta)
     DuckDB.append(meta, IESopt._get_solver_log(model)::String)
     DuckDB.end_row(meta)
 
-    DuckDB.closDuckDB.end_row(meta)
+    DuckDB.close(meta)
 
     return nothing
 end
