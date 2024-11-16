@@ -1,13 +1,16 @@
 module ResultsDuckDB
 
+import ..IESopt
+
 import JuMP
 import DuckDB
-import ..IESopt
+import DataFrames
 
 abstract type AbstractAttribute end
 
 struct AttrExtractObjectives <: AbstractAttribute end
 struct AttrExtractResults <: AbstractAttribute end
+struct AttrExtractMeta <: AbstractAttribute end
 
 function append_component_info!(appender::DuckDB.Appender, cid::Int64, rtid::Int64, rid::Int64, sid::Int64, vt::Int64)
     DuckDB.append(appender, cid)
@@ -98,6 +101,39 @@ function db_create_table(db::DuckDB.DB, model::JuMP.Model, ::AttrExtractObjectiv
         DuckDB.end_row(appender)
     end
     return DuckDB.close(appender)
+end
+
+function db_create_table(db::DuckDB.DB, model::JuMP.Model, ::AttrExtractMeta)
+    a = DuckDB.append
+    e = DuckDB.end_row
+
+    DuckDB.execute(
+        db,
+        "CREATE TABLE meta (\
+            name STRING, \
+            value UNION(int INT64, float DOUBLE, str STRING, bool BOOLEAN), \
+        )",
+    )
+
+    meta = DuckDB.Appender(db, "meta")
+
+    a(meta, "iesopt_version"); a(meta, string(pkgversion(IESopt))::String); e(meta)
+    a(meta, "solver_name"); a(meta, JuMP.solver_name(model)::String); e(meta)
+    a(meta, "termination_status"); a(meta, string(JuMP.termination_status(model))::String); e(meta)
+    a(meta, "solver_status"); a(meta, string(JuMP.raw_status(model))::String); e(meta)
+    a(meta, "result_count"); a(meta, JuMP.result_count(model)::Int64); e(meta)
+    a(meta, "objective_value"); a(meta, JuMP.objective_value(model)::Float64); e(meta)
+    a(meta, "solve_time"); a(meta, JuMP.solve_time(model)::Float64); e(meta)
+    a(meta, "has_values"); a(meta, JuMP.has_values(model)::Bool); e(meta)
+    a(meta, "has_duals"); a(meta, JuMP.has_duals(model)::Bool); e(meta)
+    a(meta, "primal_status"); a(meta, Int64(JuMP.primal_status(model))::Int64); e(meta)
+    a(meta, "dual_status"); a(meta, Int64(JuMP.dual_status(model))::Int64); e(meta)
+    a(meta, "log_iesopt"); a(meta, IESopt._get_iesopt_log(model)::String); e(meta)
+    a(meta, "log_solver"); a(meta, IESopt._get_solver_log(model)::String); e(meta)
+
+    DuckDB.close(meta)
+
+    return nothing
 end
 
 # TODO: InputData
@@ -194,13 +230,19 @@ function db_create_table(db::DuckDB.DB, model::JuMP.Model, ::AttrExtractResults)
     return nothing
 end
 
-function extract_results(model::JuMP.Model)
+function extract(model::JuMP.Model)
     db = DuckDB.DB(":memory:")
 
+    db_create_table(db, model, AttrExtractMeta())
     db_create_table(db, model, AttrExtractObjectives())
     db_create_table(db, model, AttrExtractResults())
 
     return db
 end
+
+query(db::DuckDB.DB, q::String) = DuckDB.execute(db, q)::DuckDB.QueryResult
+query(db::DuckDB.DB, q::String, ::Type{Dict}) = Dict(query(db, q))
+query(db::DuckDB.DB, q::String, ::Type{Vector}) = NamedTuple.(query(db, q))
+query(db::DuckDB.DB, q::String, ::Type{DataFrames.DataFrame}) = DataFrames.DataFrame(query(db, q))
 
 end
