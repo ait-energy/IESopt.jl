@@ -141,7 +141,7 @@ guaranteeing that the Expression can not be empty.
 """
 const NonEmptyExpressionValue = Union{JuMP.VariableRef, JuMP.AffExpr, Vector{JuMP.AffExpr}, Float64, Vector{Float64}}
 
-_name(e::Expression) = e.empty ? "" : e.internal.name
+_name(e::Expression) = e.empty || isnothing(e.internal) ? "" : e.internal.name
 _isfixed(e::Expression) = (e.empty || (e.value isa Float64) || (e.value isa Vector{Float64}))::Bool
 _isempty(e::Expression) = e.empty::Bool
 
