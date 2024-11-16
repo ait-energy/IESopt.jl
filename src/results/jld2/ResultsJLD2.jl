@@ -1,6 +1,13 @@
 module ResultsJLD2
 
-using ..IESopt: _iesopt, _iesopt_config, _result_fields, _CoreComponent, _CoreComponentResult, _CoreComponentOptResultContainer, _component_type
+using ..IESopt:
+    _iesopt,
+    _iesopt_config,
+    _result_fields,
+    _CoreComponent,
+    _CoreComponentResult,
+    _CoreComponentOptResultContainer,
+    _component_type
 
 import LibGit2
 import JLD2

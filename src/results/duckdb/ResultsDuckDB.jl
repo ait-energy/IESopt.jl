@@ -104,9 +104,6 @@ function db_create_table(db::DuckDB.DB, model::JuMP.Model, ::AttrExtractObjectiv
 end
 
 function db_create_table(db::DuckDB.DB, model::JuMP.Model, ::AttrExtractMeta)
-    a = DuckDB.append
-    e = DuckDB.end_row
-
     DuckDB.execute(
         db,
         "CREATE TABLE meta (\
@@ -117,21 +114,47 @@ function db_create_table(db::DuckDB.DB, model::JuMP.Model, ::AttrExtractMeta)
 
     meta = DuckDB.Appender(db, "meta")
 
-    a(meta, "iesopt_version"); a(meta, string(pkgversion(IESopt))::String); e(meta)
-    a(meta, "solver_name"); a(meta, JuMP.solver_name(model)::String); e(meta)
-    a(meta, "termination_status"); a(meta, string(JuMP.termination_status(model))::String); e(meta)
-    a(meta, "solver_status"); a(meta, string(JuMP.raw_status(model))::String); e(meta)
-    a(meta, "result_count"); a(meta, JuMP.result_count(model)::Int64); e(meta)
-    a(meta, "objective_value"); a(meta, JuMP.objective_value(model)::Float64); e(meta)
-    a(meta, "solve_time"); a(meta, JuMP.solve_time(model)::Float64); e(meta)
-    a(meta, "has_values"); a(meta, JuMP.has_values(model)::Bool); e(meta)
-    a(meta, "has_duals"); a(meta, JuMP.has_duals(model)::Bool); e(meta)
-    a(meta, "primal_status"); a(meta, Int64(JuMP.primal_status(model))::Int64); e(meta)
-    a(meta, "dual_status"); a(meta, Int64(JuMP.dual_status(model))::Int64); e(meta)
-    a(meta, "log_iesopt"); a(meta, IESopt._get_iesopt_log(model)::String); e(meta)
-    a(meta, "log_solver"); a(meta, IESopt._get_solver_log(model)::String); e(meta)
+    DuckDB.append(meta, "iesopt_version")
+    DuckDB.append(meta, string(pkgversion(IESopt))::String)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "solver_name")
+    DuckDB.append(meta, JuMP.solver_name(model)::String)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "termination_status")
+    DuckDB.append(meta, string(JuMP.termination_status(model))::String)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "solver_status")
+    DuckDB.append(meta, string(JuMP.raw_status(model))::String)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "result_count")
+    DuckDB.append(meta, JuMP.result_count(model)::Int64)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "objective_value")
+    DuckDB.append(meta, JuMP.objective_value(model)::Float64)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "solve_time")
+    DuckDB.append(meta, JuMP.solve_time(model)::Float64)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "has_values")
+    DuckDB.append(meta, JuMP.has_values(model)::Bool)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "has_duals")
+    DuckDB.append(meta, JuMP.has_duals(model)::Bool)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "primal_status")
+    DuckDB.append(meta, Int64(JuMP.primal_status(model))::Int64)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "dual_status")
+    DuckDB.append(meta, Int64(JuMP.dual_status(model))::Int64)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "log_iesopt")
+    DuckDB.append(meta, IESopt._get_iesopt_log(model)::String)
+    DuckDB.end_row(meta)
+    DuckDB.append(meta, "log_solver")
+    DuckDB.append(meta, IESopt._get_solver_log(model)::String)
+    DuckDB.end_row(meta)
 
-    DuckDB.close(meta)
+    DuckDB.closDuckDB.end_row(meta)
 
     return nothing
 end
