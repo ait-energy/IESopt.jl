@@ -24,8 +24,10 @@ import ArgCheck
 # Used to "hotload" code (e.g., addons, Core Templates).
 using RuntimeGeneratedFunctions
 
-# Used to parse expressions from strings (over using `Meta.parse`).
+# Used to parse expressions from strings, and to trick with precompiling indirect dependencies.
 import JuliaSyntax
+import MacroTools
+import RelocatableFolders
 
 # Required during the "build" step, showing progress.
 using ProgressMeter
@@ -50,8 +52,6 @@ import YAML
 import JSON
 import SentinelArrays, InlineStrings, CSV  # NOTE: The first two only help with precompilation of CSV.
 import DataFrames
-import JLD2
-import LibGit2
 import ZipFile
 
 # Used in Benders/Stochastic.

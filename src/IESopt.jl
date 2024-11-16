@@ -611,14 +611,7 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
         end
     end
 
-    if _iesopt_config(model).results.enabled
-        if !JuMP.is_solved_and_feasible(model)
-            @error "Extracting results is only possible for a solved and feasible model"
-        else
-            _extract_results(model)
-            _save_results(model)
-        end
-    end
+    handle_result_extraction(model)
 
     @info "Profiling results after `optimize` [time, top 5]" _profiling_format_top(model, 5)...
     return nothing
@@ -776,7 +769,7 @@ end
 
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
+include("precompile/precompile_traced.jl")
 include("precompile/precompile_tools.jl")
-# include("precompile/precompile_manual.jl")
 
 end
