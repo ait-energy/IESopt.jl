@@ -15,6 +15,6 @@ function _node_exp_injection!(node::Node)
 
     if !isnothing(node.etdf_group)
         # Add this node's "net positions" (= it's injections) to the overall ETDF group.
-        push!(_iesopt(model).aux.etdf.groups[node.etdf_group], node.id)
+        push!(internal(model).aux.etdf.groups[node.etdf_group], node.id)
     end
 end

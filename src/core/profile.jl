@@ -43,8 +43,8 @@ Besides modelling fixed profiles, they also allow different ways to modify the v
 @kwdef struct Profile <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    constraint_safety::Bool
-    constraint_safety_cost::_ScalarInput
+    soft_constraints::Bool
+    soft_constraints_penalty::_ScalarInput
 
     # [Mandatory] ======================================================================================================
     name::_String
@@ -209,19 +209,19 @@ end
 
 function _after_construct_variables!(profile::Profile)
     model = profile.model
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
 
     if !_isempty(profile.value)
-        if (profile.mode === :fixed) && _iesopt_config(model).parametric
+        if (profile.mode === :fixed) && false  # TODO _iesopt_config(model).parametric
             # Create all representatives.
             _repr = Dict(
                 t => @variable(model, base_name = make_base_name(profile, "aux_value[$(t)]")) for
-                t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+                t in get_T(model) if internal(model).model.snapshots[t].is_representative
             )
             # Create all variables, either as themselves or their representative.
             profile.var.aux_value = collect(
-                _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
 
@@ -229,11 +229,11 @@ function _after_construct_variables!(profile::Profile)
         _finalize(profile.value)
         for t in get_T(model)
             _repr_t =
-                _iesopt(model).model.snapshots[t].is_representative ? t :
-                _iesopt(model).model.snapshots[t].representative
+                internal(model).model.snapshots[t].is_representative ? t :
+                internal(model).model.snapshots[t].representative
             val = access(profile.value, _repr_t, Float64)
 
-            if (profile.mode === :fixed) && _iesopt_config(model).parametric
+            if (profile.mode === :fixed) && false  # TODO _iesopt_config(model).parametric
                 JuMP.fix(profile.var.aux_value[t], val; force=true)
                 JuMP.add_to_expression!(profile.exp.value[t], profile.var.aux_value[t])
             else

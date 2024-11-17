@@ -32,7 +32,7 @@ function _connection_obj_cost!(connection::Connection)
         )
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, connection.obj.cost)
+    push!(internal(model).model.objectives["total_cost"].terms, connection.obj.cost)
 
     return nothing
 end

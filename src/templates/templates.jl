@@ -38,7 +38,7 @@ function _analyse(template::CoreTemplate)
 
     internal = _is_container(template) ? values(template.yaml["components"]) : [template.yaml["component"]]
     child_types = sort!(collect(Set(comp["type"] for comp in internal)))::Vector{String}
-    instances = get(_iesopt(template.model).model.tags, template.name, String[])
+    instances = get(internal(template.model).model.tags, template.name, String[])
 
     docs = get(template.yaml, "docs", Dict{String, Any}())
     isempty(docs) && @warn "Template is missing `docs` entry" template = template.name

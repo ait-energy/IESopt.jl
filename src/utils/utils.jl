@@ -16,6 +16,37 @@ macro critical(msg, args...)
     end)
 end
 
+macro config(model, expr, type::Union{Symbol, Expr}=:Any)
+    function walk(item)
+        if item isa Expr && item.head == :.
+            # Do `foo.bar` -> `foo["bar"]`.
+            a, b = item.args
+            return :($a[$(string(b.value))])
+        elseif item isa Symbol
+            # This is the first "accessors" in the chain.
+            return :(__config__[$(string(item))])
+        end
+
+        return item
+    end
+
+    # Use to substitute the `__config__` symbol with the actual configuration.
+    function substitute_model(item)
+        (item === :(__config__)) && return :($(esc(model)).ext[:_iesopt].input.config)
+        return item
+    end
+
+    # Walk to properly access the dict(s).
+    expr = MacroTools.postwalk(walk, expr)
+
+    # Walk to substitute `__config__`.
+    expr = MacroTools.postwalk(substitute_model, expr)
+
+    # Return expression, including the optional type assert.
+    (type != :Any) && return :($expr::$type)
+    return expr
+end
+
 function _get_solver_module(solver::Any)
     @critical "No solver extension prepared" solver
 end

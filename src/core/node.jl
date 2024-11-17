@@ -25,8 +25,8 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
 @kwdef struct Node <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    constraint_safety::Bool
-    constraint_safety_cost::_ScalarInput
+    soft_constraints::Bool
+    soft_constraints_penalty::_ScalarInput
 
     # [Mandatory] ======================================================================================================
     name::_String
@@ -160,8 +160,8 @@ function _setup!(node::Node)
 
     if !isnothing(node.etdf_group)
         # Check if we need to create the current ETDF group.
-        if !haskey(_iesopt(model).aux.etdf.groups, node.etdf_group)
-            _iesopt(model).aux.etdf.groups[node.etdf_group] = []
+        if !haskey(internal(model).aux.etdf.groups, node.etdf_group)
+            internal(model).aux.etdf.groups[node.etdf_group] = []
         end
     end
 

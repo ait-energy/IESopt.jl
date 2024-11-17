@@ -57,7 +57,7 @@ _build_priority(::Virtual) = -1  # This means that `Virtual`s are not built.
 
             # See if we may be trying to find a component that is "inside" this Virtual?
             cname = "$(getfield(virtual, :name)).$field"
-            haskey(_iesopt(model).model.components, cname) && return get_component(model, cname)
+            haskey(internal(model).model.components, cname) && return get_component(model, cname)
 
             return getfield(virtual, field)
         catch e
@@ -78,7 +78,7 @@ _build_priority(::Virtual) = -1  # This means that `Virtual`s are not built.
     function Base.propertynames(virtual::Virtual)
         prefix = "$(getfield(virtual, :name))."
         sub_components = Symbol[]
-        for cname in keys(_iesopt(virtual.model).model.components)
+        for cname in keys(internal(virtual.model).model.components)
             startswith(cname, prefix) || continue
             push!(sub_components, Symbol(split(cname, prefix)[2]))
         end

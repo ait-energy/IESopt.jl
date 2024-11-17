@@ -228,16 +228,16 @@ function _load_or_retrieve_addon_file(filename::String; reload::Bool)
 end
 
 function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=DataFrames.DataFrame, slice::Bool=true)
-    paths = _iesopt_config(model).paths::_ConfigPaths
+    paths = @config(model, paths)
 
     if endswith(filename, ".csv")
-        path = path === :auto ? :files : path
-        filepath = abspath(getfield(_iesopt_config(model).paths, path), filename)
+        path = path === :auto ? "files" : string(path)
+        filepath = abspath(@config(model, paths)[path], filename)
         return _getcsv(model, filepath; sink=sink, slice=slice)
     elseif endswith(filename, ".jl")
-        path = path === :auto ? :addons : path
+        path = path === :auto ? "addons" : string(path)
         core_addon_dir = Assets.get_path("addons")
-        filepath_local = abspath(getfield(_iesopt_config(model).paths, path), filename)
+        filepath_local = abspath(@config(model, paths)[path], filename)
         filepath_core = abspath(core_addon_dir, filename)
 
         # Before checking the file, let's see if it refers to an already loaded module instead.
@@ -245,7 +245,7 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
         module_name = Symbol(basename(filename)[1:(end - 3)])
         if (module_name in names(Main; all=true))
             @info "Addon already loaded in global Main" addon = module_name
-            if model.ext[:_iesopt_force_reload]
+            if @config(model, general.performance.force_addon_reload, Bool)
                 @warn "Cannot force reload an addon that is already loaded in Main, outside IESopt; ignoring reload, and re-using the existing module" module_name
             end
             return getfield(Main, module_name)
@@ -253,10 +253,10 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
 
         if isfile(filepath_local)
             @info "Trying to load addon from file (local)" filename source = filepath_local
-            return _load_or_retrieve_addon_file(filepath_local; reload=model.ext[:_iesopt_force_reload])
+            return _load_or_retrieve_addon_file(filepath_local; reload=@config(model, general.performance.force_addon_reload, Bool))
         elseif isfile(filepath_core)
             @info "Trying to load addon from file (core)" filename source = filepath_core
-            return _load_or_retrieve_addon_file(filepath_core; reload=model.ext[:_iesopt_force_reload])
+            return _load_or_retrieve_addon_file(filepath_core; reload=@config(model, general.performance.force_addon_reload, Bool))
         else
             @critical "Failed to find addon location" filename filepath_local filepath_core
         end
@@ -312,8 +312,8 @@ function _getcsv(
     table = CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)::DataFrames.DataFrame
 
     # Get some snapshot config parameters
-    offset = _iesopt_config(model).optimization.snapshots.offset::Int64
-    aggregation = _iesopt_config(model).optimization.snapshots.aggregate
+    offset = @config(model, optimization.snapshots.offset, Int64)
+    aggregation = @config(model, optimization.snapshots.aggregate)
 
     # Offset and aggregation don't work together.
     if !isnothing(aggregation) && offset != 0
@@ -322,7 +322,7 @@ function _getcsv(
 
     # Get the number of table rows and and the model's snapshot count
     nrows = size(table, 1)
-    count = _iesopt_config(model).optimization.snapshots.count::Int64
+    count = @config(model, optimization.snapshots.count, Int64)
 
     # Get the range of table rows we want to return.
     # Without snapshot aggregation we can return the rows specified by offset and count.
@@ -341,8 +341,8 @@ function _getcsv(
 end
 
 function _getfromcsv(model::JuMP.Model, file::String, column::String)
-    haskey(_iesopt(model).input.files, file) || (@critical "File not properly registered" column file)
-    df = _iesopt(model).input.files[file]::DataFrames.DataFrame
+    haskey(internal(model).input.files, file) || (@critical "File not properly registered" column file)
+    df = internal(model).input.files[file]::DataFrames.DataFrame
     return @view df[get_T(model), column]
 end
 
@@ -353,7 +353,7 @@ function _conv_S2NI(model::JuMP.Model, str::AbstractString)
 
     if isnothing(findfirst("@", str))
         # Check if this is a link to an Expression.
-        if haskey(_iesopt(model).model.components, str)
+        if haskey(internal(model).model.components, str)
             component = get_component(model, str)
             error(
                 "You ended up in an outdated part of IESopt, which should not have happened. Please report this error including the model you are trying to run.",
@@ -370,7 +370,7 @@ function _conv_S2NI(model::JuMP.Model, str::AbstractString)
     else
         # This handles references to files like "column@data_file".
         col, file = split(str, "@")
-        return collect(skipmissing(_iesopt(model).input.files[file][!, col]))
+        return collect(skipmissing(internal(model).input.files[file][!, col]))
     end
 end
 
@@ -508,13 +508,13 @@ function _add_obj_term!(model::JuMP.Model, term::String; component::String, obje
 end
 
 function _add_obj_term!(model::JuMP.Model, term::Real; component::String, objective::String)
-    push!(_iesopt(model).aux._obj_terms[objective], float(term))
+    push!(internal(model).aux._obj_terms[objective], float(term))
     return nothing
 end
 
 function _add_obj_term_from_str!(model::JuMP.Model, parsed_term::Expr; component::String, objective::String)
     try
-        push!(_iesopt(model).aux._obj_terms[objective], eval(parsed_term))
+        push!(internal(model).aux._obj_terms[objective], eval(parsed_term))
     catch error
         @critical "Failed to evaluate objective term" component objective error
     end
@@ -522,12 +522,12 @@ function _add_obj_term_from_str!(model::JuMP.Model, parsed_term::Expr; component
 end
 
 function _add_obj_term_from_str!(model::JuMP.Model, parsed_term::Symbol; component::String, objective::String)
-    push!(_iesopt(model).aux._obj_terms[objective], "$(component).$(parsed_term)")
+    push!(internal(model).aux._obj_terms[objective], "$(component).$(parsed_term)")
     return nothing
 end
 
 function _profiling_get_top(model::JuMP.Model, n::Int64; mode::Symbol=:time, groupby::Symbol=:function)
-    prof = _iesopt(model).aux._profiling
+    prof = internal(model).aux._profiling
 
     if groupby == :function
         data = prof

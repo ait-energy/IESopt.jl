@@ -31,10 +31,10 @@ function _extract_results(model::JuMP.Model)
     @info "Begin extracting results"
     # TODO: support multiple results (from MOA)
 
-    result_components = _iesopt(model).results.components
-    result_objectives = _iesopt(model).results.objectives
-    result_customs = _iesopt(model).results.customs
-    components = _iesopt(model).model.components
+    result_components = internal(model).results.components
+    result_objectives = internal(model).results.objectives
+    result_customs = internal(model).results.customs
+    components = internal(model).model.components
 
     model_has_duals = JuMP.has_duals(model)
 
@@ -55,10 +55,10 @@ function _extract_results(model::JuMP.Model)
     end
 
     merge!(result_components, Dict(k => _convert_to_result(v) for (k, v) in components))
-    merge!(result_objectives, Dict(k => JuMP.value(v.expr) for (k, v) in _iesopt(model).model.objectives))
+    merge!(result_objectives, Dict(k => JuMP.value(v.expr) for (k, v) in internal(model).model.objectives))
 
     # Add results that were defined by Core Templates.
-    for (component_name, entry) in _iesopt(model).results._templates
+    for (component_name, entry) in internal(model).results._templates
         symbolized_parameters = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in entry.virtual._parameters)
         # TODO: extract user defined results (properly)
         # for item in entry.items

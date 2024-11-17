@@ -37,8 +37,8 @@ function _node_con_last_state!(node::Node)
 
     injection_t = t
     if _has_representative_snapshots(model)
-        if !_iesopt(model).model.snapshots[t].is_representative
-            injection_t = _iesopt(model).model.snapshots[t].representative
+        if !internal(model).model.snapshots[t].is_representative
+            injection_t = internal(model).model.snapshots[t].representative
         end
     end
 
@@ -74,14 +74,14 @@ function _node_con_last_state!(node::Node)
         )
     end
 
-    if node.constraint_safety
+    if node.soft_constraints
         if !_isempty(node.state_lb)
-            _iesopt(model).aux.constraint_safety_penalties[node.con.last_state_lb] =
-                (component_name=node.name, t=t, description="last_state_lb", penalty=node.constraint_safety_cost)
+            internal(model).aux.soft_constraints_penalties[node.con.last_state_lb] =
+                (component_name=node.name, t=t, description="last_state_lb", penalty=node.soft_constraints_penalty)
         end
         if !_isempty(node.state_ub)
-            _iesopt(model).aux.constraint_safety_penalties[node.con.last_state_ub] =
-                (component_name=node.name, t=t, description="last_state_ub", penalty=node.constraint_safety_cost)
+            internal(model).aux.soft_constraints_penalties[node.con.last_state_ub] =
+                (component_name=node.name, t=t, description="last_state_ub", penalty=node.soft_constraints_penalty)
         end
     end
 

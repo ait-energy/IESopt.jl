@@ -38,7 +38,7 @@ true_cost = []
 for t in 1:365
     append!(true_cost, [_cost[t * 24 * 4] for _ in 1:(24 * 4)])
 end
-objs = _iesopt(model).model.objectives
+objs = internal(model).model.objectives
 JuMP.@objective(
     model,
     Min,
@@ -95,7 +95,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=365, sense=:Min, lower_bound=0.0, o
 
     JuMP.fix.(get_component(model, "inflow").var.aux_value, _inflow[((t - 1) * 24 * 4 + 1):(t * 24 * 4)]; force=true)
     JuMP.fix.(get_component(model, "demand").var.aux_value, _demand[((t - 1) * 24 * 4 + 1):(t * 24 * 4)]; force=true)
-    objs = _iesopt(model).model.objectives
+    objs = internal(model).model.objectives
 
     if t == 1
         SDDP.@stageobjective(
@@ -184,7 +184,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
     end
 
     v = JuMP.fix_value(get_component(model, "inflow").var.aux_value[1])
-    objs = _iesopt(model).model.objectives
+    objs = internal(model).model.objectives
 
     Ω = [1.0]
     P = [1.0]
@@ -270,7 +270,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
     end
 
     v = JuMP.fix_value(get_component(model, "inflow").var.aux_value[1])
-    objs = _iesopt(model).model.objectives
+    objs = internal(model).model.objectives
 
     lower = -convert(Int64, floor(t / 5.0 * 2500))
     upper = -0.5 * lower
@@ -349,7 +349,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=52, sense=:Min, lower_bound=0.0, op
     end
 
     v = JuMP.fix_value(get_component(model, "inflow").var.aux_value[1])
-    objs = _iesopt(model).model.objectives
+    objs = internal(model).model.objectives
 
     Ω = [
         (

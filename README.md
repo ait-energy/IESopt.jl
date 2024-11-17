@@ -100,7 +100,7 @@ Steps 1. and 2. can be combined in a single call, which the convenience function
 using IESopt
 
 model = IESopt.run("config.iesopt.yaml")
-results = model.ext[:iesopt].results
+results = model.ext[:_iesopt].results
 ```
 
 #### Using Python
@@ -132,7 +132,7 @@ IESopt.generate!(filename::String)
 IESopt.optimize!(model::JuMP.Model; save_results::Bool=true, kwargs...)
 
 """Build, optimize, and return a model, in a single call."""
-IESopt.run(filename::String; verbosity=nothing, kwargs...)
+IESopt.run(filename::String; kwargs...)
 
 """Get the component with the name `component_name` from the `model`."""
 IESopt.get_component(model::JuMP.Model, component_name::String)

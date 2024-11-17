@@ -5,8 +5,8 @@ component's settings, as well as have associated costs.
 @kwdef struct Decision <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    constraint_safety::Bool
-    constraint_safety_cost::_ScalarInput
+    soft_constraints::Bool
+    soft_constraints_penalty::_ScalarInput
 
     # [Mandatory] ======================================================================================================
     name::_String

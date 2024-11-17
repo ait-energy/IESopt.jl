@@ -5,7 +5,7 @@ function _parse_noncore_component!(
     cname::String,
 )::Dict{String, Any}
     # Get template and file.
-    template = _iesopt(model).input.noncore[:templates][type]
+    template = internal(model).input.noncore[:templates][type]
     parameters = deepcopy(get(template.yaml, "parameters", Dict{String, Any}()))
 
     # Parse parameters from configuration.
@@ -47,7 +47,7 @@ function _parse_noncore_component!(
     end
 
     # Add global parameters
-    for (k, v) in _iesopt(model).input.parameters
+    for (k, v) in internal(model).input.parameters
         if haskey(parameters, k)
             @warn "Ambiguous parameter in component and global specification; using local value" component = cname parameter =
                 k
@@ -57,7 +57,7 @@ function _parse_noncore_component!(
     end
 
     # Write the final version of parameters into the Virtual.
-    virtual = _iesopt(model).model.components[cname]
+    virtual = internal(model).model.components[cname]
     merge!(virtual._parameters, parameters)
 
     if haskey(template.yaml, "functions")
@@ -112,10 +112,10 @@ function _parse_noncore_component!(
     if haskey(template.yaml, "files")
         for file in template.yaml["files"]
             filedescr = replace(file[1], replacements => p -> parameters[p[2:(end - 1)]])
-            haskey(_iesopt(model).input.files, filedescr) && continue
+            haskey(internal(model).input.files, filedescr) && continue
 
             filename = replace(file[2], replacements => p -> parameters[p[2:(end - 1)]])
-            _iesopt(model).input.files[filedescr] = _getfile(model, filename)
+            internal(model).input.files[filedescr] = _getfile(model, filename)
         end
     end
 
@@ -136,7 +136,7 @@ function _parse_container!(
     type::String,
 )::Vector{String}
     # Get template and file.
-    template = _iesopt(model).input.noncore[:templates][type]
+    template = internal(model).input.noncore[:templates][type]
     parameters = copy(get(template.yaml, "parameters", Dict{String, Any}()))
 
     # Get top-level configuration.
@@ -184,7 +184,7 @@ function _parse_container!(
     end
 
     # Add global parameters
-    for (k, v) in _iesopt(model).input.parameters
+    for (k, v) in internal(model).input.parameters
         if haskey(parameters, k)
             @warn "Ambiguous parameter in component and global specification; using local value" component = name parameter =
                 k
@@ -194,7 +194,7 @@ function _parse_container!(
     end
 
     # Write the final version of parameters into the Virtual.
-    virtual = _iesopt(model).model.components[name]
+    virtual = internal(model).model.components[name]
     merge!(virtual._parameters, parameters)
 
     # Validate and then prepare.
@@ -237,9 +237,9 @@ function _parse_container!(
     if haskey(template.yaml, "files")
         for file in template.yaml["files"]
             filedescr = replace(file[1], replacements => p -> parameters[p[2:(end - 1)]])
-            haskey(_iesopt(model).input.files, filedescr) && continue
+            haskey(internal(model).input.files, filedescr) && continue
             filename = replace(file[2], replacements => p -> parameters[p[2:(end - 1)]])
-            _iesopt(model).input.files[filedescr] = _getfile(model, filename)
+            internal(model).input.files[filedescr] = _getfile(model, filename)
         end
     end
 
@@ -325,16 +325,16 @@ function _parse_noncore!(model::JuMP.Model, description::Dict{String, Any}, cnam
     template = _require_template(model, type)
 
     # Remember its name and type properly, before that is lost due to flattening, by constructing a Virtual.
-    _iesopt(model).model.components[cname] = Virtual(; model, name=cname, type, _template=template)
+    internal(model).model.components[cname] = Virtual(; model, name=cname, type, _template=template)
 
     # Properly tag the new Virtual.
-    !haskey(_iesopt(model).model.tags, type) && (_iesopt(model).model.tags[type] = Vector{String}())
-    push!(_iesopt(model).model.tags[type], cname)
+    !haskey(internal(model).model.tags, type) && (internal(model).model.tags[type] = Vector{String}())
+    push!(internal(model).model.tags[type], cname)
 
-    # if !haskey(_iesopt(model).input.noncore[:templates], type)
+    # if !haskey(internal(model).input.noncore[:templates], type)
     #     valid_templates = [
     #         path for
-    #         path in _iesopt(model).input.noncore[:paths] if isfile(normpath(path, string(type, ".iesopt.template.yaml")))
+    #         path in internal(model).input.noncore[:paths] if isfile(normpath(path, string(type, ".iesopt.template.yaml")))
     #     ]
     #     (length(valid_templates) == 0) && error("Type template <$type.iesopt.template.yaml> could not be found")
     #     (length(valid_templates) != 1) && error("Type template <$type.iesopt.template.yaml> is ambiguous")
@@ -342,13 +342,13 @@ function _parse_noncore!(model::JuMP.Model, description::Dict{String, Any}, cnam
     #     template_path = valid_templates[1]
     #     template_file = normpath(template_path, string(type, ".iesopt.template.yaml"))
 
-    #     _iesopt(model).input.noncore[:templates][type] = YAML.load_file(template_file; dicttype=Dict{String, Any})
-    #     _iesopt(model).input.noncore[:templates][type]["path"] = template_path
+    #     internal(model).input.noncore[:templates][type] = YAML.load_file(template_file; dicttype=Dict{String, Any})
+    #     internal(model).input.noncore[:templates][type]["path"] = template_path
     #     @info "Encountered non-core component" type = type template = template_file
     # end
 
-    # is_container = haskey(_iesopt(model).input.noncore[:templates][type], "components")
-    # is_component = haskey(_iesopt(model).input.noncore[:templates][type], "component")
+    # is_container = haskey(internal(model).input.noncore[:templates][type], "components")
+    # is_component = haskey(internal(model).input.noncore[:templates][type], "component")
 
     if _is_component(template)
         description[cname] = _parse_noncore_component!(model, type, description[cname], cname)

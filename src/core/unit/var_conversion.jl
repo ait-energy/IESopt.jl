@@ -32,13 +32,13 @@ function _unit_var_conversion!(unit::Unit)
         # Create all representatives.
         _repr = Dict(
             t => @variable(model, lower_bound = 0, base_name = make_base_name(unit, "conversion[$(t)]")) for
-            t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+            t in get_T(model) if internal(model).model.snapshots[t].is_representative
         )
 
         # Create all variables, either as themselves or their representative.
         unit.var.conversion = collect(
-            _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-            _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+            internal(model).model.snapshots[t].is_representative ? _repr[t] :
+            _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
         )
     end
 
@@ -69,11 +69,11 @@ end
 
 function _connect_unit_var_conversion!(unit::Unit, limits::Dict, incremental_efficiencies::Dict)
     model = unit.model
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
 
     # TODO: re-order this for loop like in the function below
     for t in get_T(model)
-        _iesopt(model).model.snapshots[t].is_representative || continue
+        internal(model).model.snapshots[t].is_representative || continue
 
         for carrier in keys(unit.conversion_dict[:in])
             _total(unit, :in, carrier.name)[t] = (
@@ -110,7 +110,7 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict)
     # There is just a single efficiency to care about.
     model = unit.model
 
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
     unit_var_conversion = unit.var.conversion::Vector{JuMP.VariableRef}
 
     input_totals = Dict{Carrier, Vector{JuMP.AffExpr}}(
@@ -138,7 +138,7 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict)
         end
     )
 
-    _snapshots = _iesopt(model).model.snapshots
+    _snapshots = internal(model).model.snapshots
     _T = (
         _has_representative_snapshots(model) ? [t for t in get_T(model) if _snapshots[t].is_representative] :
         get_T(model)

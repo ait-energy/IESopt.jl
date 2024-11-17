@@ -333,8 +333,8 @@ _finalize(::Nothing) = nothing
 #         return e.value
 #     else
 #         t =
-#             _iesopt(e.model).model.snapshots[t].is_representative ? t :
-#             _iesopt(e.model).model.snapshots[t].representative
+#             internal(e.model).model.snapshots[t].is_representative ? t :
+#             internal(e.model).model.snapshots[t].representative
 
 #         if e.is_expression && length(e.value[t].terms) == 0
 #             return e.value[t].constant
@@ -356,9 +356,9 @@ _finalize(::Nothing) = nothing
 #             else
 #                 return [
 #                     JuMP.value(
-#                         e.value[(_iesopt(e.model).model.snapshots[t].is_representative ? t :
-#                                  _iesopt(e.model).model.snapshots[t].representative)],
-#                     ) for t in _iesopt(e.model).model.T
+#                         e.value[(internal(e.model).model.snapshots[t].is_representative ? t :
+#                                  internal(e.model).model.snapshots[t].representative)],
+#                     ) for t in internal(e.model).model.T
 #                 ]
 #             end
 #         end
@@ -419,12 +419,12 @@ _finalize(::Nothing) = nothing
 #     if has_file
 #         value = _snapshot_aggregation!(
 #             model,
-#             sum(fc[1] .* collect(skipmissing(_iesopt(model).input.files[fc[3]][!, fc[2]])) for fc in filecols) .+
+#             sum(fc[1] .* collect(skipmissing(internal(model).input.files[fc[3]][!, fc[2]])) for fc in filecols) .+
 #             sum(_safe_parse(Float64, c) for c in constants; init=0.0),
 #         )
 
 #         if has_decision
-#             return _Expression(model, true, true, decisions, @expression(model, [t = _iesopt(model).model.T], value[t]))
+#             return _Expression(model, true, true, decisions, @expression(model, [t = internal(model).model.T], value[t]))
 #         else
 #             return _Expression(model, true, false, nothing, value)
 #         end

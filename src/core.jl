@@ -82,7 +82,7 @@ macro profile(arg1, arg2=nothing, arg3=nothing)
         method = methods($func)[1]
         identifier = (Symbol(method.module), string(method.file), Symbol($base_identifier))
 
-        profiling = _iesopt($model).aux._profiling
+        profiling = internal($model).aux._profiling
         profile = @timed $func($(args...))
 
         if haskey(profiling, identifier)
@@ -322,7 +322,7 @@ mutable struct _Profiling
 end
 
 mutable struct _IESoptInputData
-    config::Union{_Config, Nothing}
+    config::Dict{String, Dict{String, Any}}
     files::Dict{String, Union{Module, DataFrames.DataFrame}}
     addons::Dict{Any, Any}      # todo
 
@@ -345,8 +345,8 @@ mutable struct _IESoptModelData
 end
 
 mutable struct _IESoptAuxiliaryData
-    constraint_safety_penalties::Dict{JuMP.ConstraintRef, NamedTuple}
-    constraint_safety_expressions::Any      # todo
+    soft_constraints_penalties::Dict{JuMP.ConstraintRef, NamedTuple}
+    soft_constraints_expressions::Any      # todo
     etdf::NamedTuple
     _flattened_description::Dict{String, Any}
     _obj_terms::Dict{String, Vector{Union{String, Float64}}}
@@ -361,7 +361,7 @@ mutable struct _IESoptResultData
     _templates::Dict{String, Any}
 end
 
-mutable struct _IESoptData
+mutable struct InternalData
     input::_IESoptInputData
     model::_IESoptModelData
 
@@ -377,7 +377,7 @@ end
 
 function _IESoptInputData(toplevel_yaml::Dict)
     return _IESoptInputData(
-        nothing,
+        Dict{String, Dict{String, Any}}(),
         Dict{String, Union{Module, DataFrames.DataFrame}}(),
         Dict{Any, Any}(),
         Dict{Symbol, Any}(),
@@ -419,8 +419,8 @@ function _IESoptResultData()
     )
 end
 
-function _IESoptData(toplevel_yaml::Dict)
-    return _IESoptData(
+function InternalData(toplevel_yaml::Dict)
+    return InternalData(
         _IESoptInputData(toplevel_yaml),
         _IESoptModelData(),
         _IESoptResultData(),
@@ -430,12 +430,32 @@ function _IESoptData(toplevel_yaml::Dict)
     )
 end
 
-_iesopt(model::JuMP.Model) = model.ext[:iesopt]::_IESoptData
-_iesopt_config(model::JuMP.Model) = _iesopt(model).input.config::_Config
-_iesopt_debug(model::JuMP.Model) = _iesopt(model).debug     # TODO: as soon as debug is a "stack", only report the last entry in this function
-_iesopt_cache(model::JuMP.Model) = _iesopt(model).aux.cache::Dict{Symbol, Any}
-_iesopt_model(model::JuMP.Model) = _iesopt(model).model::_IESoptModelData
-_iesopt_logger(model::JuMP.Model) = _iesopt(model).logger::Union{Logging.ConsoleLogger, LoggingExtras.TeeLogger}
+function internal(model::JuMP.Model)
+    return model.ext[:_iesopt]::InternalData
+end
+
+@recompile_invalidations begin
+    # TODO: remove this deprecation warning in the next "large" release
+    struct _IESoptDataDeprecator
+        model::JuMP.Model
+    end
+
+    function Base.getindex(dd::_IESoptDataDeprecator, key::Any)
+        @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
+        return internal(dd.model)[key]
+    end
+
+    function Base.setindex!(dd::_IESoptDataDeprecator, value::Any, key::Any)
+        @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
+        return internal(dd.model)[key] = value
+    end
+end
+
+_iesopt_config(model::JuMP.Model) = internal(model).input.config::Dict{String, Dict{String, Any}}
+_iesopt_debug(model::JuMP.Model) = internal(model).debug     # TODO: as soon as debug is a "stack", only report the last entry in this function
+_iesopt_cache(model::JuMP.Model) = internal(model).aux.cache::Dict{Symbol, Any}
+_iesopt_model(model::JuMP.Model) = internal(model).model::_IESoptModelData
+_iesopt_logger(model::JuMP.Model) = internal(model).logger::Union{Logging.ConsoleLogger, LoggingExtras.TeeLogger}
 
 """
     get_T(model::JuMP.Model)
@@ -448,7 +468,7 @@ Retrieve the vector `T` from the IESopt model.
 # Returns
 - `Vector{_ID}`: The vector `T`.
 """
-get_T(model::JuMP.Model) = _iesopt(model).model.T::Vector{_ID}  # TODO: change this, to return a UnitRange (which helps JuMP)
+get_T(model::JuMP.Model) = internal(model).model.T::Vector{_ID}  # TODO: change this, to return a UnitRange (which helps JuMP)
 
 """
     get_version()
@@ -474,15 +494,15 @@ manually added to the configuration file.
 - `String`: The version of the specified entry.
 """
 function get_version(model::JuMP.Model, entry::String)
-    if !haskey(_iesopt_config(model).version, entry)
+    if !haskey(@config(model, general.version), entry)
         @warn "Missing version entry in config" entry
         return "missing"
     end
 
-    return _iesopt_config(model).version[entry]::String
+    return @config(model, general.version)[entry]::String
 end
 
-_has_addons(model::JuMP.Model) = !isempty(_iesopt(model).input.addons)
+_has_addons(model::JuMP.Model) = !isempty(internal(model).input.addons)
 
 _has_cache(model::JuMP.Model, cache::Symbol) = haskey(_iesopt_cache(model), cache)
 _get_cache(model::JuMP.Model, cache::Symbol) = _iesopt_cache(model)[cache]

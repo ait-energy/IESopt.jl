@@ -133,7 +133,7 @@ function benders(
 
     # Scan for Decisions / non-Decisions.
     _cname_non_decisions = []
-    for (cname, component) in benders_data.main.ext[:iesopt].model.components
+    for (cname, component) in benders_data.main.ext[:_iesopt].model.components
         if component isa Decision
             push!(benders_data.decisions, cname)
         else
@@ -144,7 +144,7 @@ function benders(
     # Disable everything that is not a Decision in the main-problem.
     @info "[benders] Modify main model"
     for cname in _cname_non_decisions
-        delete!(benders_data.main.ext[:iesopt].model.components, cname)
+        delete!(benders_data.main.ext[:_iesopt].model.components, cname)
     end
 
     # Build main-problem.
@@ -229,18 +229,18 @@ function benders(
     JuMP.set_silent(benders_data.sub)
 
     # Check constraints safety.
-    if !isempty(benders_data.main.ext[:iesopt].aux.constraint_safety_penalties)
-        @info "[benders] Relaxing constraints based on constraint_safety (MAIN)"
-        benders_data.main.ext[:constraint_safety_expressions] = JuMP.relax_with_penalty!(
+    if !isempty(benders_data.main.ext[:_iesopt].aux.soft_constraints_penalties)
+        @info "[benders] Relaxing constraints based on soft_constraints (MAIN)"
+        benders_data.main.ext[:soft_constraints_expressions] = JuMP.relax_with_penalty!(
             benders_data.main,
-            Dict(k => v.penalty for (k, v) in benders_data.main.ext[:iesopt].aux.constraint_safety_penalties),
+            Dict(k => v.penalty for (k, v) in benders_data.main.ext[:_iesopt].aux.soft_constraints_penalties),
         )
     end
-    if !isempty(benders_data.sub.ext[:iesopt].aux.constraint_safety_penalties)
-        @info "[benders] Relaxing constraints based on constraint_safety (SUB)"
-        benders_data.sub.ext[:constraint_safety_expressions] = JuMP.relax_with_penalty!(
+    if !isempty(benders_data.sub.ext[:_iesopt].aux.soft_constraints_penalties)
+        @info "[benders] Relaxing constraints based on soft_constraints (SUB)"
+        benders_data.sub.ext[:soft_constraints_expressions] = JuMP.relax_with_penalty!(
             benders_data.sub,
-            Dict(k => v.penalty for (k, v) in benders_data.sub.ext[:iesopt].aux.constraint_safety_penalties),
+            Dict(k => v.penalty for (k, v) in benders_data.sub.ext[:_iesopt].aux.soft_constraints_penalties),
         )
     end
 

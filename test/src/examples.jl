@@ -5,11 +5,11 @@
 end
 
 @testitem "02_advanced_single_node" tags = [:examples] setup = [TestExampleModule] begin
-    TestExampleModule.check(; obj=1506.75, verbosity=true)
+    TestExampleModule.check(; obj=1506.75)
 end
 
 @testitem "03_basic_two_nodes" tags = [:examples] setup = [TestExampleModule] begin
-    TestExampleModule.check(; obj=1225.0, verbosity="warning")
+    TestExampleModule.check(; obj=1225.0)
 end
 
 @testitem "05_basic_two_nodes_1y" tags = [:examples] setup = [TestExampleModule] begin
@@ -37,7 +37,7 @@ end
 end
 
 @testitem "11_basic_unit_commitment" tags = [:examples] setup = [TestExampleModule] begin
-    TestExampleModule.check(; obj=1570.0, verbosity=true)
+    TestExampleModule.check(; obj=1570.0)
 end
 
 @testitem "12_incremental_efficiency" tags = [:examples] setup = [TestExampleModule] begin
@@ -101,19 +101,19 @@ end
 
 # Run tests that manually check various outcomes of example models.
 
-@testitem "04_constraint_safety" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+@testitem "04_soft_constraints" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     model = TestExampleModule.run()
 
-    @test JuMP.value(model.ext[:iesopt].model.objectives["total_cost"].expr) ≈ 2975.0 atol = 0.05
-    @test sum(JuMP.value.(values(model.ext[:iesopt].aux.constraint_safety_expressions))) ≈ 1
+    @test JuMP.value(model.ext[:_iesopt].model.objectives["total_cost"].expr) ≈ 2975.0 atol = 0.05
+    @test sum(JuMP.value.(values(model.ext[:_iesopt].aux.soft_constraints_expressions))) ≈ 1
 end
 
 # NOTE: This example fails because it tries to read two snapshots from a CSV file containing only one row.
 # model = JuMP.direct_model(HiGHS.Optimizer())
-# generate!(model, joinpath(dir, "19_etdfs.iesopt.yaml"); verbosity=false)
+# generate!(model, joinpath(dir, "19_etdfs.iesopt.yaml"))
 # optimize!(model)
 # @test JuMP.objective_value(model) ≈ 95.7 atol = 0.1
-# @test sum(JuMP.value.(values(model.ext[:iesopt].aux.constraint_safety_expressions))) ≈ 0
+# @test sum(JuMP.value.(values(model.ext[:_iesopt].aux.soft_constraints_expressions))) ≈ 0
 
 @testitem "20_chp" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     model = TestExampleModule.check(; obj=16687.5)
@@ -131,7 +131,7 @@ end
 # generate!(model, joinpath(dir, "21_aggregated_snapshots.iesopt.yaml"))
 # optimize!(model)
 # @test all(JuMP.value.(component(model, "buy").exp.value) .≈ [19.0 / 3.0, 3.0, 2.0])
-# @test sum(JuMP.value.(values(model.ext[:iesopt].aux.constraint_safety_expressions))) ≈ 0
+# @test sum(JuMP.value.(values(model.ext[:_iesopt].aux.soft_constraints_expressions))) ≈ 0
 
 @testitem "snapshots (22 and 23)" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     model = TestExampleModule.run("22_snapshot_weights")
@@ -142,11 +142,11 @@ end
     TestExampleModule.check("23_snapshots_from_csv"; obj=obj_val_example_22)
 end
 
-# model = generate!(joinpath(dir, "24_linearized_optimal_powerflow.iesopt.yaml"); verbosity=false)
+# model = generate!(joinpath(dir, "24_linearized_optimal_powerflow.iesopt.yaml"))
 # optimize!(model)
-# @test JuMP.value(model.ext[:iesopt].model.objectives["total_cost"].expr) ≈ 5333.16 atol = 0.05
+# @test JuMP.value(model.ext[:_iesopt].model.objectives["total_cost"].expr) ≈ 5333.16 atol = 0.05
 # @test JuMP.objective_value(model) ≈ (50 * 10000 + 5333.16) atol = 0.05
-# @test sum(JuMP.value.(values(model.ext[:iesopt].aux.constraint_safety_expressions))) ≈ 50
+# @test sum(JuMP.value.(values(model.ext[:_iesopt].aux.soft_constraints_expressions))) ≈ 50
 # ac_flows = [
 #     round(JuMP.value(component(model, conn).exp.pf_flow[1]); digits=3) for
 #     conn in ["conn12", "conn23", "conn24", "conn34", "conn56", "conn57"]
@@ -174,15 +174,15 @@ end
 
 # Disabled, because Benders needs to modify Decisions (which is currently not possible due to immutability).
 # @testset "Benders decomposition" begin
-#     model = generate!(joinpath(PATH_EXAMPLES, "33_benders_investment.iesopt.yaml"); verbosity=false)
+#     model = generate!(joinpath(PATH_EXAMPLES, "33_benders_investment.iesopt.yaml"))
 #     optimize!(model)
 #     _conventional_obj = JuMP.objective_value(model)
-#     benders_data = benders(HiGHS.Optimizer, joinpath(PATH_EXAMPLES, "33_benders_investment.iesopt.yaml"); verbosity=false)
+#     benders_data = benders(HiGHS.Optimizer, joinpath(PATH_EXAMPLES, "33_benders_investment.iesopt.yaml"))
 #     _benders_obj = JuMP.objective_value(benders_data.main)
 #     @test _conventional_obj ≈ _benders_obj atol = (_conventional_obj * 1e-4)
 
 #     _conventional_obj = 91539936.2678  # too slow for the test
-#     benders_data = benders(HiGHS.Optimizer, joinpath(PATH_EXAMPLES, "35_fixed_costs.iesopt.yaml"); verbosity=false)
+#     benders_data = benders(HiGHS.Optimizer, joinpath(PATH_EXAMPLES, "35_fixed_costs.iesopt.yaml"))
 #     _benders_obj = JuMP.objective_value(benders_data.main)
 #     @test _conventional_obj ≈ _benders_obj atol = (_conventional_obj * 1e-4)
 # end

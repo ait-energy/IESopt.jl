@@ -41,14 +41,15 @@ end
 
 function _get_solver_log(model::JuMP.Model)
     lcsn = lowercase(JuMP.solver_name(model))
-    log_file = abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).$(lcsn).log")
+    scenario_name = @config(model, general.name.scenario)
+    log_file = abspath(@config(model, paths.results), "$(scenario_name).$(lcsn).log")
     isfile(log_file) || return ""
     return read(log_file, String)
 end
 
 function _get_iesopt_log(model::JuMP.Model)
     try
-        file = abspath(replace(string(_iesopt(model).logger.loggers[2].logger.stream.name), "<file " => "", ">" => ""))
+        file = abspath(replace(string(internal(model).logger.loggers[2].logger.stream.name), "<file " => "", ">" => ""))
         return String(open(read, file))
     catch error
     end
@@ -60,16 +61,16 @@ include("jld2/ResultsJLD2.jl")
 include("duckdb/ResultsDuckDB.jl")
 
 function handle_result_extraction(model::JuMP.Model)
-    if _iesopt_config(model).results.enabled
+    if @config(model, results.enabled, Bool)
         @info "Begin extracting results"
         # TODO: include content of result config section
         if !JuMP.is_solved_and_feasible(model)
             @error "Extracting results is only possible for a solved and feasible model"
         else
-            if _iesopt_config(model).results.backend == :jld2
+            if @config(model, results.backend) == :jld2
                 ResultsJLD2._extract_results(model)
                 ResultsJLD2._save_results(model)
-            elseif _iesopt_config(model).results.backend == :duckdb
+            elseif @config(model, results.backend) == :duckdb
                 db = ResultsDuckDB.extract(model)
                 # TODO:
                 ResultsDuckDB.close(db)

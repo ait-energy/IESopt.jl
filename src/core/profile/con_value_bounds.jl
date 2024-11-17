@@ -53,13 +53,13 @@ function _profile_con_value_bounds!(profile::Profile)
                         model,
                         profile.var.aux_value[t] >= access(profile.lb, t, NonEmptyScalarExpressionValue),
                         base_name = make_base_name(profile, "value_lb[$(t)]")
-                    ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+                    ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
                 )
 
                 # Create all constraints, either as themselves or their representative.
                 profile.con.value_lb = collect(
-                    _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                    _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+                    internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                    _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
                 )
             end
         end
@@ -79,13 +79,13 @@ function _profile_con_value_bounds!(profile::Profile)
                         model,
                         profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
                         base_name = make_base_name(profile, "value_ub[$(t)]")
-                    ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+                    ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
                 )
 
                 # Create all constraints, either as themselves or their representative.
                 profile.con.value_ub = collect(
-                    _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                    _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+                    internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                    _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
                 )
             end
         end

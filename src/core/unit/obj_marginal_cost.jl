@@ -20,12 +20,12 @@ function _unit_obj_marginal_cost!(unit::Unit)
     for t in get_T(model)
         JuMP.add_to_expression!(
             unit.obj.marginal_cost,
-            total_mc[_iesopt(model).model.snapshots[t].representative],
+            total_mc[internal(model).model.snapshots[t].representative],
             _weight(model, t) * access(unit.marginal_cost, t, Float64),
         )
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, unit.obj.marginal_cost)
+    push!(internal(model).model.objectives["total_cost"].terms, unit.obj.marginal_cost)
 
     return nothing
 end

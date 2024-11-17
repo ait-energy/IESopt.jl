@@ -29,11 +29,11 @@ function _set_timeseries_safe(p_or_cf::String, v::Any, parameters::Dict{String, 
     column, file = string.(split(p_or_cf, "@"))
 
     # Check if this file exists.
-    if haskey(_iesopt(model).input.files, file)
+    if haskey(internal(model).input.files, file)
         # This works for overwriting existing columns, as well as adding new ones.
-        _iesopt(model).input.files[file][!, column] .= v
+        internal(model).input.files[file][!, column] .= v
     else
-        _iesopt(model).input.files[file] = DataFrames.DataFrame(column => v)
+        internal(model).input.files[file] = DataFrames.DataFrame(column => v)
     end
 
     return nothing

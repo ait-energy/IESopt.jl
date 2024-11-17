@@ -40,17 +40,17 @@ function _node_con_state_bounds!(node::Node)
     end
 
     # Handle constraint safety (if enabled).
-    if node.constraint_safety
+    if node.soft_constraints
         if !_isempty(node.state_lb)
             @simd for t in get_T(model)
-                _iesopt(model).aux.constraint_safety_penalties[node.con.state_lb[t]] =
-                    (component_name=node.name, t=t, description="state_lb", penalty=node.constraint_safety_cost)
+                internal(model).aux.soft_constraints_penalties[node.con.state_lb[t]] =
+                    (component_name=node.name, t=t, description="state_lb", penalty=node.soft_constraints_penalty)
             end
         end
         if !_isempty(node.state_ub)
             @simd for t in get_T(model)
-                _iesopt(model).aux.constraint_safety_penalties[node.con.state_ub[t]] =
-                    (component_name=node.name, t=t, description="state_ub", penalty=node.constraint_safety_cost)
+                internal(model).aux.soft_constraints_penalties[node.con.state_ub[t]] =
+                    (component_name=node.name, t=t, description="state_ub", penalty=node.soft_constraints_penalty)
             end
         end
     end

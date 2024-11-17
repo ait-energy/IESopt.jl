@@ -34,8 +34,8 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
 @kwdef struct Unit <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    constraint_safety::Bool
-    constraint_safety_cost::_ScalarInput
+    soft_constraints::Bool
+    soft_constraints_penalty::_ScalarInput
 
     # [Mandatory] ======================================================================================================
     name::_String
@@ -252,7 +252,7 @@ end
 function _prepare!(unit::Unit)
     # todo: "null" in the ThermalGen component translates to "nothing" (as String) instead of nothing (as Nothing)!
     model = unit.model
-    carriers = _iesopt(model).model.carriers
+    carriers = internal(model).model.carriers
 
     # Prepare in/out total expressions.
     for carrier in keys(unit.inputs)
@@ -282,7 +282,7 @@ end
 function _isvalid(unit::Unit)
     model = unit.model
 
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
 
     # Check that input carriers match.
     if !isnothing(unit.inputs)
@@ -390,7 +390,7 @@ function _result(unit::Unit, mode::String, field::String; result::Int=1)
         if _has_representative_snapshots(unit.model)
             value = [
                 JuMP.value(
-                    _total(unit, Symbol(dir), carrier)[_iesopt(unit.model).model.snapshots[t].representative];
+                    _total(unit, Symbol(dir), carrier)[internal(unit.model).model.snapshots[t].representative];
                     result=result,
                 ) for t in get_T(unit.model)
             ]

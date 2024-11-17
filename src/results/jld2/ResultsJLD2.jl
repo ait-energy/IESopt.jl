@@ -1,8 +1,8 @@
 module ResultsJLD2
 
 using ..IESopt:
-    _iesopt,
-    _iesopt_config,
+    internal,
+    @config,
     _result_fields,
     _CoreComponent,
     _CoreComponentResult,
@@ -16,23 +16,23 @@ import JuMP
 include("extract.jl")
 
 function _save_results(model::JuMP.Model)
-    _iesopt_config(model).results.memory_only && return nothing
+    @config(model, results.memory_only) && return nothing
 
     @info "Begin saving results"
     # TODO: support multiple results (from MOA)
 
     # Make sure the path is valid.
-    filepath =
-        normpath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).iesopt.result.jld2")
+    scenario_name = @config(model, general.name.scenario)
+    filepath = normpath(@config(model, paths.results), "$(scenario_name).iesopt.result.jld2")
     mkpath(dirname(filepath))
 
     # Write results.
-    JLD2.jldopen(filepath, "w"; compress=_iesopt_config(model).results.compress) do file
-        file["model/components"] = _iesopt(model).results.components
-        file["model/objectives"] = _iesopt(model).results.objectives
-        file["model/snapshots"] = _iesopt(model).model.snapshots
-        file["model/carriers"] = _iesopt(model).model.carriers
-        file["model/custom"] = _iesopt(model).results.customs
+    JLD2.jldopen(filepath, "w"; compress=@config(model, results.compress)) do file
+        file["model/components"] = internal(model).results.components
+        file["model/objectives"] = internal(model).results.objectives
+        file["model/snapshots"] = internal(model).model.snapshots
+        file["model/carriers"] = internal(model).model.carriers
+        file["model/custom"] = internal(model).results.customs
 
         file["attributes/iesopt_version"] = string(pkgversion(@__MODULE__))
         file["attributes/solver_name"] = JuMP.solver_name(model)
@@ -45,18 +45,19 @@ function _save_results(model::JuMP.Model)
         file["attributes/primal_status"] = Int(JuMP.primal_status(model))
         file["attributes/dual_status"] = Int(JuMP.dual_status(model))
 
-        if :input in _iesopt_config(model).results.include
-            file["input/config/toplevel"] = _iesopt(model).input._tl_yaml
-            file["input/config/flattened"] = _iesopt(model).aux._flattened_description
-            file["input/config/parsed"] = _iesopt(model).input.config
-            file["input/parameters"] = _iesopt(model).input.parameters
+        if :input in @config(model, results.include)
+            file["input/config/toplevel"] = internal(model).input._tl_yaml
+            file["input/config/flattened"] = internal(model).aux._flattened_description
+            file["input/config/parsed"] = internal(model).input.config
+            file["input/parameters"] = internal(model).input.parameters
         end
 
         # file["info/hash"] = _get_hash(model)
-        if :git in _iesopt_config(model).results.include
+        if :git in @config(model, results.include)
             file["info/git"] = _get_git()
         end
-        if :log in _iesopt_config(model).results.include
+
+        if :log in @config(model, results.include)
             file["info/logs/iesopt"] = _get_iesopt_log(model)
             file["info/logs/solver"] = _get_solver_log(model)
         end

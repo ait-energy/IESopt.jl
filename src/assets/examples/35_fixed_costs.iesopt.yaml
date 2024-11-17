@@ -89,7 +89,7 @@ components:
     has_state: true
     state_lb: 0
     state_ub: invest_storage:value
-    constraint_safety: false
+    soft_constraints: false
   
   demand:
     type: Profile

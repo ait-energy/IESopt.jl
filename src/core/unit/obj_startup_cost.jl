@@ -20,7 +20,7 @@ function _unit_obj_startup_cost!(unit::Unit)
         JuMP.add_to_expression!(unit.obj.startup_cost, unit.var.startup[t], unit.startup_cost)
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, unit.obj.startup_cost)
+    push!(internal(model).model.objectives["total_cost"].terms, unit.obj.startup_cost)
 
     return nothing
 end

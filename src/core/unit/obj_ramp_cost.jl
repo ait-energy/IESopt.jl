@@ -31,6 +31,6 @@ function _unit_obj_ramp_cost!(unit::Unit)
         )
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, unit.obj.ramp_cost)
+    push!(internal(model).model.objectives["total_cost"].terms, unit.obj.ramp_cost)
     return nothing
 end

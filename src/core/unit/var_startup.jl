@@ -30,13 +30,13 @@ function _unit_var_startup!(unit::Unit)
         # Create all representatives.
         _repr = Dict(
             t => @variable(model, lower_bound = 0.0, base_name = make_base_name(unit, "startup[$(t)]")) for
-            t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+            t in get_T(model) if internal(model).model.snapshots[t].is_representative
         )
 
         # Create all variables, either as themselves or their representative.
         unit.var.startup = collect(
-            _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-            _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+            internal(model).model.snapshots[t].is_representative ? _repr[t] :
+            _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
         )
     end
 

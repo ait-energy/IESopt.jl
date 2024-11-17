@@ -4,8 +4,8 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
 @kwdef struct Connection <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    constraint_safety::Bool
-    constraint_safety_cost::_ScalarInput
+    soft_constraints::Bool
+    soft_constraints_penalty::_ScalarInput
 
     # [Mandatory] ======================================================================================================
     name::_String
@@ -101,8 +101,8 @@ function _check(connection::Connection)
     !connection.conditional && return true
 
     # Check if the connected nodes exist.
-    !haskey(_iesopt(connection.model).model.components, connection.node_from) && return false
-    !haskey(_iesopt(connection.model).model.components, connection.node_to) && return false
+    !haskey(internal(connection.model).model.components, connection.node_from) && return false
+    !haskey(internal(connection.model).model.components, connection.node_to) && return false
 
     return true
 end
@@ -114,7 +114,7 @@ function _prepare!(connection::Connection)
         @error "ETDFs are disabled until a rework to PowerModels.jl is done" connection = connection.name
         # if isa(connection.etdf, _String)
         #     # Load ETDF from supplied file.
-        #     data = _iesopt(model).input.files[connection.etdf]
+        #     data = internal(model).input.files[connection.etdf]
 
         #     if hasproperty(data, "connection.name")
         #         # This is a static ETDF matrix (n x l).
@@ -234,7 +234,7 @@ function _result(connection::Connection, mode::String, field::String; result::In
     elseif !isnothing(connection.etdf)
         @error "ETDF results are disabled until a rework to PowerModels.jl is done" connection = connection.name
         # flow = sum(
-        #     _iesopt(connection.model).model.components[id].exp.injection .* connection.etdf[id] for
+        #     internal(connection.model).model.components[id].exp.injection .* connection.etdf[id] for
         #     id in keys(connection.etdf)
         # )
         # if mode == "value" && field == "flow"

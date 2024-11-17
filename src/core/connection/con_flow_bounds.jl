@@ -30,7 +30,7 @@ This flow is then constrained:
 """
 function _connection_con_flow_bounds!(connection::Connection)
     model = connection.model
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
 
     # todo: rework only getting/checking lb/ub once
     if !_isempty(connection.capacity) || !_isempty(connection.lb)
@@ -47,7 +47,7 @@ function _connection_con_flow_bounds!(connection::Connection)
     cvf = connection.var.flow::Vector{JuMP.VariableRef}
     for t in get_T(model)
         # If a Snapshot is representative, it's either representative or there are no activated representative Snapshots.
-        !_iesopt(model).model.snapshots[t].is_representative && continue
+        !internal(model).model.snapshots[t].is_representative && continue
 
         # NOTE: See below for a rough outline how the naive constraints were being constructed.
         if _isempty(connection.capacity)
@@ -114,40 +114,40 @@ function _connection_con_flow_bounds!(connection::Connection)
     if _has_representative_snapshots(model)
         # Use the constructed representatives.
         for t in get_T(model)
-            _iesopt(model).model.snapshots[t].is_representative && continue
+            internal(model).model.snapshots[t].is_representative && continue
 
             if !_isempty(connection.capacity) || !_isempty(connection.lb)
-                connection.con.flow_lb[t] = connection.con.flow_lb[_iesopt(model).model.snapshots[t].representative]
+                connection.con.flow_lb[t] = connection.con.flow_lb[internal(model).model.snapshots[t].representative]
             end
             if !_isempty(connection.capacity) || !_isempty(connection.ub)
-                connection.con.flow_ub[t] = connection.con.flow_ub[_iesopt(model).model.snapshots[t].representative]
+                connection.con.flow_ub[t] = connection.con.flow_ub[internal(model).model.snapshots[t].representative]
             end
         end
     end
 
     # Handle constraint safety (if enabled).
-    if connection.constraint_safety
+    if connection.soft_constraints
         _for_lb = !_isempty(connection.capacity) || !_isempty(connection.lb)
         _for_ub = !_isempty(connection.capacity) || !_isempty(connection.ub)
 
         for t in get_T(model)
             # Skip constraint safety for non-representative Snapshots.
-            !_iesopt(model).model.snapshots[t].is_representative && continue
+            !internal(model).model.snapshots[t].is_representative && continue
 
             if _for_lb
-                _iesopt(model).aux.constraint_safety_penalties[connection.con.flow_lb[t]] = (
+                internal(model).aux.soft_constraints_penalties[connection.con.flow_lb[t]] = (
                     component_name=connection.name,
                     t=t,
                     description="flow_lb",
-                    penalty=connection.constraint_safety_cost,
+                    penalty=connection.soft_constraints_penalty,
                 )
             end
             if _for_ub
-                _iesopt(model).aux.constraint_safety_penalties[connection.con.flow_ub[t]] = (
+                internal(model).aux.soft_constraints_penalties[connection.con.flow_ub[t]] = (
                     component_name=connection.name,
                     t=t,
                     description="flow_ub",
-                    penalty=connection.constraint_safety_cost,
+                    penalty=connection.soft_constraints_penalty,
                 )
             end
         end

@@ -18,11 +18,10 @@ include("templates/templates.jl")
 # include("texify/texify.jl")
 
 function _build_model!(model::JuMP.Model)
-    if _iesopt_config(model).optimization.high_performance
-        if model.set_string_names_on_creation
-            @info "Overwriting `string_names_on_creation` to `false` since `high_performance` is set"
-        end
-        JuMP.set_string_names_on_creation(model, false)
+    if @config(model, general.performance.string_names, Bool) != model.set_string_names_on_creation
+        new_val = @config(model, general.performance.string_names, Bool)
+        @info "Overwriting `string_names_on_creation` to `$(new_val)` based on config"
+        JuMP.set_string_names_on_creation(model, new_val)
     end
 
     # This specifies the order in which components are built. This ensures that model parts that are used later on, are
@@ -47,18 +46,20 @@ function _build_model!(model::JuMP.Model)
     # with a default build priority of 0.
     # Components with a negative build priority are not built at all.
     corder =
-        sort(collect(values(_iesopt(model).model.components)); by=_build_priority, rev=true)::Vector{<:_CoreComponent}
+        sort(collect(values(internal(model).model.components)); by=_build_priority, rev=true)::Vector{<:_CoreComponent}
 
     @info "Start creating JuMP model"
+
+    progress_enabled = @config(model, general.verbosity.progress, String) == "on"
     for f in build_order
         # Construct all components, building them in the necessary order.
         progress_map(
             corder;
             mapfun=foreach,
-            progress=Progress(length(corder); enabled=_iesopt_config(model).progress::Bool, desc="$(Symbol(f)) ..."),
+            progress=Progress(length(corder); enabled=progress_enabled, desc="$(Symbol(f)) ..."),
         ) do component
             if _build_priority(component) >= 0
-                _iesopt(model).debug = "$(component.name) :: $(f)"
+                internal(model).debug = "$(component.name) :: $(f)"
                 f(component)::Nothing
             end
         end
@@ -66,7 +67,7 @@ function _build_model!(model::JuMP.Model)
         # Call global addons
         if _has_addons(model)
             addon_fi = Symbol(string(f)[2:end])
-            for (name, prop) in _iesopt(model).input.addons
+            for (name, prop) in internal(model).input.addons
                 # Only execute a function if it exists.
                 if addon_fi in names(prop.addon; all=true)
                     @info "Invoking addon" addon = name step = addon_fi
@@ -88,23 +89,23 @@ function _build_model!(model::JuMP.Model)
     end
 
     # Construct relevant ETDF constraints.
-    if !isempty(_iesopt(model).aux.etdf.groups)
+    if !isempty(internal(model).aux.etdf.groups)
         @error "ETDF constraints are currently not supported"
-        # for (etdf_group, node_ids) in _iesopt(model).aux.etdf.groups
-        #     _iesopt(model).aux.etdf.constr[etdf_group] = @constraint(
+        # for (etdf_group, node_ids) in internal(model).aux.etdf.groups
+        #     internal(model).aux.etdf.constr[etdf_group] = @constraint(
         #         model,
         #         [t = get_T(model) ],
-        #         sum(_iesopt(model).model.components[id].exp.injection[t] for id in node_ids) == 0
+        #         sum(internal(model).model.components[id].exp.injection[t] for id in node_ids) == 0
         #     )
         # end
     end
 
     # Building the objective(s).
-    for (name, obj) in _iesopt(model).model.objectives
+    for (name, obj) in internal(model).model.objectives
         @info "Preparing objective" name
 
         # Add all terms that were added from within a component definition to the correct objective's terms.
-        for term in _iesopt(model).aux._obj_terms[name]
+        for term in internal(model).aux._obj_terms[name]
             if term isa Number
                 push!(obj.constants, term)
             else
@@ -129,17 +130,14 @@ function _build_model!(model::JuMP.Model)
     end
 
     if !_is_multiobjective(model)
-        current_objective = _iesopt_config(model).optimization.objective.current
+        current_objective = @config(model, optimization.objective.current)
         isnothing(current_objective) && @critical "Missing an active objective"
-        @objective(model, Min, _iesopt(model).model.objectives[current_objective].expr)
+        @objective(model, Min, internal(model).model.objectives[current_objective].expr)
     else
         @objective(
             model,
             Min,
-            [
-                _iesopt(model).model.objectives[obj].expr for
-                obj in _iesopt_config(model).optimization.multiobjective.terms
-            ]
+            [internal(model).model.objectives[obj].expr for obj in @config(model, optimization.multiobjective.terms)]
         )
     end
 end
@@ -147,19 +145,19 @@ end
 function _prepare_model!(model::JuMP.Model)
     # Potentially remove components that are tagged `conditional`, and violate some of their conditions.
     failed_components = []
-    for (cname, component) in _iesopt(model).model.components
+    for (cname, component) in internal(model).model.components
         !_check(component) && push!(failed_components, cname)
     end
     if length(failed_components) > 0
         @warn "Some components are removed based on the `conditional` setting" n_components = length(failed_components)
         for cname in failed_components
-            delete!(_iesopt(model).model.components, cname)
+            delete!(internal(model).model.components, cname)
         end
     end
 
     # Init global addons before preparing components
     if _has_addons(model)
-        for (name, prop) in _iesopt(model).input.addons
+        for (name, prop) in internal(model).input.addons
             if !Base.invokelatest(prop.addon.initialize!, model, prop.config)
                 @critical "Addon failed to set up" name
             end
@@ -168,7 +166,7 @@ function _prepare_model!(model::JuMP.Model)
 
     # Fully prepare each component.
     all_components_ok = true
-    for (id, component) in _iesopt(model).model.components
+    for (id, component) in internal(model).model.components
         all_components_ok &= _prepare!(component)
     end
     if !all_components_ok
@@ -177,26 +175,31 @@ function _prepare_model!(model::JuMP.Model)
 end
 
 """
-    run(filename::AbstractString; verbosity=nothing, kwargs...)
+    run(filename::AbstractString; kwargs...)
 
 Build, optimize, and return a model.
 
 # Arguments
 
 - `filename::AbstractString`: The path to the top-level configuration file.
-- `verbosity`: The verbosity level to use. Supports `true` (= verbose mode), `"warning"` (= warnings and above), and
-  `false` (suppressing logs).
-
-If `verbosity = true`, the verbosity setting of the solver defaults to `true` as well, otherwise it defaults to `false`
-(the verbosity setting of the solver can also be directly controled using the `verbosity_solve` setting in the top-level
-config file).
 
 # Keyword Arguments
 
 Keyword arguments are passed to the [`generate!`](@ref) function.
 """
-function run(@nospecialize(filename::AbstractString); @nospecialize(verbosity = nothing), @nospecialize(kwargs...))
-    model = generate!(filename; verbosity, kwargs...)
+function run(
+    filename::AbstractString;
+    parameters::Union{Nothing, Dict}=nothing,
+    config::Union{Nothing, Dict}=nothing,
+    addons::Union{Nothing, Dict}=nothing,
+    carriers::Union{Nothing, Dict}=nothing,
+    components::Union{Nothing, Dict}=nothing,
+    load_components::Union{Nothing, Dict}=nothing,
+)
+    @nospecialize
+
+    model = generate!(filename; parameters, config, addons, carriers, components, load_components)
+
     if haskey(model.ext, :_iesopt_failed_generate)
         @error "Errors in model generation; skipping optimization"
         delete!(model.ext, :_iesopt_failed_generate)
@@ -219,26 +222,41 @@ Generate an IESopt model based on the top-level config in `filename`.
 
 # Arguments
 - `filename::AbstractString`: The name of the file to load.
-- `kwargs...`: Additional keyword arguments that can be passed to the function.
+
+# Keyword Arguments
+To be documented.
 
 # Returns
 - `model::JuMP.Model`: The generated IESopt model.
 """
-function generate!(@nospecialize(filename::AbstractString); @nospecialize(kwargs...))
+function generate!(
+    filename::AbstractString;
+    parameters::Union{Nothing, Dict}=nothing,
+    config::Union{Nothing, Dict}=nothing,
+    addons::Union{Nothing, Dict}=nothing,
+    carriers::Union{Nothing, Dict}=nothing,
+    components::Union{Nothing, Dict}=nothing,
+    load_components::Union{Nothing, Dict}=nothing,
+)
+    @nospecialize
+
     model = JuMP.Model()::JuMP.Model
-    generate!(model, String(filename); kwargs...)
+    generate!(model, String(filename); parameters, config, addons, carriers, components, load_components)
+
     return model::JuMP.Model
 end
 
 """
-    generate!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
+    generate!(model::JuMP.Model, filename::AbstractString; kwargs...)
 
 Generates an IESopt model from a given file and attaches an optimizer if necessary.
 
 # Arguments
 - `model::JuMP.Model`: The JuMP model to be used.
-- `filename::String`: The path to the file containing the model definition.
-- `kwargs...`: Additional keyword arguments passed to the parsing function.
+- `filename::AbstractString`: The path to the file containing the model definition.
+
+# Keyword Arguments
+To be documented.
 
 # Returns
 - `model::JuMP.Model`: The generated IESopt model.
@@ -249,7 +267,20 @@ Generates an IESopt model from a given file and attaches an optimizer if necessa
 - The function logs the model generation process and handles any exceptions that occur during generation.
 - If an error occurs, detailed debug information and the stack trace are logged.
 """
-function generate!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
+function generate!(
+    model::JuMP.Model,
+    filename::AbstractString;
+    parameters::Union{Nothing, Dict}=nothing,
+    config::Union{Nothing, Dict}=nothing,
+    addons::Union{Nothing, Dict}=nothing,
+    carriers::Union{Nothing, Dict}=nothing,
+    components::Union{Nothing, Dict}=nothing,
+    load_components::Union{Nothing, Dict}=nothing,
+)
+    @nospecialize
+
+    filename = String(filename)
+
     # local stats_parse, stats_build, stats_total
     # TODO: "re-enable" by refactoring to TimerOutputs
 
@@ -258,7 +289,7 @@ function generate!(model::JuMP.Model, filename::String; @nospecialize(kwargs...)
         !validate(filename) && return nothing
 
         # Parse & build the model.
-        parse!(model, filename; kwargs...) || return model
+        parse!(model, filename; parameters, config, addons, carriers, components, load_components) || return model
         with_logger(_iesopt_logger(model)) do
             if JuMP.mode(model) != JuMP.DIRECT && JuMP.MOIU.state(JuMP.backend(model)) == JuMP.MOIU.NO_OPTIMIZER
                 _attach_optimizer(model)
@@ -286,7 +317,7 @@ function generate!(model::JuMP.Model, filename::String; @nospecialize(kwargs...)
         # end
     catch
         # Get debug information from model, if available.
-        debug = haskey(model.ext, :iesopt) ? _iesopt(model).debug : "not available"
+        debug = haskey(model.ext, :iesopt) ? internal(model).debug : "not available"
         debug = isnothing(debug) ? "not available" : debug
 
         # Get ALL current exceptions.
@@ -329,7 +360,7 @@ _setoptnow(model::JuMP.Model, ::Val{:none}, moa::Bool) = @critical "This code sh
 function _attach_optimizer(model::JuMP.Model)
     @info "Setting up Optimizer"
 
-    solver_name = _iesopt_config(model).optimization.solver.name
+    solver_name = @config(model, optimization.solver.name)
     solver = get(
         Dict{String, Symbol}(
             "highs" => :HiGHS,
@@ -348,7 +379,7 @@ function _attach_optimizer(model::JuMP.Model)
         @critical "Can't determine proper solver" solver_name
     end
 
-    if _iesopt_config(model).optimization.solver.mode == "direct"
+    if @config(model, optimization.solver.mode) == "direct"
         @critical "Automatic direct mode is currently not supported"
     end
 
@@ -383,12 +414,12 @@ function _attach_optimizer(model::JuMP.Model)
     end
 
     if _is_multiobjective(model)
-        moa_mode = _iesopt_config(model).optimization.multiobjective.mode
+        moa_mode = @config(model, optimization.multiobjective.mode)
         @info "Setting MOA mode" mode = moa_mode
         JuMP.set_attribute(model, MOA.Algorithm(), eval(Meta.parse("MOA.$moa_mode()")))
     end
 
-    for (attr, value) in _iesopt_config(model).optimization.solver.attributes
+    for (attr, value) in @config(model, optimization.solver.attributes)
         try
             @suppress JuMP.set_attribute(model, attr, value)
             @info "Setting attribute" attr value
@@ -397,8 +428,8 @@ function _attach_optimizer(model::JuMP.Model)
         end
     end
 
-    if !isnothing(_iesopt_config(model).optimization.multiobjective)
-        for (attr, value) in _iesopt_config(model).optimization.multiobjective.settings
+    if _is_multiobjective(model)
+        for (attr, value) in @config(model, optimization.multiobjective.settings)
             try
                 if value isa Vector
                     for i in eachindex(value)
@@ -418,18 +449,16 @@ function _attach_optimizer(model::JuMP.Model)
 end
 
 """
-    parse!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
+    parse!(model::JuMP.Model, filename::AbstractString; kwargs...)
 
 Parse the model configuration from a specified file and update the given `JuMP.Model` object.
 
 # Arguments
 - `model::JuMP.Model`: The JuMP model to be updated.
-- `filename::String`: The path to the configuration file. The file must have a `.iesopt.yaml` extension.
-- `kwargs...`: Additional keyword arguments that can be passed to customize the parsing process.
+- `filename::AbstractString`: The path to the configuration file. The file must have a `.iesopt.yaml` extension.
 
 # Keyword Arguments
-- `verbosity`: Controls the verbosity level of the parsing process. Default is `nothing`.
-- `force_reload`: A boolean flag indicating whether to force reloading addons. Default is `true`.
+To be documented.
 
 # Returns
 - `Bool`: Returns `true` if the model was successfully parsed.
@@ -437,17 +466,39 @@ Parse the model configuration from a specified file and update the given `JuMP.M
 # Errors
 - Logs a critical error if the file does not have the `.iesopt.yaml` extension or if there is an error while parsing the model.
 """
-function parse!(model::JuMP.Model, filename::String; @nospecialize(kwargs...))
+function parse!(
+    model::JuMP.Model,
+    filename::AbstractString;
+    parameters::Union{Nothing, Dict}=nothing,
+    config::Union{Nothing, Dict}=nothing,
+    addons::Union{Nothing, Dict}=nothing,
+    carriers::Union{Nothing, Dict}=nothing,
+    components::Union{Nothing, Dict}=nothing,
+    load_components::Union{Nothing, Dict}=nothing,
+)
+    @nospecialize
+
     if !endswith(filename, ".iesopt.yaml")
         @critical "Model entry config files need to respect the `.iesopt.yaml` file extension" filename
     end
 
     # Get all parameters that were passed directly from the caller.
-    global_parameters = Dict{String, Any}(string(k) => v for (k, v) in kwargs)
+    global_parameters = something(parameters, Dict{String, Any}())
 
-    # Extract IESopt-internal arguments from `kwargs`.
-    model.ext[:_iesopt_verbosity] = pop!(global_parameters, "verbosity", nothing)
-    model.ext[:_iesopt_force_reload] = pop!(global_parameters, "force_reload", true)
+    # Handle passed "modification" keyword arguments.
+    model.ext[:_iesopt_kwargs] = Dict(
+        :parameters => parameters,
+        :config => config,
+        :addons => addons,
+        :carriers => carriers,
+        :components => components,
+        :load_components => load_components,
+    )
+    # TODO
+    isnothing(addons) || @error "The `addons` keyword argument is not yet supported"
+    isnothing(carriers) || @error "The `carriers` keyword argument is not yet supported"
+    isnothing(components) || @error "The `components` keyword argument is not yet supported"
+    isnothing(load_components) || @error "The `load_components` keyword argument is not yet supported"
 
     # Load the model specified by `filename`.
     _parse_model!(model, filename, global_parameters) || (@critical "Error while parsing model" filename)
@@ -478,7 +529,7 @@ function build!(model::JuMP.Model)
 
     # Perform conistency checks on all parsed components.
     all_components_ok = true::Bool
-    for (id, component) in _iesopt(model).model.components
+    for (id, component) in internal(model).model.components
         all_components_ok &= _isvalid(component)::Bool
     end
     if !all_components_ok
@@ -526,28 +577,28 @@ function optimize!(model::JuMP.Model; @nospecialize(kwargs...))
 end
 
 function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
-    if !isempty(_iesopt(model).aux.constraint_safety_penalties)
-        @info "Relaxing constraints based on constraint_safety"
-        _iesopt(model).aux.constraint_safety_expressions = JuMP.relax_with_penalty!(
+    if !isempty(internal(model).aux.soft_constraints_penalties)
+        @info "Relaxing constraints based on soft_constraints"
+        internal(model).aux.soft_constraints_expressions = JuMP.relax_with_penalty!(
             model,
-            Dict(k => v.penalty for (k, v) in _iesopt(model).aux.constraint_safety_penalties),
+            Dict(k => v.penalty for (k, v) in internal(model).aux.soft_constraints_penalties),
         )
     end
 
     # Enable or disable solver output
-    if _iesopt_config(model).verbosity_solve
+    if @config(model, general.verbosity.solver) == "on"
         JuMP.unset_silent(model)
     else
         JuMP.set_silent(model)
     end
 
     # Logging solver output.
-    if _iesopt_config(model).optimization.solver.log
+    if @config(model, optimization.solver.log)
         # todo: replace this with a more general approach
         try
             lcsn = lowercase(JuMP.solver_name(model))
-            log_file =
-                abspath(_iesopt_config(model).paths.results, "$(_iesopt_config(model).names.scenario).$(lcsn).log")
+            scenario_name = @config(model, general.name.scenario)
+            log_file = abspath(@config(model, paths.results), "$(scenario_name).$(lcsn).log")
             rm(log_file; force=true)
             if JuMP.solver_name(model) == "Gurobi"
                 @info "Logging solver output" log_file
@@ -580,7 +631,7 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
         @error "No results returned after call to `optimize!`. This most likely indicates an infeasible or unbounded model. You can check with `IESopt.compute_IIS(model)` which constraints make your model infeasible. Note: this requires a solver that supports this (e.g. Gurobi)"
         return nothing
     else
-        if !isnothing(_iesopt_config(model).optimization.multiobjective)
+        if !isnothing(@config(model, optimization.multiobjective))
             if JuMP.termination_status(model) == JuMP.MOI.OPTIMAL
                 @info "Finished optimizing, solution(s) optimal" result_count = JuMP.result_count(model)
             else
@@ -594,20 +645,20 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
     end
 
     # Analyse constraint safety results
-    if !isempty(_iesopt(model).aux.constraint_safety_penalties)
+    if !isempty(internal(model).aux.soft_constraints_penalties)
         relaxed_components = Vector{String}()
-        for (k, v) in _iesopt(model).aux.constraint_safety_penalties
+        for (k, v) in internal(model).aux.soft_constraints_penalties
             # Skip components that we already know about being relaxed.
             (v.component_name ∈ relaxed_components) && continue
 
-            if JuMP.value(_iesopt(model).aux.constraint_safety_expressions[k]) > 0
+            if JuMP.value(internal(model).aux.soft_constraints_expressions[k]) > 0
                 push!(relaxed_components, v.component_name)
             end
         end
 
         if !isempty(relaxed_components)
             @warn "The safety constraint feature triggered" n_components = length(relaxed_components) components = "[$(relaxed_components[1]), ...]"
-            @info "You can further analyse the relaxed components by looking at the `constraint_safety_penalties` and `constraint_safety_expressions` entries in `model.ext`."
+            @info "You can further analyse the relaxed components by looking at the `soft_constraints_penalties` and `soft_constraints_expressions` entries in `model.ext`."
         end
     end
 
@@ -661,7 +712,7 @@ Get the component `component_name` from `model`.
 """
 function get_component(model::JuMP.Model, @nospecialize(component_name::AbstractString))
     cn = string(component_name)
-    components = _iesopt(model).model.components::Dict{String, _CoreComponent}
+    components = internal(model).model.components::Dict{String, _CoreComponent}
 
     if !haskey(components, cn)
         st = stacktrace()
@@ -691,17 +742,17 @@ Retrieve components from a given IESopt model.
 function get_components(model::JuMP.Model; @nospecialize(tagged::Union{Nothing, String, Vector{String}} = nothing))
     !isnothing(tagged) && return _components_tagged(model, tagged)::Vector{<:_CoreComponent}
 
-    return collect(values(_iesopt(model).model.components))::Vector{<:_CoreComponent}
+    return collect(values(internal(model).model.components))::Vector{<:_CoreComponent}
 end
 
 function _components_tagged(model::JuMP.Model, tag::String)
-    cnames = get(_iesopt(model).model.tags, tag, String[])
+    cnames = get(internal(model).model.tags, tag, String[])
     isempty(cnames) && return _CoreComponent[]
     return get_component.(model, cnames)::Vector{<:_CoreComponent}
 end
 
 function _components_tagged(model::JuMP.Model, tags::Vector{String})
-    cnames = [get(_iesopt(model).model.tags, tag, String[]) for tag in tags]
+    cnames = [get(internal(model).model.tags, tag, String[]) for tag in tags]
     cnames = intersect(cnames...)
     isempty(cnames) && return _CoreComponent[]
     return get_component.(model, cnames)::Vector{<:_CoreComponent}
@@ -740,13 +791,13 @@ function to_table(model::JuMP.Model; path::String="./out", write_to_file::Bool=t
         Unit => Vector{OrderedDict{Symbol, Any}}(),
     )
 
-    for (id, component) in _iesopt(model).model.components
+    for (id, component) in internal(model).model.components
         push!(tables[typeof(component)], _to_table(component))
     end
 
     if write_to_file
         for (type, table) in tables
-            CSV.write(normpath(_iesopt_config(model).paths.main, path, "$type.csv"), DataFrames.DataFrame(table))
+            CSV.write(normpath(@config(model, paths.main), path, "$type.csv"), DataFrames.DataFrame(table))
         end
         return nothing
     end

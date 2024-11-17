@@ -18,7 +18,7 @@ Additionally, the flow gets "injected" at the `Node`s that the `connection` is c
 """
 function _connection_var_flow!(connection::Connection)
     model = connection.model
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
 
     if !isnothing(connection.etdf)
         return nothing
@@ -53,13 +53,13 @@ function _connection_var_flow!(connection::Connection)
             # Create all representatives.
             _repr = Dict(
                 t => @variable(model, base_name = make_base_name(connection, "flow[$(t)]")) for
-                t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+                t in get_T(model) if internal(model).model.snapshots[t].is_representative
             )
 
             # Create all variables, either as themselves or their representative.
             connection.var.flow = collect(
-                _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
 

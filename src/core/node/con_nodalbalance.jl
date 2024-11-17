@@ -55,7 +55,7 @@ function _node_con_nodalbalance!(node::Node)
             end
 
             t_other = t == 1 ? get_T(model)[end] : (t - 1)
-            injection_t_other = _iesopt(model).model.snapshots[t_other].representative
+            injection_t_other = internal(model).model.snapshots[t_other].representative
 
             if (t == 1) && (node.state_cyclic === :geq)
                 if node.nodal_balance === :create
@@ -148,13 +148,13 @@ function _node_con_nodalbalance!(node::Node)
                     model,
                     _weight(model, t) * node.exp.injection[t] == 0,
                     base_name = make_base_name(node, "nodalbalance", t)
-                ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+                ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
             node.con.nodalbalance = collect(
-                _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
     elseif node.nodal_balance === :create
@@ -174,13 +174,13 @@ function _node_con_nodalbalance!(node::Node)
                     model,
                     _weight(model, t) * node.exp.injection[t] <= 0,
                     base_name = make_base_name(node, "nodalbalance[$(t)]")
-                ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+                ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
             node.con.nodalbalance = collect(
-                _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
     elseif node.nodal_balance === :destroy
@@ -200,13 +200,13 @@ function _node_con_nodalbalance!(node::Node)
                     model,
                     _weight(model, t) * node.exp.injection[t] >= 0,
                     base_name = make_base_name(node, "nodalbalance[$(t)]")
-                ) for t in get_T(model) if _iesopt(model).model.snapshots[t].is_representative
+                ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
             )
 
             # Create all constraints, either as themselves or their representative.
             node.con.nodalbalance = collect(
-                _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in get_T(model)
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
     elseif node.nodal_balance === :sum

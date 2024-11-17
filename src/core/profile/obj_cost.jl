@@ -33,7 +33,7 @@ function _profile_obj_cost!(profile::Profile)
         )
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, profile.obj.cost)
+    push!(internal(model).model.objectives["total_cost"].terms, profile.obj.cost)
 
     return nothing
 end

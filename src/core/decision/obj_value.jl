@@ -14,7 +14,7 @@ function _decision_obj_value!(decision::Decision)
 
     model = decision.model
     decision.obj.value = decision.var.value * decision.cost
-    push!(_iesopt(model).model.objectives["total_cost"].terms, decision.obj.value)
+    push!(internal(model).model.objectives["total_cost"].terms, decision.obj.value)
 
     return nothing
 end

@@ -11,7 +11,7 @@ for each `Snapshot`. If the `pf_slack` property of this `Node` is set to `true`,
 function _node_var_pf_theta!(node::Node)
     model = node.model
 
-    !haskey(_iesopt(model).input.addons, "Powerflow") && return
+    !haskey(internal(model).input.addons, "Powerflow") && return
 
     @error "Global addon based powerflow is deprecated until we finished the move to PowerModels.jl"
     return nothing
@@ -20,7 +20,7 @@ function _node_var_pf_theta!(node::Node)
         @error "Representative Snapshots are currently not supported for models using Powerflow"
     end
 
-    if _iesopt(model).input.addons["Powerflow"].config["__settings__"].mode === :linear_angle
+    if internal(model).input.addons["Powerflow"].config["__settings__"].mode === :linear_angle
         if node.pf_slack
             node.var.pf_theta = zeros(length(get_T(model)))
         else
