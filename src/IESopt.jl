@@ -200,9 +200,8 @@ function run(
 
     model = generate!(filename; parameters, config, addons, carriers, components, load_components)
 
-    if haskey(model.ext, :_iesopt_failed_generate)
+    if pop!(model.ext, :_iesopt_failed_generate, false)
         @error "Errors in model generation; skipping optimization"
-        delete!(model.ext, :_iesopt_failed_generate)
         return model
     end
 
@@ -822,7 +821,7 @@ end
 
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
-include("precompile/precompile_traced.jl")
+# include("precompile/precompile_traced.jl")
 include("precompile/precompile_tools.jl")
 
 end

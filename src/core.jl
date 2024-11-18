@@ -536,7 +536,14 @@ _get_cached(model::JuMP.Model, cache::Symbol, entry::Any) = _iesopt_cache(model)
 @recompile_invalidations begin
     function Base.show(
         io::IO,
-        item::Union{InternalData, _IESoptAuxiliaryData, _IESoptDataDeprecator, _IESoptInputData, _IESoptModelData, _IESoptResultData},
+        item::Union{
+            InternalData,
+            _IESoptAuxiliaryData,
+            _IESoptDataDeprecator,
+            _IESoptInputData,
+            _IESoptModelData,
+            _IESoptResultData,
+        },
     )
         str_show = """:: $(typeof(item)) ::"""
 

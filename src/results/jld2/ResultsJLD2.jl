@@ -12,7 +12,10 @@ using ..IESopt:
     _CoreComponent,
     _CoreComponentResult,
     _CoreComponentOptResultContainer,
-    _component_type
+    _component_type,
+    _get_git,
+    _get_iesopt_log,
+    _get_solver_log
 
 import LibGit2
 import JLD2

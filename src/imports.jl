@@ -2,7 +2,7 @@ using PrecompileTools: @setup_workload, @compile_workload, @recompile_invalidati
 
 # See: https://discourse.julialang.org/t/base-docs-doc-failing-with-1-11-0/121187
 # This is a workaround for an issue introduced by Julia 1.11.0, and seems to now be necessary to use `Base.Docs`
-import REPL
+# import REPL
 
 using TestItems
 
@@ -35,7 +35,7 @@ using ProgressMeter
 using OrderedCollections
 
 # Required to generate dynamic docs of Core Components.
-import Base.Docs
+# import Base.Docs
 import Markdown
 
 # Everything JuMP / optimization related.
@@ -51,6 +51,7 @@ const MOI = JuMP.MOI
 import YAML
 import JSON
 import SentinelArrays, InlineStrings, CSV  # NOTE: The first two only help with precompilation of CSV.
+import CSV
 import DataFrames
 import ZipFile
 

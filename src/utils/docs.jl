@@ -69,7 +69,7 @@ function _docs_docstr_to_admonition(f::Function)
         You can find the full implementation and all details here: [`$(obj_cc)/$(obj_type)_$(obj_name) @ IESopt.jl`](https://github.com/$(f_path)).
     """
 
-    docstr = string(Base.Docs.doc(f))
+    docstr = string(@doc f)
     docstr = replace(docstr, r"```(?s).*```" => header)
     docstr = replace(docstr, "\n" => "\n    ", "\$\$" => "```math")      # TODO
 
