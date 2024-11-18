@@ -539,7 +539,8 @@ function build!(model::JuMP.Model)
     # Build the model.
     _build_model!(model)
 
-    @info "Profiling results after `build` [time, top 5]" _profiling_format_top(model, 5)...
+    # @info "Profiling results after `build` [time, top 5]" _profiling_format_top(model, 5)...
+    return nothing
 end
 
 """
@@ -664,7 +665,8 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
 
     _handle_result_extraction(model)
 
-    @info "Profiling results after `optimize` [time, top 5]" _profiling_format_top(model, 5)...
+    # TODO
+    # @info "Profiling results after `optimize` [time, top 5]" _profiling_format_top(model, 5)...
     return nothing
 end
 
