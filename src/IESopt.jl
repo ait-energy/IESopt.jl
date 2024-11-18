@@ -175,30 +175,31 @@ function _prepare_model!(model::JuMP.Model)
 end
 
 """
-    run(filename::AbstractString; kwargs...)
+    run(filename::String; kwargs...)
 
 Build, optimize, and return a model.
 
 # Arguments
 
-- `filename::AbstractString`: The path to the top-level configuration file.
+- `filename::String`: The path to the top-level configuration file.
 
 # Keyword Arguments
 
-Keyword arguments are passed to the [`generate!`](@ref) function.
+Keyword arguments are passed to the [`normpath(__dir, !`](@ref) function.
 """
 function run(
-    filename::AbstractString;
+    filename::String;
     parameters::Union{Nothing, Dict}=nothing,
     config::Union{Nothing, Dict}=nothing,
     addons::Union{Nothing, Dict}=nothing,
     carriers::Union{Nothing, Dict}=nothing,
     components::Union{Nothing, Dict}=nothing,
     load_components::Union{Nothing, Dict}=nothing,
+    skip_validation::Bool=false,
 )
-    @nospecialize
+    @nospecialize parameters config addons carriers components load_components
 
-    model = generate!(filename; parameters, config, addons, carriers, components, load_components)
+    model = generate!(filename; parameters, config, addons, carriers, components, load_components, skip_validation)
 
     if pop!(model.ext, :_iesopt_failed_generate, false)
         @error "Errors in model generation; skipping optimization"
@@ -215,12 +216,12 @@ function run(
 end
 
 """
-    generate!(filename::AbstractString; @nospecialize(kwargs...))
+    generate!(filename::String; @nospecialize(kwargs...))
 
 Generate an IESopt model based on the top-level config in `filename`.
 
 # Arguments
-- `filename::AbstractString`: The name of the file to load.
+- `filename::String`: The name of the file to load.
 
 # Keyword Arguments
 To be documented.
@@ -229,30 +230,31 @@ To be documented.
 - `model::JuMP.Model`: The generated IESopt model.
 """
 function generate!(
-    filename::AbstractString;
+    filename::String;
     parameters::Union{Nothing, Dict}=nothing,
     config::Union{Nothing, Dict}=nothing,
     addons::Union{Nothing, Dict}=nothing,
     carriers::Union{Nothing, Dict}=nothing,
     components::Union{Nothing, Dict}=nothing,
     load_components::Union{Nothing, Dict}=nothing,
+    skip_validation::Bool=false,
 )
-    @nospecialize
+    @nospecialize parameters config addons carriers components load_components
 
     model = JuMP.Model()::JuMP.Model
-    generate!(model, String(filename); parameters, config, addons, carriers, components, load_components)
+    generate!(model, filename; parameters, config, addons, carriers, components, load_components, skip_validation)
 
     return model::JuMP.Model
 end
 
 """
-    generate!(model::JuMP.Model, filename::AbstractString; kwargs...)
+    generate!(model::JuMP.Model, filename::String; kwargs...)
 
 Generates an IESopt model from a given file and attaches an optimizer if necessary.
 
 # Arguments
 - `model::JuMP.Model`: The JuMP model to be used.
-- `filename::AbstractString`: The path to the file containing the model definition.
+- `filename::String`: The path to the file containing the model definition.
 
 # Keyword Arguments
 To be documented.
@@ -268,24 +270,26 @@ To be documented.
 """
 function generate!(
     model::JuMP.Model,
-    filename::AbstractString;
+    filename::String;
     parameters::Union{Nothing, Dict}=nothing,
     config::Union{Nothing, Dict}=nothing,
     addons::Union{Nothing, Dict}=nothing,
     carriers::Union{Nothing, Dict}=nothing,
     components::Union{Nothing, Dict}=nothing,
     load_components::Union{Nothing, Dict}=nothing,
+    skip_validation::Bool=false,
 )
-    @nospecialize
-
-    filename = String(filename)
+    @nospecialize parameters config addons carriers components load_components
 
     # local stats_parse, stats_build, stats_total
     # TODO: "re-enable" by refactoring to TimerOutputs
 
     try
-        # Validate before parsing.
-        !validate(filename) && return nothing
+        if !skip_validation
+            @info "Performing validation; this can be turned off (by passing `skip_validation = true`) since it takes quite some time" filename
+            # Validate before parsing.
+            !validate(filename) && return nothing
+        end
 
         # Parse & build the model.
         parse!(model, filename; parameters, config, addons, carriers, components, load_components) || return model
@@ -821,7 +825,7 @@ end
 
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
-# include("precompile/precompile_traced.jl")
+include("precompile/precompile_traced.jl")
 include("precompile/precompile_tools.jl")
 
 end

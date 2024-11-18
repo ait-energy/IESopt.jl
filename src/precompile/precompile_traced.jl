@@ -42,6 +42,8 @@ let
     MutableArithmetics = JuMP.MutableArithmetics
     Serialization = RuntimeGeneratedFunctions.Serialization
     DuckDB_jll = ResultsDuckDB.DuckDB.DuckDB_jll
+    SentinelArrays = CSV.SentinelArrays
+    InlineStrings = CSV.InlineStrings
 
     # The following are "cross-indirect-dependencies", and require some previous definition.
     CodecBzip2 = MathOptInterface.FileFormats.CodecBzip2

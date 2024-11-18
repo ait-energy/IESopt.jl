@@ -50,7 +50,6 @@ const MOI = JuMP.MOI
 # File (and filesystem/git) and data format handling.
 import YAML
 import JSON
-import SentinelArrays, InlineStrings, CSV  # NOTE: The first two only help with precompilation of CSV.
 import CSV
 import DataFrames
 import ZipFile
