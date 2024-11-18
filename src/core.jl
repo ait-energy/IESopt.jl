@@ -451,6 +451,16 @@ end
         model::JuMP.Model
     end
 
+    function Base.getproperty(dd::_IESoptDataDeprecator, name::Symbol)
+        @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
+        return getfield(internal(dd.model), name)
+    end
+
+    function Base.setproperty!(dd::_IESoptDataDeprecator, name::Symbol, value)
+        @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
+        return setfield!(internal(dd.model), name, value)
+    end
+
     function Base.getindex(dd::_IESoptDataDeprecator, key::Any)
         @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
         return internal(dd.model)[key]
