@@ -16,6 +16,24 @@ macro critical(msg, args...)
     end)
 end
 
+"""
+    @config(model, expr, type::Union{Symbol, Expr}=:Any)
+
+Returns or sets a configuration value in the `model`'s configuration dictionary.
+
+This macro is used to set and retrieve configuration values in the `model`'s configuration dictionary. This resolves the
+access properly during compile time. A type can be optionally specified to assert the type of the value.
+
+# Example
+
+```julia
+# Setting a configuration value.
+@config(model, general.verbosity.core) = "info"
+
+# Getting a configuration value.
+verbosity = @config(model, general.verbosity.core, String)
+```
+"""
 macro config(model, expr, type::Union{Symbol, Expr}=:Any)
     function walk(item)
         if item isa Expr && item.head == :.

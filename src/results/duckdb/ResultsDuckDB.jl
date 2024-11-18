@@ -1,3 +1,8 @@
+"""
+    ResultsDuckDB
+
+The `ResultsDuckDB` module provides functions to extract results from a JuMP model and store them in a DuckDB database.
+"""
 module ResultsDuckDB
 
 import ..IESopt

@@ -662,7 +662,7 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
         end
     end
 
-    handle_result_extraction(model)
+    _handle_result_extraction(model)
 
     @info "Profiling results after `optimize` [time, top 5]" _profiling_format_top(model, 5)...
     return nothing

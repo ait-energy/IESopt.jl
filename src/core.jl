@@ -361,6 +361,12 @@ mutable struct _IESoptResultData
     _templates::Dict{String, Any}
 end
 
+"""
+    InternalData
+
+The internal data structure used by IESopt.jl to store all relevant information about the model, its components, and
+results.
+"""
 mutable struct InternalData
     input::_IESoptInputData
     model::_IESoptModelData
@@ -430,6 +436,11 @@ function InternalData(toplevel_yaml::Dict)
     )
 end
 
+"""
+    internal(model::JuMP.Model)
+
+Retrieve the internal data structure from the JuMP model.
+"""
 function internal(model::JuMP.Model)
     return model.ext[:_iesopt]::InternalData
 end

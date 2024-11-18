@@ -60,7 +60,7 @@ end
 include("jld2/ResultsJLD2.jl")
 include("duckdb/ResultsDuckDB.jl")
 
-function handle_result_extraction(model::JuMP.Model)
+function _handle_result_extraction(model::JuMP.Model)
     if @config(model, results.enabled, Bool)
         @info "Begin extracting results"
         # TODO: include content of result config section

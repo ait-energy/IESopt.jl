@@ -1,3 +1,8 @@
+"""
+    ResultsJLD2
+
+This module provides functions to save and load results to and from JLD2 files.
+"""
 module ResultsJLD2
 
 using ..IESopt:
