@@ -453,22 +453,22 @@ end
 
     function Base.getproperty(dd::_IESoptDataDeprecator, name::Symbol)
         @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
-        return getfield(internal(dd.model), name)
+        return getfield(internal(getfield(dd, :model)), name)
     end
 
     function Base.setproperty!(dd::_IESoptDataDeprecator, name::Symbol, value)
         @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
-        return setfield!(internal(dd.model), name, value)
+        return setfield!(internal(getfield(dd, :model)), name, value)
     end
 
     function Base.getindex(dd::_IESoptDataDeprecator, key::Any)
         @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
-        return internal(dd.model)[key]
+        return internal(getfield(dd, :model))[key]
     end
 
     function Base.setindex!(dd::_IESoptDataDeprecator, value::Any, key::Any)
         @error "`model.ext[:iesopt]` is deprecated, use `internal(model)` instead" maxlog = 1
-        return internal(dd.model)[key] = value
+        return internal(getfield(dd, :model))[key] = value
     end
 end
 
@@ -532,3 +532,20 @@ function _is_cached(model::JuMP.Model, cache::Symbol, entry::Any)
     return _has_cache(model, cache) && haskey(_iesopt_cache(model)[cache], entry)
 end
 _get_cached(model::JuMP.Model, cache::Symbol, entry::Any) = _iesopt_cache(model)[cache][entry]
+
+@recompile_invalidations begin
+    function Base.show(
+        io::IO,
+        item::Union{_IESoptAuxiliaryData, _IESoptDataDeprecator, _IESoptInputData, _IESoptModelData, _IESoptResultData},
+    )
+        str_show = """:: $(typeof(item)) ::"""
+
+        fields = fieldnames(typeof(item))
+        for field in fields[1:(end - 1)]
+            str_show *= "\n├ $field [$(typeof(getfield(item, field)))]"
+        end
+        str_show *= "\n└ $(fields[end]) [$(typeof(getfield(item, fields[end])))]"
+
+        return print(io, str_show)
+    end
+end
