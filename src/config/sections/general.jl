@@ -24,13 +24,26 @@ config:
 function _prepare_config_general!(model::JuMP.Model)
     data = get(internal(model).input._tl_yaml["config"], "general", Dict{String, Any}())
 
+    @config(model, general) = Dict{String, Dict{String, String}}()
+
+    # Verbosity.
+    haskey(data, "verbosity") || (data["verbosity"] = Dict{String, String}())
+    verbosity_core = get(data["verbosity"], "core", "info")::String
+    verbosity_bool_default = verbosity_core == "error" ? "off" : "on"
+    @config(model, general.verbosity) = Dict{String, String}(
+        "core" => replace(verbosity_core, "warning" => "warn"),
+        "progress" => get(data["verbosity"], "progress", verbosity_bool_default)::String,
+        "python" => replace(get(data["verbosity"], "python", verbosity_core)::String, "warning" => "warn"),
+        "solver" => get(data["verbosity"], "solver", verbosity_bool_default)::String,
+    )
+
     # Validation checks.
     if !haskey(data, "version")
-        @warn "Missing `version` specification in the configuration file - consider adding it now, see: https://ait-energy.github.io/iesopt/pages/manual/yaml/top_level.html#version"
+        if @config(model, general.verbosity.core, String) != "error"
+            @warn "Missing `version` specification in the configuration file - consider adding it now, see: https://ait-energy.github.io/iesopt/pages/manual/yaml/top_level.html#version"
+        end
         data["version"] = Dict{String, String}("core" => string(pkgversion(@__MODULE__)), "python" => "missing")
     end
-
-    @config(model, general) = Dict{String, Dict{String, String}}()
 
     # Version.
     @config(model, general.version) = Dict{String, String}(string(k) => string(v) for (k, v) in data["version"])
@@ -41,17 +54,6 @@ function _prepare_config_general!(model::JuMP.Model)
     @config(model, general.name) = Dict{String, String}(
         "model" => replace(get(data["name"], "model", "my_model")::String, _time),
         "scenario" => replace(get(data["name"], "scenario", "my_scenario")::String, _time),
-    )
-
-    # Verbosity.
-    haskey(data, "verbosity") || (data["verbosity"] = Dict{String, String}())
-    verbosity_core = get(data["verbosity"], "core", "info")::String
-    verbosity_bool_default = verbosity_core == "error" ? "off" : "on"
-    @config(model, general.verbosity) = Dict{String, String}(
-        "core" => replace(get(data["verbosity"], "core", "info")::String, "warning" => "warn"),
-        "progress" => get(data["verbosity"], "progress", verbosity_bool_default)::String,
-        "python" => replace(get(data["verbosity"], "python", verbosity_core)::String, "warning" => "warn"),
-        "solver" => get(data["verbosity"], "solver", verbosity_bool_default)::String,
     )
 
     # Performance.
