@@ -15,7 +15,7 @@ Logging.min_enabled_level(filelogger::_FileLogger) = Logging.Info
 Logging.catch_exceptions(filelogger::_FileLogger) = Logging.catch_exceptions(filelogger.logger)
 
 """
-    save_close_filelogger(model::JuMP.Model)
+    safe_close_filelogger(model::JuMP.Model)
 
 Safely closes the file logger's iostream if it is open. This function checks if the logger associated with the given `model` is a `LoggingExtras.TeeLogger` and if it contains a `IESopt._FileLogger` as one of its loggers. If the file logger's stream is open, it will be closed.
 
@@ -28,7 +28,7 @@ Safely closes the file logger's iostream if it is open. This function checks if 
 # Notes
 - The function includes a `try-catch` block to handle any potential errors during the closing process. Currently, the catch block does not perform any actions.
 """
-function save_close_filelogger(model::JuMP.Model)
+function safe_close_filelogger(model::JuMP.Model)
     try
         if internal(model).logger isa LoggingExtras.TeeLogger
             tl = internal(model).logger
@@ -62,7 +62,7 @@ function _attach_logger!(model::JuMP.Model)
         catch
             @error (
                 "Could not create file logger, falling back to console logger only; if this happened after a " *
-                "previous model run, consider calling `save_close_filelogger(model)` after you are done with your " *
+                "previous model run, consider calling `safe_close_filelogger(model)` after you are done with your " *
                 "previous model - before re-generating a new one - to properly release the log file handle"
             )
             internal(model).logger = logger

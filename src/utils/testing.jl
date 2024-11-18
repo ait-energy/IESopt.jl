@@ -16,10 +16,10 @@ end
         else
             filename = cfg_name
         end
-        m = @suppress generate!(Assets.get_path("examples", "$filename.iesopt.yaml"), kwargs...)
+        m = @suppress generate!(Assets.get_path("examples", "$filename.iesopt.yaml"); kwargs...)
         @suppress optimize!(m)
         @test JuMP.objective_value(m) ≈ obj atol = 0.1
-        @suppress save_close_filelogger(m)
+        @suppress safe_close_filelogger(m)
         return m
     end
 
@@ -30,9 +30,9 @@ end
         else
             filename = cfg_name
         end
-        m = @suppress generate!(Assets.get_path("examples", "$filename.iesopt.yaml"), kwargs...)
+        m = @suppress generate!(Assets.get_path("examples", "$filename.iesopt.yaml"); kwargs...)
         @suppress optimize!(m)
-        @suppress save_close_filelogger(m)
+        @suppress safe_close_filelogger(m)
         return m
     end
 end

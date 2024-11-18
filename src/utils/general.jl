@@ -253,10 +253,16 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
 
         if isfile(filepath_local)
             @info "Trying to load addon from file (local)" filename source = filepath_local
-            return _load_or_retrieve_addon_file(filepath_local; reload=@config(model, general.performance.force_addon_reload, Bool))
+            return _load_or_retrieve_addon_file(
+                filepath_local;
+                reload=@config(model, general.performance.force_addon_reload, Bool)
+            )
         elseif isfile(filepath_core)
             @info "Trying to load addon from file (core)" filename source = filepath_core
-            return _load_or_retrieve_addon_file(filepath_core; reload=@config(model, general.performance.force_addon_reload, Bool))
+            return _load_or_retrieve_addon_file(
+                filepath_core;
+                reload=@config(model, general.performance.force_addon_reload, Bool)
+            )
         else
             @critical "Failed to find addon location" filename filepath_local filepath_core
         end

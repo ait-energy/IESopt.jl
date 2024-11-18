@@ -71,12 +71,12 @@ end
 
 @testitem "25_global_parameters" tags = [:examples] setup = [TestExampleModule] begin
     TestExampleModule.check(; obj=50.0)
-    TestExampleModule.check(; obj=100.0, demand=10)
+    TestExampleModule.check(; obj=100.0, parameters=Dict("demand" => 10))
 end
 
 @testitem "26_initial_states" tags = [:examples] setup = [TestExampleModule] begin
-    TestExampleModule.check(; obj=150.0, store_initial_state=15)
-    TestExampleModule.check(; obj=0.0, store_initial_state=50)
+    TestExampleModule.check(; obj=150.0, parameters=Dict("store_initial_state" => 15))
+    TestExampleModule.check(; obj=0.0, parameters=Dict("store_initial_state" => 50))
 end
 
 @testitem "27_piecewise_linear_costs" tags = [:examples] setup = [TestExampleModule] begin
@@ -196,10 +196,10 @@ end
 end
 
 @testitem "47_disable_components" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
-    model_coupled = TestExampleModule.run(; mode="coupled")
-    model_individual = TestExampleModule.run(; mode="individual")
-    model_AT_DE = TestExampleModule.run(; mode="coupled", enable_CH=false)
-    model_CH = TestExampleModule.run(; enable_DE=false, enable_AT=false)
+    model_coupled = TestExampleModule.run(; parameters=Dict("mode" => "coupled"))
+    model_individual = TestExampleModule.run(; parameters=Dict("mode" => "individual"))
+    model_AT_DE = TestExampleModule.run(; parameters=Dict("mode" => "coupled", "enable_CH" => false))
+    model_CH = TestExampleModule.run(; parameters=Dict("enable_DE" => false, "enable_AT" => false))
 
     @test JuMP.objective_value(model_coupled) <=
           JuMP.objective_value(model_AT_DE) + JuMP.objective_value(model_CH) <=
