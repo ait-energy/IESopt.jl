@@ -536,7 +536,7 @@ _get_cached(model::JuMP.Model, cache::Symbol, entry::Any) = _iesopt_cache(model)
 @recompile_invalidations begin
     function Base.show(
         io::IO,
-        item::Union{_IESoptAuxiliaryData, _IESoptDataDeprecator, _IESoptInputData, _IESoptModelData, _IESoptResultData},
+        item::Union{InternalData, _IESoptAuxiliaryData, _IESoptDataDeprecator, _IESoptInputData, _IESoptModelData, _IESoptResultData},
     )
         str_show = """:: $(typeof(item)) ::"""
 
@@ -546,6 +546,6 @@ _get_cached(model::JuMP.Model, cache::Symbol, entry::Any) = _iesopt_cache(model)
         end
         str_show *= "\n└ $(fields[end]) [$(typeof(getfield(item, fields[end])))]"
 
-        return print(io, str_show)
+        return println(io, str_show)
     end
 end
