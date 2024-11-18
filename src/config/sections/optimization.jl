@@ -18,10 +18,6 @@ function _prepare_config_optimization!(model::JuMP.Model)
     # Snapshots.
     data_snapshots = get(data, "snapshots", Dict{String, Any}())
     count = data_snapshots["count"]
-    if ccall(:jl_generating_output, Cint, ()) == 1  # == is precompiling?
-        count = min(4, count)
-        @warn "Detected precompilation... limiting Snapshot count" original = data_snapshots["count"] new = count
-    end
     weight_config = get(data_snapshots, "weights", nothing)
     weights = weight_config isa Real ? float(weight_config) : weight_config
     @config(model, optimization.snapshots) = Dict(

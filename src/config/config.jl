@@ -9,7 +9,6 @@ function _replace_config_from_user(model::JuMP.Model)
     data = internal(model).input._tl_yaml["config"]
 
     for (k, v) in model.ext[:_iesopt_kwargs][:config]
-        @info k
         accessors = split(k, '.')
         current = data
         for (i, accessor) in enumerate(accessors)
