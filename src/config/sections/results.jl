@@ -24,7 +24,7 @@ function _prepare_config_results!(model::JuMP.Model)
     @config(model, results.include) = Set(Symbol.(split(included_modes, '+')))
 
     # Backend.
-    @config(model, results.backend) = Symbol(get(data, "backend", "duckdb"))::Symbol
+    @config(model, results.backend) = Symbol(get(data, "backend", "jld2"))::Symbol
 
     return nothing
 end
