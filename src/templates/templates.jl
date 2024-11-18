@@ -36,8 +36,8 @@ function _analyse(template::CoreTemplate)
     template = _require_template(template.model, template.name)
     template._status[] = old_status
 
-    internal = _is_container(template) ? values(template.yaml["components"]) : [template.yaml["component"]]
-    child_types = sort!(collect(Set(comp["type"] for comp in internal)))::Vector{String}
+    inner_comps = _is_container(template) ? values(template.yaml["components"]) : [template.yaml["component"]]
+    child_types = sort!(collect(Set(comp["type"] for comp in inner_comps)))::Vector{String}
     instances = get(internal(template.model).model.tags, template.name, String[])
 
     docs = get(template.yaml, "docs", Dict{String, Any}())
