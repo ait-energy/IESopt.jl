@@ -1,6 +1,9 @@
 # This example showcases the usage of non-core components and component containers.
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     snapshots:

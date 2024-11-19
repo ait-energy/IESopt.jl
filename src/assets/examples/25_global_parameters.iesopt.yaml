@@ -8,6 +8,9 @@
 parameters: files/25/global.iesopt.param.yaml
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     solver:

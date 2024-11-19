@@ -4,6 +4,9 @@ parameters:
   store_initial_state: null
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     solver:

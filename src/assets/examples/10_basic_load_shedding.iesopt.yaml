@@ -2,6 +2,9 @@
 # See: 08_basic_investment.iesopt.yaml
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     snapshots:

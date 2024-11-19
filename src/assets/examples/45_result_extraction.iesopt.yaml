@@ -2,9 +2,12 @@
 # ::: SECTION | MAIN CONFIGURATION                                                                                 ::: #
 # ::: ============================================================================================================ ::: #
 config:
-  name:
-    model: ExampleModel45
-    scenario: SomeScenario_$TIME$
+  general:
+    version:
+      core: 2.0.0
+    name:
+      model: ExampleModel45
+      scenario: SomeScenario_$TIME$
   # ------------------------------------------------------------------------------------------------------------------ #
   optimization:
     problem_type: LP

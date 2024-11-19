@@ -2,9 +2,12 @@
 # ::: SECTION | MAIN CONFIGURATION                                                                                 ::: #
 # ::: ------------------------------------------------------------------------------------------------------------ ::: #
 config:
-  name:
-    model: CustomResults
-    scenario: SomeScenario_$TIME$
+  general:
+    name:
+      model: CustomResults
+      scenario: SomeScenario_$TIME$
+    version:
+      core: 2.0.0
   # ------------------------------------------------------------------------------------------------------------------ #
   optimization:
     problem_type: LP

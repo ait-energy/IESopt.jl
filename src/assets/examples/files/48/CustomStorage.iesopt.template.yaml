@@ -25,4 +25,4 @@ components:
 
 functions:
   finalize: |
-    @add_result "setpoint" (access("discharging").var.flow - access("charging").var.flow)
+    this.exp.setpoint = this.discharging.var.flow - this.charging.var.flow

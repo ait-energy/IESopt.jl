@@ -4,6 +4,9 @@
 # as little energy as possible (this is here done by only assigning a cost to H2 import).
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     snapshots:

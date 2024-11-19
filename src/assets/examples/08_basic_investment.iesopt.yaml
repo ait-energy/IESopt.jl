@@ -1,6 +1,9 @@
 # This introduces a completely new model/problem to showcase basic investment decisions.
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     snapshots:

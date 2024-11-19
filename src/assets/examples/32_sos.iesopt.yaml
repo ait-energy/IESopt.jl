@@ -1,6 +1,9 @@
 # This example (at the time of writing) relies on a solver that supports SOS1 / SOS2 constraints directly, since JuMP
 # does not offer a bridge for that (e.g.: HiGHS.jl does not support it, while it's fine with Gurobi.jl).
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: MILP
     solver:

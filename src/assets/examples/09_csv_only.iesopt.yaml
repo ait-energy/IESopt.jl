@@ -4,6 +4,9 @@
 # This examples showcases loading components from supplied CSV files instead of specifying them inside this YAML.
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     snapshots:

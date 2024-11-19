@@ -15,6 +15,9 @@
 # that the safety feature applies.
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     snapshots:

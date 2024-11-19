@@ -2,6 +2,9 @@
 # explained/described anymore. See also: 03_basic_two_nodes.yaml
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: LP
     snapshots:

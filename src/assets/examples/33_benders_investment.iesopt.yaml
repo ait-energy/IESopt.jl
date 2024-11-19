@@ -2,6 +2,9 @@ parameters:
   snapshot_count: 35040
 
 config:
+  general:
+    version:
+      core: 2.0.0
   optimization:
     problem_type: MILP
     solver:
