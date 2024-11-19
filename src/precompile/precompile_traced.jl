@@ -39,7 +39,7 @@ let
     InvertedIndices = DataFrames.InvertedIndices
     Mmap = CSV.Mmap
     Distributed = ProgressMeter.Distributed
-    MutableArithmetics = JuMP.MutableArithmetics
+    MutableArithmetics = JuMP._MA
     Serialization = RuntimeGeneratedFunctions.Serialization
     DuckDB_jll = ResultsDuckDB.DuckDB.DuckDB_jll
     SentinelArrays = CSV.SentinelArrays
