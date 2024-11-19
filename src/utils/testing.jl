@@ -19,10 +19,10 @@ end
 
         @info "TestExampleModule" mode = "run" file = filename raw = cfg_name
 
-        m = @suppress generate!(String(Assets.get_path("examples", "$filename.iesopt.yaml")); kwargs...)
-        @suppress optimize!(m)
+        m = generate!(String(Assets.get_path("examples", "$filename.iesopt.yaml")); kwargs...)
+        optimize!(m)
         @test JuMP.objective_value(m) ≈ obj atol = 0.1
-        @suppress safe_close_filelogger(m)
+        safe_close_filelogger(m)
         return m
     end
 
@@ -36,9 +36,9 @@ end
 
         @info "TestExampleModule" mode = "run" file = filename raw = cfg_name
 
-        m = @suppress generate!(String(Assets.get_path("examples", "$filename.iesopt.yaml")); kwargs...)
-        @suppress optimize!(m)
-        @suppress safe_close_filelogger(m)
+        m = generate!(String(Assets.get_path("examples", "$filename.iesopt.yaml")); kwargs...)
+        optimize!(m)
+        safe_close_filelogger(m)
         return m
     end
 end
