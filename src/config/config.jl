@@ -54,6 +54,11 @@ function _prepare_config!(model::JuMP.Model)
             @error "The `version.core` (v$(version_core)) entry in the configuration file is different from the current version of `IESopt.jl` (v$(current_version_core)), which might lead to unexpected behavior or errors"
         end
 
+        unknown_sections = [k for k in keys(internal(model).input._tl_yaml["config"]) if !(k in ["general", "optimization", "files", "results", "paths"])]
+        if !isempty(unknown_sections)
+            @error "Unknown configuration sections found in the configuration file: $(join(unknown_sections, ", "))"
+        end
+
         @debug "Configuration loaded"
         @debug "[general]" Dict(Symbol(k) => v for (k, v) in @config(model, general))...
         @debug "[optimization]" Dict(Symbol(k) => v for (k, v) in @config(model, optimization))...
