@@ -52,5 +52,8 @@ end
 end
 
 # Clean up output files after testing is done.
-rm(joinpath(PATH_TESTFILES, "out"); force=true, recursive=true)
-rm(joinpath(PATH_TESTFILES, "filesystem", "out"); force=true, recursive=true)
+try
+    rm(joinpath(PATH_TESTFILES, "out"); force=true, recursive=true)
+    rm(joinpath(PATH_TESTFILES, "filesystem", "out"); force=true, recursive=true)
+catch
+end

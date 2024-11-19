@@ -207,8 +207,7 @@ end
 end
 
 @testitem "48_custom_results" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
-    model = TestExampleModule.check("48_custom_results"; obj=981.17)
-    @test JuMP.objective_value(model)
+    model = TestExampleModule.check(; obj=981.17)
 
     setpoint = JuMP.value.(IESopt.get_component(model, "storage").exp.setpoint)
     @test sum(setpoint) ≈ -1.09 atol = 0.01
@@ -216,5 +215,8 @@ end
     @test maximum(setpoint) ≈ 3.58 atol = 0.01
 end
 
-# Clean up output files after testing is done.
-rm(normpath(IESopt.Assets.get_path("examples"), "out"); force=true, recursive=true)
+try
+    # Clean up output files after testing is done.
+    rm(normpath(IESopt.Assets.get_path("examples"), "out"); force=true, recursive=true)
+catch
+end
