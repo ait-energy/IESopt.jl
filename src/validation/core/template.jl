@@ -4,7 +4,7 @@ function _validate_template_component(name::String, properties::Dict)
     try
         # TODO
     catch exception
-        valid &= _vassert(false, "An unexpected exception occured"; location=properties["type"], name=name)
+        valid &= _vassert(false, "An unexpected exception occurred"; location=properties["type"], name=name)
     end
 
     return valid

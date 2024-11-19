@@ -69,7 +69,7 @@ function construct_constraints!(model::JuMP.Model, config::Dict)
 
     # This enables you to return `false` if something went wrong. If an error occurs, please also use
     # `@error "[MyAddonName] My error message" additional_parameter=42`
-    # to provide addtional info before returning `false`. You can of course always also utilize the remaining Julia
+    # to provide additional info before returning `false`. You can of course always also utilize the remaining Julia
     # logging functions. Please make sure to start all logging messages with `[MyAddonName]`.
 
     @info "[IESoptAddon_Example18] Finished constructing constraint."

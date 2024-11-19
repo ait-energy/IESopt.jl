@@ -4,7 +4,7 @@ function _validate_decision(name::String, properties::Dict)
     try
         # TODO
     catch exception
-        valid &= _vassert(false, "An unexpected exception occured"; location="Decision", name=name)
+        valid &= _vassert(false, "An unexpected exception occurred"; location="Decision", name=name)
     end
 
     return valid

@@ -13,7 +13,7 @@ A template is defined by a YAML file, similar to the `config.iesopt.yaml` file t
 think about the parameters that we want to define for our heat pump. Let's create a new file for that. The pre-defined
 one is called `HeatPump`, so we need a different name: Templates must always have a unique name.
 
-Possiblities for that could be:
+Possibilities for that could be:
 
 - `CustomHeatPump`, if you do not have any more details
 - `GroundSourceHeatPump`, if we want to implement a ground-source heat pump with different parameters/features than the

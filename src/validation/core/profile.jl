@@ -4,7 +4,7 @@ function _validate_profile(name::String, properties::Dict)
     try
         # TODO
     catch exception
-        valid &= _vassert(false, "An unexpected exception occured"; location="Profile", name=name)
+        valid &= _vassert(false, "An unexpected exception occurred"; location="Profile", name=name)
     end
 
     return valid

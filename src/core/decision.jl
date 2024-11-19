@@ -143,7 +143,7 @@ function _result(decision::Decision, mode::String, field::String; result::Int=1)
     end
 
     if field in ["size", "count"]
-        @error "`decision:size` and `decision:count` are deprecated and most likely do not work as exepected; please change to extracting `decision:value`" decision =
+        @error "`decision:size` and `decision:count` are deprecated and most likely do not work as expected; please change to extracting `decision:value`" decision =
             decision.name mode = mode
     end
 

@@ -1,4 +1,4 @@
-# This example demonstrates the effect and use of the inbuilt "constraint safety" feature. This artifically alters
+# This example demonstrates the effect and use of the inbuilt "constraint safety" feature. This artificially alters
 # constraints inside the core components, in order to (hopefully) catch infeasibilities during the optimization run,
 # returning a (partially) valid solution as well as an indication where the infeasibility occurs.
 # Comments indicate points of this model file that changed compared to the previous examples. All other elements are not
@@ -29,7 +29,7 @@ config:
       active: true
       # This parameterizes the cost of utilizing the safety feature. This should be much higher than other costs in the
       # objective function and defaults to 1e15. This, while being a rather safe number - meaning it most likely will not
-      # interfer in any wrong way with your model - comes at the cost of numerical instability. This can be handled
+      # interfere in any wrong way with your model - comes at the cost of numerical instability. This can be handled
       # "properly" by some solvers (like Gurobi) but will negatively impact others (like GLPK). To counter this we can
       # specify a lower cost coefficient here. Consider setting a lower tolerance for these solvers, for example call
       # `JuMP.set_optimizer_attribute(model, "tol_dj", 1e-12)` for GLPK.

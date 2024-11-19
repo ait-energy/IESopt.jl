@@ -172,7 +172,7 @@ function _mapexpr_addon(expr::Expr, reload::Bool)
     end
 
     if expr.args[3].head != :block
-        # The actual stuff inside the module defintion is not a block.
+        # The actual stuff inside the module definition is not a block.
         error(
             "Failed loading addon (ERROR_CODE 3); make sure the file only contains a single module definition that wraps all your code",
         )
@@ -216,12 +216,12 @@ function _load_or_retrieve_addon_file(filename::String; reload::Bool)
             (module_addon isa Module) && return module_addon
         end
 
-        @error "An error occured while trying to load an addon file" addon_file_name = filename
+        @error "An error occurred while trying to load an addon file" addon_file_name = filename
         @error "The loaded code did not return a valid module; make sure the file only contains a single module definition that wraps all your code"
     catch e
-        @error "An error occured while trying to load an addon file" addon_file_name = filename
+        @error "An error occurred while trying to load an addon file" addon_file_name = filename
         @error string(e.error)
-        @error "The error seems to have occured here" file = e.file line = e.line
+        @error "The error seems to have occurred here" file = e.file line = e.line
     end
 
     @critical "Error while loading addons, see above for details"

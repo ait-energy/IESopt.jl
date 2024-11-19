@@ -42,7 +42,7 @@ load_components:
 
   # You can also use `- .csv` to load all CSV files in the folder.
 
-# Even when loading components from external CSV files, you can specify addtional ones like normal. IESopt takes
+# Even when loading components from external CSV files, you can specify additional ones like normal. IESopt takes
 # care about merging them correctly.
 components:
   co2_emissions:

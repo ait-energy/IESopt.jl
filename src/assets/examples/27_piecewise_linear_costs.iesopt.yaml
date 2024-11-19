@@ -42,7 +42,7 @@ components:
     conversion: ~ -> 1 electricity
     # The following constructs the piecewise linear function, including a constant offset of 5 (given as calculation!).
     # We expect the first 5 to be "free", the next 10 to cost "10 each", then "20 each", and the remaining 5 (so that
-    # the demand of 30 can be covered) "30 each". That makes total sytem cost of 100 + 200 + 150 = 450.
+    # the demand of 30 can be covered) "30 each". That makes total system cost of 100 + 200 + 150 = 450.
     capacity: 10.0/2 + build_gas_1:value + build_gas_2:value + build_gas_3:value out:electricity
   
   demand:

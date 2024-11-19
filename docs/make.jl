@@ -8,7 +8,7 @@ if is_local_draft
         import Revise
         Revise.revise()
     catch
-        @warn "Building documentation without Revise support. If you want to automatically refresh docstrings from withing IESopt.jl, you need Revise installed."
+        @warn "Building documentation without Revise support. If you want to automatically refresh docstrings from within IESopt.jl, you need Revise installed."
     end
 end
 

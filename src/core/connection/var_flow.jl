@@ -32,7 +32,7 @@ function _connection_var_flow!(connection::Connection)
             @critical "Representative Snapshots are currently not supported for models using Powerflow"
         end
 
-        # This is a passive Conection.
+        # This is a passive Connection.
         @simd for t in get_T(model)
             # Construct the flow expression.
             JuMP.add_to_expression!(connection.exp.pf_flow[t], node_from.var.pf_theta[t], 1.0 / connection.pf_X)

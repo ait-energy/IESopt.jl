@@ -23,10 +23,10 @@ function _docs_struct_to_table(datatype::Type)
     # Get proper binding from module, error if structure is unexpected.
     binding = Base.Docs.aliasof(datatype, typeof(datatype))
     dict = Base.Docs.meta(binding.mod; autoinit=false)
-    isnothing(dict) && @critical "Doc error occured" datatype
-    haskey(dict, binding) || @critical "Doc error occured" datatype dict binding
+    isnothing(dict) && @critical "Doc error occurred" datatype
+    haskey(dict, binding) || @critical "Doc error occurred" datatype dict binding
     multidoc = dict[binding]
-    haskey(multidoc.docs, Union{}) || @critical "Doc error occured" datatype multidoc.docs
+    haskey(multidoc.docs, Union{}) || @critical "Doc error occurred" datatype multidoc.docs
 
     # Get all fields that have a docstring.
     all_doc_fields = multidoc.docs[Union{}].data[:fields]

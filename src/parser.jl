@@ -546,7 +546,7 @@ function _parse_components_csv!(
                     # Is this a global parameter that we should fill in automatically?
                     if !isnothing(internal(model).input.parameters) && haskey(internal(model).input.parameters, k)
                         if warnlogcount == 0
-                            @warn "You left a field empty in a CSV component defintion file that corresponds to a global parameter. Automatic replacement is happening. Did you really intend this?" component =
+                            @warn "You left a field empty in a CSV component definition file that corresponds to a global parameter. Automatic replacement is happening. Did you really intend this?" component =
                                 name property = k
                             warnlogcount += 1
                         end

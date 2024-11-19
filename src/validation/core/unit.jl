@@ -4,7 +4,7 @@ function _validate_unit(name::String, properties::Dict)
     try
         # TODO
     catch exception
-        valid &= _vassert(false, "An unexpected exception occured"; location="Unit", name=name)
+        valid &= _vassert(false, "An unexpected exception occurred"; location="Unit", name=name)
     end
 
     return valid
