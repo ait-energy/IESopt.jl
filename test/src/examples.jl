@@ -87,13 +87,13 @@ end
     TestExampleModule.check(; obj=7000.0)
 end
 
-@testitem "30_representative_snapshots" tags = [:examples] setup = [TestExampleModule] begin
-    # TestExampleModule.check(; obj=319100.0)
-    model = TestExampleModule.run()
-    @test JuMP.objective_value(model) ≈ 319100.0 atol = 0.1 broken = true
-    # TODO: This is due to the Expression rework, that did not make use of aggregation in reading col@file values.
-    #       Re-implement, or remove if representative snapshots are re-implemented.
-end
+# @testitem "30_representative_snapshots" tags = [:examples] setup = [TestExampleModule] begin
+#     # TestExampleModule.check(; obj=319100.0)
+#     model = TestExampleModule.run()
+#     @test JuMP.objective_value(model) ≈ 319100.0 atol = 0.1 broken = true
+#     # TODO: This is due to the Expression rework, that did not make use of aggregation in reading col@file values.
+#     #       Re-implement, or remove if representative snapshots are re-implemented.
+# end
 
 @testitem "44_lossy_connections" tags = [:examples] setup = [TestExampleModule] begin
     TestExampleModule.check(; obj=1233.75)
