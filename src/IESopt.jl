@@ -71,8 +71,14 @@ function _build_model!(model::JuMP.Model)
                 # Only execute a function if it exists.
                 if addon_fi in names(prop.addon; all=true)
                     @info "Invoking addon" addon = name step = addon_fi
-                    if !Base.invokelatest(getfield(prop.addon, addon_fi), model, prop.config)
+                    ret = Base.invokelatest(getfield(prop.addon, addon_fi), model, prop.config)
+                    if isnothing(ret)
+                        @warn "Please make sure your addon returns `true` or `false` in every step to indicate success/failure" addon =
+                            name step = addon_fi
+                    elseif ret === false
                         @critical "Addon returned error" addon = name step = addon_fi
+                    elseif ret !== true
+                        @warn "Addon returned unexpected value: `$(ret)`" addon = name step = addon_fi
                     end
                 end
             end
