@@ -1,0 +1,85 @@
+# This example showcases basic unit commitment.
+
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 6
+    solver:
+      name: highs
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+
+components:
+  # The "power grid".
+  grid:
+    type: Node
+    carrier: electricity
+
+  # We can import electricity for a low cost up to 10 MW.
+  import:
+    # The "disabled" flag allows easy disabling a component, without the need to comment out all relevant lines. This
+    # will influence how the Unit behaves, since it is forced to fully be online to cover the max demand of 20.
+    # disabled: true
+    type: Profile
+    carrier: electricity
+    node_to: grid
+    cost: 5
+    mode: ranged
+    lb: 0
+    ub: 10
+  
+  # We produce electricity here.
+  plant:
+    type: Unit
+    outputs: {electricity: grid}
+    conversion: ~ -> 1 electricity
+    capacity: 20 out:electricity
+    marginal_cost: 50 per out:electricity
+    # These are the new settings:
+    enable_ramp_up: true          # Enabling ramps for the increase of production.
+    ramp_up_limit: 0.3            # It can increase by 30% of maximum capacity per time step.
+    ramp_up_cost: 1               # Ramping up induces some (small) costs
+    enable_ramp_down: true        # Enabling ramps for the decrease of production.
+    ramp_down_limit: 0.3          # It can decrease by 30% of maximum capacity per time step.
+    ramp_down_cost: 1             # Ramping down induces some (small) costs
+    unit_commitment: linear       # Enable unit commitment with a linear formulation (allowing partial startup, ...).
+    min_conversion: 0.35          # If the unit is on, it needs to run at a minimum of 35%.
+    startup_cost: 1000            # Each startup of the unit costs 1000.
+    is_on_before: 0               # This specifies that the unit is off at the begin.
+    # Note#1: If there are no costs assigned to ramping, then the values of the ramps can have rather arbitrary values.
+    # Note#2: Try changing the unit_commitment to "binary", which will heavily influence whether the unit is ON/OFF.
+    # Note#3: Be careful with `linear` unit commitment when `is_on_before` is `1` (default), because then the solution
+    #         will change (the startup is not necessary anymore).
+
+  # And this is the demand that is not coverable by import alone.
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: grid
+    value: [5, 5, 10, 20, 0, 0]
+  
+  # It could be that the unit produces too much energy. This would normally be handled by various internal safety
+  # mechanisms that ensure feasibility. But: These (a) complicate the problem for the solver, and (b) possibly distort
+  # our results. It is therefore best to always account for possible (foreseeable) cases. We therefore include an
+  # external "market" that just takes all left-over energy (at a "negative price" of 5). Make sure that, if you are
+  # interested in negative prices for the generation of (i.e.) electricity that you do not account for something like
+  # this, and carefully consider Profile's deviation settings.
+  market:
+    # Try disabling the market. Since the problem will no longer be feasible (the unit can't cover the peak demand while
+    # ramping down in time for Snapshot 5/6), the Profile deviation of `demand` will step in and make the problem
+    # feasible again using (automatic) load shedding, which can lead to unwanted results (because it just uses default
+    # values and will possibly not reflect the wanted situation). Observe the resulting warning!
+    # disabled: true
+    type: Profile
+    carrier: electricity
+    mode: destroy
+    node_from: grid
+    cost: 5

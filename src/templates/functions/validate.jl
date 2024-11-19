@@ -14,8 +14,8 @@ parameters:
 
 functions:
   validate: |
-    @check parameters["p"] isa Number
-    @check parameters["p"] > 0
+    @check this.get("p") isa Number
+    @check this.get("p") > 0
 ```
 
 See ["Template Validation"](@ref manual_templates_validation) in the documentation for more information.
@@ -59,33 +59,30 @@ end
 
 function _build_template_function_validate(template::CoreTemplate)
     if !haskey(template.yaml, "functions") || !haskey(template.yaml["functions"], "validate")
-        template.functions[:validate] = (::Dict{String, Any}, ::String) -> true
+        template.functions[:validate] = (::Virtual) -> true
         return nothing
     end
 
     # Get code from "validate" and remove trailing newline.
     code = chomp(template.yaml["functions"]["validate"])
 
-    # Replace the `get` function (that would otherwise conflict with Julia's `get` function).
-    code = replace(code, r"""get\("([^"]+)"\)""" => s"""_get_parameter_safe("\1", __parameters__)""")
-
     # Parse the code into an expression.
     code_ex = Meta.parse("""begin\n$(code)\nend"""; filename="$(template.name).iesopt.template.yaml")
 
     # Convert into a proper function.
     template.functions[:validate] = @RuntimeGeneratedFunction(
-        :(function (__parameters__::Dict{String, Any}, __component__::String)
-            MODEL = Utilities.ModelWrapper($(template).model)
+        :(function (__virtual__::Virtual)
             __template_name__ = $(template).name
-
-            get_ts(s::String) = _get_timeseries_safe(s, __parameters__, MODEL.model)
+            __parameters__ = __virtual__._parameters
+            __model__ = __virtual__.model
+            this = __virtual__
 
             __valid__ = true
             try
                 $code_ex
             catch e
                 template = __template_name__
-                component = __component__
+                component = __virtual__.name
                 @error "Error while validating component" error = string(e) template component
                 rethrow(e)
             end

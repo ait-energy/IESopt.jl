@@ -1,0 +1,84 @@
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: MILP
+    snapshots:
+      count: 9
+    solver:
+      name: highs
+
+addons:
+  CHP: {}
+
+carriers:
+  electricity: {}
+  gas: {}
+  heat: {}
+  co2: {}
+
+components:
+  grid_electricity:
+    type: Node
+    carrier: electricity
+
+  grid_gas:
+    type: Node
+    carrier: gas
+
+  grid_heat:
+    type: Node
+    carrier: heat
+
+  grid_co2:
+    type: Node
+    carrier: co2
+  
+  # =======================================
+ 
+  demand_elec:
+    type: Profile
+    carrier: electricity
+    node_from: grid_electricity
+    value: [2.75,  5.50,  7.00,  8.00,  9.00, 10.00, 5.00, 5.00, 15.00]
+  
+  demand_elec_shedding:
+    type: Profile
+    carrier: electricity
+    node_to: grid_electricity
+    mode: create
+    cost: 1000
+
+  demand_heat:
+    type: Profile
+    carrier: heat
+    node_from: grid_heat
+    value: [5.00, 10.00, 10.00, 10.00,  5.00,  0.00, 0.00, 5.00,  5.00]
+
+  # =======================================
+
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: grid_gas
+    mode: create
+    cost: 50.0
+
+  co2_emissions:
+    type: Profile
+    carrier: co2
+    node_from: grid_co2
+    mode: destroy
+    cost: 50.0
+  
+  # =======================================
+
+  chp:
+    type: CHP
+    p_max: 10
+    h_max: 10
+    fuel_in: grid_gas
+    power_out: grid_electricity
+    heat_out: grid_heat
+    co2_out: grid_co2

@@ -1,0 +1,105 @@
+# This introduces a completely new model/problem to showcase basic investment decisions.
+
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 24
+    solver:
+      name: highs
+  files:
+    data: example_data.csv
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    files: files
+
+carriers:
+  electricity: {}
+  h2: {}
+
+components:
+  # The power grid in the north.
+  elec:
+    type: Node
+    carrier: electricity
+
+  # The hydrogen grid in the south.
+  h2_south:
+    type: Node
+    carrier: h2
+
+  # This is a new type of core component: a Decision. It represents a decision to be made that determines a single,
+  # scalar value resulting from choosing a "count" (how many of X we want) and a "size" (how big should each X be). By
+  # default it is not associated with any costs, and can only build a single "unit" (count == 1). The only setting that
+  # is not pre-initialized with a default value is the maximum size. If we do not specify it, the size will be
+  # undbounded.
+  build_pipeline:
+    type: Decision
+    # We now associate a cost with increasing the size of this decision. 0.75 units of pipeline capacity will be built,
+    # since that is exactly what the model needs to cover peak demand in the south.
+    cost: 1000
+
+  pipeline:
+    type: Connection
+    node_from: h2_north
+    node_to: h2_south
+    lb: 0
+    # Now we do not use a fixed capacity for the first time, but instead use the result of "build_pipeline". The final
+    # (total) value of the decision can be used as upper bound utilizing the `decision:value_name` syntax.
+    ub: build_pipeline:value
+  
+  build_storage:
+    type: Decision
+    # We now also associate a cost with increasing the size of this decision.
+    cost: 100
+
+  # A simple hydrogen node from where the H2 is transported south, with some storage that can be built by the model.
+  h2_north:
+    type: Node
+    carrier: h2
+    has_state: true
+    state_lb: 0
+    state_ub: build_storage:value
+  
+  # We can also choose to decide the necessary size of our gas power plant.
+  build_gas:
+    type: Decision
+    cost: 500
+
+  plant_gas:
+    type: Unit
+    outputs: {electricity: elec}
+    conversion: ~ -> 1 electricity
+    # As earlier, we can also determine the capacity of a unit based on a decision. This shows, that with the other
+    # configured parameters, a maximum capacity of only ~0.6 is necessary instead of the maximum of 1.0 without costs.
+    # Further increasing the cost (`cost` of `build_gas`) will further reduce the built capacity while increasing
+    # the storage size.
+    capacity: build_gas:value out:electricity
+    marginal_cost: 100 per out:electricity
+  
+  plant_solar:
+    type: Unit
+    outputs: {electricity: elec}
+    conversion: ~ -> 1 electricity
+    capacity: 1 out:electricity
+    availability_factor: 08_pv@data
+  
+  electrolysis:
+    type: Unit
+    inputs: {electricity: elec}
+    outputs: {h2: h2_north}
+    conversion: 1 electricity -> 0.5 h2
+    capacity: 10 out:h2
+
+  demand:
+    type: Profile
+    carrier: h2
+    node_from: h2_south
+    value: 08_demand@data
+
+  

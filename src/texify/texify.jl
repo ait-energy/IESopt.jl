@@ -33,7 +33,7 @@ function texify(model; filename::String, component::String="")
     ]
 
     # Sort components by name.
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
     sorted_comp_names = sort(keys(components))
 
     # Prepare all variables.

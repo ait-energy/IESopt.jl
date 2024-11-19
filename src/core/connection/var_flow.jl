@@ -18,7 +18,7 @@ Additionally, the flow gets "injected" at the `Node`s that the `connection` is c
 """
 function _connection_var_flow!(connection::Connection)
     model = connection.model
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
 
     if !isnothing(connection.etdf)
         return nothing
@@ -32,8 +32,8 @@ function _connection_var_flow!(connection::Connection)
             @critical "Representative Snapshots are currently not supported for models using Powerflow"
         end
 
-        # This is a passive Conection.
-        @simd for t in _iesopt(model).model.T
+        # This is a passive Connection.
+        @simd for t in get_T(model)
             # Construct the flow expression.
             JuMP.add_to_expression!(connection.exp.pf_flow[t], node_from.var.pf_theta[t], 1.0 / connection.pf_X)
             JuMP.add_to_expression!(connection.exp.pf_flow[t], node_to.var.pf_theta[t], -1.0 / connection.pf_X)
@@ -47,35 +47,31 @@ function _connection_var_flow!(connection::Connection)
 
         # Construct the flow variable.
         if !_has_representative_snapshots(model)
-            connection.var.flow = @variable(
-                model,
-                [t = _iesopt(model).model.T],
-                base_name = _base_name(connection, "flow"),
-                container = Array
-            )
+            connection.var.flow =
+                @variable(model, [t = get_T(model)], base_name = make_base_name(connection, "flow"), container = Array)
         else
             # Create all representatives.
             _repr = Dict(
-                t => @variable(model, base_name = _base_name(connection, "flow[$(t)]")) for
-                t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                t => @variable(model, base_name = make_base_name(connection, "flow[$(t)]")) for
+                t in get_T(model) if internal(model).model.snapshots[t].is_representative
             )
 
             # Create all variables, either as themselves or their representative.
             connection.var.flow = collect(
-                _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
 
         # Connect to correct nodes.
-        loss = something(connection.loss, 0)
-        @simd for t in _iesopt(model).model.T
-            JuMP.add_to_expression!(components[connection.node_from].exp.injection[t], -connection.var.flow[t])
-            JuMP.add_to_expression!(
-                components[connection.node_to].exp.injection[t],
-                connection.var.flow[t],
-                1 - _get(loss, t),
-            )
+        cvf = connection.var.flow::Vector{JuMP.VariableRef}
+        nfei = components[connection.node_from].exp.injection::Vector{JuMP.AffExpr}
+        ntei = components[connection.node_to].exp.injection::Vector{JuMP.AffExpr}
+        loss = _prepare(connection.loss; default=0.0)
+
+        @inbounds @simd for t in get_T(model)
+            JuMP.add_to_expression!(nfei[t], cvf[t], -1.0)
+            JuMP.add_to_expression!(ntei[t], cvf[t], (1.0 - access(loss, t, Float64))::Float64)
         end
     end
 

@@ -1,0 +1,53 @@
+# Comments indicate points of this model file that changed compared to the previous examples. All other elements are not
+# explained/described anymore. See also: 07_csv_filestorage.iesopt.yaml
+
+# This examples showcases loading components from supplied CSV files instead of specifying them inside this YAML.
+
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 8760
+    solver:
+      name: highs
+  files:
+    data: example_data.csv
+  paths:
+    files: files
+    components: files # files/09
+
+carriers:
+  electricity: {}
+  gas: {}
+  wind: {}
+  co2: {}
+
+# List all files that IESopt should parse to load components. These can be arbitrarily mixed.
+load_components:
+  # You could either do the following:
+  #   - connections.csv
+  #   - nodes.csv
+  #   - profiles.csv
+  #   - units.csv
+  # If you do that, change `components: files` to `components: files/09` in the `paths` section, to correctly include
+  # the "09/" folder into the filepath.
+
+  # Or "better", load all CSV files in "09/" except "snapshots.csv":
+  - ^09[/\\]((?!snapshots\.csv$).)*\.csv$
+  # NOTE: It is recommended to use `[/\\]` as path separators, like in the Regex above,
+  #       so the model can work on both UNIX and Windows systems.
+
+  # You can also use `- .csv` to load all CSV files in the folder.
+
+# Even when loading components from external CSV files, you can specify additional ones like normal. IESopt takes
+# care about merging them correctly.
+components:
+  co2_emissions:
+    type: Profile
+    carrier: co2
+    mode: destroy
+    node_from: total_co2
+    cost: 100

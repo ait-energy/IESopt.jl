@@ -34,9 +34,8 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
 @kwdef struct Unit <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    init_state::Ref{Symbol} = Ref(:empty)
-    constraint_safety::Bool
-    constraint_safety_cost::_ScalarInput
+    soft_constraints::Bool
+    soft_constraints_penalty::_ScalarInput
 
     # [Mandatory] ======================================================================================================
     name::_String
@@ -55,7 +54,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     (followed by `:`) specifies whether the limit is to be placed on the in- our output of this `Unit`, and `carrier`
     specifies the respective `Carrier`. Example: `100 in:electricity` (to limit the "input rating").
     """
-    capacity::_Expression
+    capacity::Expression
 
     raw"""```{"mandatory": "yes", "values": "dict", "unit": "-", "default": "-"}```
     Dictionary specifying the output "ports" of this `Unit`. Refer to the basic examples for the general syntax.
@@ -81,7 +80,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     power plants, e.g., due to maintenance. For time-varying availability of intermittent generators (e.g., wind), it's
     recommended (most of the time) to use `availability_factor` instead.
     """
-    availability::_OptionalExpression = nothing
+    availability::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "`1`"}```
     Similar to `availability`, but given as factor of `capacity` instead. If, e.g., `capacity: 100 out:electricity` and
@@ -89,7 +88,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     intermittent generators, where the availability is not a fixed value, but depends on the weather, and can be passed,
     e.g., by setting `availability_factor: wind@input_data_file`.
     """
-    availability_factor::_OptionalExpression = nothing
+    availability_factor::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "`true`, `false`", "unit": "-", "default": "`false`"}```
     If `true`, the minimal partial load will be influenced by the availability. Example: Consider a `Unit` with
@@ -109,7 +108,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     format `value per dir:carrier`, e.g. `3.5 per out:electricity` for a marginal cost of 3.5 monetary units per unit of
     electricity generated.
     """
-    marginal_cost::_OptionalExpression = nothing
+    marginal_cost::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "`true`, `false`", "unit": "-", "default": "`false`"}```
     Enables calculation of upward ramps. Ramping is based on the carrier specified in `capacity`.
@@ -174,7 +173,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     Number of `Unit`s that should be considered to have been running before the optimization starts. Can be used in
     combination with `on_time_before`, especially for `unit_count` greater than 1.
     """
-    is_on_before::_Bound = 1        # todo: why is this a bound (and not _OptionalScalarInput)
+    is_on_before::_ScalarInput = 1        # todo: why is this a bound (and not _OptionalScalarInput)
 
     raw"""```{"mandatory": "no", "values": "`off`, `linear`, `binary`, `integer`", "unit": "-", "default": "`off`"}```
     Controls how the unit commitment of this `Unit` is handled. `linear` results in the ability to startup parts of the
@@ -189,7 +188,7 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     Number of units aggregated in this `Unit`. Besides interacting with the mode of `unit_commitment`, this mainly is
     responsible for scaling the output (e.g. grouping 47 of the same wind turbine, ...).
     """
-    unit_count::_OptionalExpression  # default=1 is enforced in `parser.jl`
+    unit_count::Expression  # default=1 is enforced in `parser.jl`
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "-"}```
     If `unit_commitment` is not set to `off`, this specifies the percentage that is considered to be the minimal
@@ -219,8 +218,9 @@ A `Unit` allows transforming one (or many) forms of energy into another one (or 
     build_priority::_OptionalScalarInput = nothing
 
     # [Internal] =======================================================================================================
-    conversion_dict::Dict{Symbol, Dict{Carrier, _NumericalInput}} = Dict(:in => Dict(), :out => Dict())
-    conversion_at_min_dict::Dict{Symbol, Dict{Carrier, _NumericalInput}} = Dict(:in => Dict(), :out => Dict())
+    conversion_dict::Dict{Symbol, Dict{Carrier, NonEmptyNumericalExpressionValue}} = Dict(:in => Dict(), :out => Dict())
+    conversion_at_min_dict::Dict{Symbol, Dict{Carrier, NonEmptyNumericalExpressionValue}} =
+        Dict(:in => Dict(), :out => Dict())
 
     capacity_carrier::NamedTuple{(:inout, :carrier), Tuple{Symbol, Carrier}}
     marginal_cost_carrier::Union{Nothing, NamedTuple{(:inout, :carrier), Tuple{Symbol, Carrier}}} = nothing
@@ -252,18 +252,18 @@ end
 function _prepare!(unit::Unit)
     # todo: "null" in the ThermalGen component translates to "nothing" (as String) instead of nothing (as Nothing)!
     model = unit.model
-    carriers = _iesopt(model).model.carriers
+    carriers = internal(model).model.carriers
 
     # Prepare in/out total expressions.
     for carrier in keys(unit.inputs)
-        _vec = Vector{JuMP.AffExpr}(undef, _iesopt(model).model.T[end])
+        _vec = Vector{JuMP.AffExpr}(undef, get_T(model)[end])
         for i in eachindex(_vec)
             _vec[i] = JuMP.AffExpr(0.0)
         end
         unit.exp[Symbol("in_$(carrier.name)")] = _vec
     end
     for carrier in keys(unit.outputs)
-        _vec = Vector{JuMP.AffExpr}(undef, _iesopt(model).model.T[end])
+        _vec = Vector{JuMP.AffExpr}(undef, get_T(model)[end])
         for i in eachindex(_vec)
             _vec[i] = JuMP.AffExpr(0.0)
         end
@@ -271,10 +271,10 @@ function _prepare!(unit::Unit)
     end
 
     # Convert string formula to proper conversion dictionary.
-    @profile unit.model _convert_unit_conversion_dict!(carriers, unit)      # todo: stop passing carriers, as soon as there is unit._model
+    _convert_unit_conversion_dict!(carriers, unit)      # todo: stop passing carriers, as soon as there is unit._model
 
     # Normalize the conversion expressions to allow correct handling later on.
-    @profile unit.model _normalize_conversion_expressions!(unit)
+    _normalize_conversion_expressions!(unit)
 
     return true
 end
@@ -282,7 +282,7 @@ end
 function _isvalid(unit::Unit)
     model = unit.model
 
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
 
     # Check that input carriers match.
     if !isnothing(unit.inputs)
@@ -327,10 +327,6 @@ function _isvalid(unit::Unit)
         @warn "Setting <min_conversion> while <unit_commitment> is off can lead to issues" unit = unit.name
     end
 
-    if (unit.enable_ramp_up || unit.enable_ramp_down) && (_get(unit.unit_count) != 1)
-        @warn "Active ramps do not work as expected with <unit_count> different from 1" unit = unit.name
-    end
-
     # A Unit can not be up/and down before the time horizon.
     if (unit.on_time_before != 0) && (unit.off_time_before != 0)
         @critical "A Unit can not be up and down before starting the optimization" unit = unit.name
@@ -344,15 +340,22 @@ function _isvalid(unit::Unit)
         @critical "A Unit can not be off before the optimization and have up time" unit = unit.name
     end
 
-    # todo: resolve the issue and then remove this
-    if (_get(unit.unit_count) != 1) && (!isnothing(unit.min_on_time) || !isnothing(unit.min_off_time))
-        @critical "min_on_time/min_off_time is currently not supported for Units with `unit.count > 1`" unit = unit.name
+    if (!_isfixed(unit.unit_count) && !_isempty(unit.unit_count)) || (access(unit.unit_count, Float64) != 1)
+        # todo: resolve the issue and then remove this
+        if !isnothing(unit.min_on_time) || !isnothing(unit.min_off_time)
+            @critical "min_on_time/min_off_time is currently not supported for Units with `unit.count > 1`" unit =
+                unit.name
+        end
+
+        if unit.enable_ramp_up || unit.enable_ramp_down
+            @warn "Active ramps do not work as expected with <unit_count> different from 1" unit = unit.name
+        end
     end
 
     # todo: resolve the issue and then remove this
     if (
         (!isnothing(unit.min_on_time) || !isnothing(unit.min_off_time)) &&
-        any(_weight(model, t) != 1 for t in _iesopt(model).model.T[2:end])
+        any(_weight(model, t) != 1 for t in get_T(model)[2:end])
     )
         @warn "min_on_time/min_off_time is NOT tested for Snapshot weights != 1" unit = unit.name
     end
@@ -387,9 +390,9 @@ function _result(unit::Unit, mode::String, field::String; result::Int=1)
         if _has_representative_snapshots(unit.model)
             value = [
                 JuMP.value(
-                    _total(unit, Symbol(dir), carrier)[_iesopt(unit.model).model.snapshots[t].representative];
+                    _total(unit, Symbol(dir), carrier)[internal(unit.model).model.snapshots[t].representative];
                     result=result,
-                ) for t in _iesopt(unit.model).model.T
+                ) for t in get_T(unit.model)
             ]
         else
             value = JuMP.value.(_total(unit, Symbol(dir), carrier); result=result)
@@ -423,84 +426,63 @@ include("unit/obj_ramp_cost.jl")
 function _construct_variables!(unit::Unit)
     # Since all `Decision`s are constructed before this `Unit`, we can now properly finalize the `availability`,
     # `availability_factor`, `unit_count`, `capacity`, and `marginal_cost`.
-    !isnothing(unit.availability) && _finalize(unit.availability)
-    !isnothing(unit.availability_factor) && _finalize(unit.availability_factor)
-    !isnothing(unit.unit_count) && _finalize(unit.unit_count)
-    !isnothing(unit.capacity) && _finalize(unit.capacity)
-    !isnothing(unit.marginal_cost) && _finalize(unit.marginal_cost)
+    _finalize(unit.availability)
+    _finalize(unit.availability_factor)
+    _finalize(unit.unit_count)
+    _finalize(unit.capacity)
+    _finalize(unit.marginal_cost)
 
     # `var_ison` needs to be constructed before `var_conversion`
-    @profile unit.model _unit_var_ison!(unit)
+    _unit_var_ison!(unit)
 
-    @profile unit.model _unit_var_conversion!(unit)
-    @profile unit.model _unit_var_ramp!(unit)
-    @profile unit.model _unit_var_startup!(unit)
+    _unit_var_conversion!(unit)
+    _unit_var_ramp!(unit)
+    _unit_var_startup!(unit)
 
     return nothing
 end
 
 function _construct_constraints!(unit::Unit)
-    @profile unit.model _unit_con_conversion_bounds!(unit)
-    @profile unit.model _unit_con_ison!(unit)
-    @profile unit.model _unit_con_min_onoff_time!(unit)
-    @profile unit.model _unit_con_startup!(unit)
-    @profile unit.model _unit_con_ramp!(unit)
-    @profile unit.model _unit_con_ramp_limit!(unit)
+    _unit_con_conversion_bounds!(unit)
+    _unit_con_ison!(unit)
+    _unit_con_min_onoff_time!(unit)
+    _unit_con_startup!(unit)
+    _unit_con_ramp!(unit)
+    _unit_con_ramp_limit!(unit)
 
     return nothing
 end
 
 function _construct_objective!(unit::Unit)
-    @profile unit.model _unit_obj_marginal_cost!(unit)
-    @profile unit.model _unit_obj_startup_cost!(unit)
-    @profile unit.model _unit_obj_ramp_cost!(unit)
+    _unit_obj_marginal_cost!(unit)
+    _unit_obj_startup_cost!(unit)
+    _unit_obj_ramp_cost!(unit)
 
     return nothing
 end
 
 function _convert_unit_conversion_dict!(carriers::Dict{String, Carrier}, unit::Unit)
-    # Convert the mandatory conversion.
-    lhs, rhs = split(unit.conversion, "->")
-    lhs = split(lhs, "+")
-    rhs = split(rhs, "+")
-    for item in lhs
-        item = strip(item)
-        item == "~" && continue
-        mult, carrier_str = split(item, " ")
-        if !isnothing(findfirst('@', mult))
-            unit.conversion_dict[:in][carriers[carrier_str]] = _conv_S2NI(unit.model, mult) # todo ????
-        else
-            unit.conversion_dict[:in][carriers[carrier_str]] = _conv_S2NI(unit.model, mult) # todo ????
-        end
-    end
-    for item in rhs
-        item = strip(item)
-        item == "~" && continue
-        mult, carrier_str = split(item, " ")
-        if !isnothing(findfirst('@', mult))
-            unit.conversion_dict[:out][carriers[carrier_str]] = _conv_S2NI(unit.model, mult) # todo ????
-        else
-            unit.conversion_dict[:out][carriers[carrier_str]] = _conv_S2NI(unit.model, mult) # todo ????
+    parsed = _convert_to_conversion_expressions(unit.model, unit.conversion)::NamedTuple
+    for side in [:in, :out]
+        terms = getproperty(parsed, side)
+        isempty(terms) && continue
+
+        for (carrier_str, expr) in terms
+            unit.conversion_dict[side][carriers[carrier_str]] = expr.value::NonEmptyNumericalExpressionValue
         end
     end
 
     isnothing(unit.conversion_at_min) && return
 
     # Convert the optional "minconversion" conversion.
-    lhs, rhs = split(unit.conversion_at_min, "->")
-    lhs = split(lhs, "+")
-    rhs = split(rhs, "+")
-    for item in lhs
-        item = strip(item)
-        item == "~" && continue
-        mult, carrier_str = split(item, " ")
-        unit.conversion_at_min_dict[:in][carriers[carrier_str]] = _conv_S2NI(unit.model, mult)
-    end
-    for item in rhs
-        item = strip(item)
-        item == "~" && continue
-        mult, carrier_str = split(item, " ")
-        unit.conversion_at_min_dict[:out][carriers[carrier_str]] = _conv_S2NI(unit.model, mult)
+    parsed = _convert_to_conversion_expressions(unit.model, unit.conversion_at_min)::NamedTuple
+    for side in [:in, :out]
+        terms = getproperty(parsed, side)
+        isempty(terms) && continue
+
+        for (carrier_str, expr) in terms
+            unit.conversion_at_min_dict[side][carriers[carrier_str]] = expr.value::NonEmptyNumericalExpressionValue
+        end
     end
 
     return nothing
@@ -509,6 +491,10 @@ end
 function _normalize_conversion_expressions!(unit::Unit)
     # Normalize default conversion expression.
     norm = unit.conversion_dict[unit.capacity_carrier.inout][unit.capacity_carrier.carrier]
+    if any(norm .== 0)
+        @critical "Using a zero (0.0) efficiency in `conversion` is not allowed" unit = unit.name
+    end
+
     for dir in [:in, :out]
         for (carrier, val) in unit.conversion_dict[dir]
             unit.conversion_dict[dir][carrier] = val ./ norm
@@ -518,6 +504,10 @@ function _normalize_conversion_expressions!(unit::Unit)
     # Normalize min_conversion expression.
     if !isnothing(unit.conversion_at_min)
         norm = unit.conversion_at_min_dict[unit.capacity_carrier.inout][unit.capacity_carrier.carrier]
+        if any(norm .== 0)
+            @critical "Using a zero (0.0) efficiency in `conversion_at_min` is not allowed" unit = unit.name
+        end
+
         for dir in [:in, :out]
             for (carrier, val) in unit.conversion_at_min_dict[dir]
                 unit.conversion_at_min_dict[dir][carrier] = val ./ norm
@@ -537,38 +527,46 @@ function _normalize_conversion_expressions!(unit::Unit)
 end
 
 function _unit_capacity_limits(unit::Unit)
+    # TODO: Refactor this to return a proper Expression.
+
+    # TODO: "online conversion" is often immediately converted to an AffExpr, but could stay a VariableRef, fix this!
+
     # Get correct maximum.
-    if !isnothing(unit.availability_factor)
-        max_conversion = min.(1.0, _get(unit.availability_factor))
-    elseif !isnothing(unit.availability)
-        if !isnothing(unit.capacity.decisions) && length(unit.capacity.decisions) > 0
+    if !_isempty(unit.availability_factor)
+        max_conversion = min.(1.0, access(unit.availability_factor, NonEmptyNumericalExpressionValue))
+    elseif !_isempty(unit.availability)
+        if !_isfixed(unit.capacity)
             @critical "Endogenuous <capacity> and <availability> are currently not supported" unit = unit.name
         end
-        max_conversion = min.(1.0, _get(unit.availability) ./ _get(unit.capacity))
+        max_conversion =
+            min.(
+                1.0,
+                access(unit.availability, NonEmptyNumericalExpressionValue) ./
+                access(unit.capacity, NonEmptyNumericalExpressionValue),
+            )
     else
         max_conversion = 1.0
     end
 
     # Calculate max / online conversion based on unit commitment.
     if unit.unit_commitment === :off
-        max_conversion = max_conversion .* _get(unit.unit_count)
+        max_conversion = max_conversion .* access(unit.unit_count, Float64)
         online_conversion = max_conversion
     else
         online_conversion = max_conversion .* unit.var.ison     # var_ison already includes unit.unit_count
-        max_conversion = max_conversion .* _get(unit.unit_count)
+        max_conversion = max_conversion .* access(unit.unit_count, NonEmptyScalarExpressionValue)
     end
 
     if isnothing(unit.min_conversion)
         # We are not limiting the min conversion.
-        return Dict{Symbol, Any}(:min => 0.0, :online => online_conversion, :max => max_conversion)
+        min_conversion = 0.0
+    else
+        min_conversion = (unit.min_conversion .* (unit.adapt_min_to_availability ? online_conversion : unit.var.ison))
     end
 
-    return Dict{Symbol, Any}(
-        :min => unit.min_conversion .* (unit.adapt_min_to_availability ? online_conversion : unit.var.ison),
-        :online => online_conversion,
-        :max => max_conversion,
+    return Dict{Symbol, NonEmptyExpressionValue}(
+        :min => min_conversion::NonEmptyExpressionValue,
+        :online => online_conversion::NonEmptyExpressionValue,
+        :max => max_conversion::NonEmptyExpressionValue,
     )
 end
-
-# todo: Why is `total` being indexed using carrier names (strings)?
-get_total(unit::Unit, direction::String, carrier::String) = _total(unit, Symbol(direction), carrier)

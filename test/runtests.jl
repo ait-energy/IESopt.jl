@@ -1,34 +1,32 @@
-import HiGHS
-using IESopt, Suppressor
-using Test, Aqua, JET
-import JuMP
+using Test, TestItemRunner, Suppressor
+import Aqua, JET
+import JuMP, HiGHS
+using IESopt
 
-const PATH_TEST = IESopt._PATHS[:test]
-const PATH_EXAMPLES = IESopt._PATHS[:examples]
-const PATH_TESTFILES = normpath(PATH_TEST, "test_files")
+const PATH_TESTFILES = normpath(@__DIR__, "test_files")
 const PATH_CURRENT = pwd()
 
+include("src/examples.jl")
+
 @testset "IESopt.jl" verbose = true begin
-    @testset "Code quality (Aqua.jl)" begin
-        include("src/aqua.jl")
+    @testset "Code quality" verbose = true begin
+        @testset "Aqua.jl" verbose = true begin
+            include("src/aqua.jl")
+        end
+
+        @testset "JET.jl" begin
+            # JET.test_package(IESopt; target_modules=(IESopt,))
+        end
     end
 
-    @testset "Code linting (JET.jl)" begin
-        # JET.test_package(IESopt; target_defined_modules = true)
-    end
+    @run_package_tests verbose = true filter = ti -> (:general in ti.tags)
 
-    @testset "Unit tests (IESopt.jl)" begin
-        include("src/unit_tests.jl")
-    end
+    include("src/unit_tests.jl")
+    @run_package_tests verbose = true filter = ti -> (:unittest in ti.tags)
 
-    @testset "Basic (IESopt.jl)" begin
+    @testset "Basic (IESopt.jl)" verbose = true begin
         include("src/basic.jl")
     end
 
-    @testset "Examples (IESopt.jl)" begin
-        if isnothing(IESopt.Library)
-        else
-            include("src/examples.jl")
-        end
-    end
+    @run_package_tests verbose = true filter = ti -> (:examples in ti.tags)
 end

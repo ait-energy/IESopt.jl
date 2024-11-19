@@ -68,7 +68,7 @@ Documenter.jl (as of May, 22nd, 2024) aggressively states: _"Documenter, like an
 Unfortunately, [semantic versioning](https://semver.org/) may not be as well suited as one might think for a package like IESopt.jl. Some reasons are:
 
 - While the (Julia) API has been stable for a long time (in a sense of: backwards-compatible), we consider the YAML configuration syntax as main part of IESopt's "API". This syntax has changed multiple times, and will likely change in the future. Maintaining full backwards compatibility for this is not feasible all the time. This induces a need for a major version bump, even though the Julia API has not changed.
-- A mere bug fix, even a small one, in IESopt.jl may very likely induce changed results of any model run. A user could see vastly different results between `v1.3.10` and `v1.3.11`, even though the changes are minimal. This envolves not taking patch updates lightly, which is not the case in many other packages.
+- A mere bug fix, even a small one, in IESopt.jl may very likely induce changed results of any model run. A user could see vastly different results between `v1.3.10` and `v1.3.11`, even though the changes are minimal. This involves not taking patch updates lightly, which is not the case in many other packages.
 
 However, as indicated, the use of semantic versioning is still "expected" by large parts of the Julia community, and not doing so may make it harder for some users, and/or some interactions with other packages. So...
 
@@ -136,7 +136,7 @@ We provide a custom `.JuliaFormatter.toml` file that should be used to format th
 2. Run `using JuliaFormatter` in the Julia REPL (this now works even if you activated the IESopt environment).
 3. Run `format(".")` in the Julia REPL to format all files in your current directory. This takes a bit of compile time, but after the first run, it should be fairly fast.
 
-Make sure you checked the formatting, before finalizing your changes or opening a PR. If you forgot to include formatting in your actual commits (we all do...), and cannot reasonably ammend them, add **all** formatting changes at the end in a single commit with the message:
+Make sure you checked the formatting, before finalizing your changes or opening a PR. If you forgot to include formatting in your actual commits (we all do...), and cannot reasonably amend them, add **all** formatting changes at the end in a single commit with the message:
 
 ```console
 git commit -m "chore: formatting"

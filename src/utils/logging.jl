@@ -1,27 +1,41 @@
-struct FileLogger <: AbstractLogger
+struct _FileLogger <: AbstractLogger
     logger::Logging.SimpleLogger
 end
 
-function FileLogger(path::String)
-    return FileLogger(Logging.SimpleLogger(open(path, "w")))
+function _FileLogger(path::String)
+    return _FileLogger(Logging.SimpleLogger(open(path, "w")))
 end
 
-function Logging.handle_message(filelogger::FileLogger, args...; kwargs...)
+function Logging.handle_message(filelogger::_FileLogger, args...; kwargs...)
     Logging.handle_message(filelogger.logger, args...; kwargs...)
     return flush(filelogger.logger.stream)
 end
-Logging.shouldlog(filelogger::FileLogger, arg...) = true
-Logging.min_enabled_level(filelogger::FileLogger) = Logging.Info
-Logging.catch_exceptions(filelogger::FileLogger) = Logging.catch_exceptions(filelogger.logger)
+Logging.shouldlog(filelogger::_FileLogger, arg...) = true
+Logging.min_enabled_level(filelogger::_FileLogger) = Logging.Info
+Logging.catch_exceptions(filelogger::_FileLogger) = Logging.catch_exceptions(filelogger.logger)
 
-function save_close_filelogger(model::JuMP.Model)
+"""
+    safe_close_filelogger(model::JuMP.Model)
+
+Safely closes the file logger's iostream if it is open. This function checks if the logger associated with the given `model` is a `LoggingExtras.TeeLogger` and if it contains a `IESopt._FileLogger` as one of its loggers. If the file logger's stream is open, it will be closed.
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model which contains the logger to be closed.
+
+# Returns
+- `nothing`: This function does not return any value.
+
+# Notes
+- The function includes a `try-catch` block to handle any potential errors during the closing process. Currently, the catch block does not perform any actions.
+"""
+function safe_close_filelogger(model::JuMP.Model)
     try
-        if _iesopt(model).logger isa LoggingExtras.TeeLogger
-            tl = _iesopt(model).logger
+        if internal(model).logger isa LoggingExtras.TeeLogger
+            tl = internal(model).logger
             if length(tl.loggers) == 2
-                if tl.loggers[2] isa IESopt.FileLogger
+                if tl.loggers[2] isa IESopt._FileLogger
                     if isopen(tl.loggers[2].logger.stream)
-                        @info "Savely closing the file logger's iostream"
+                        @info "Safely closing the file logger's iostream"
                         close(tl.loggers[2].logger.stream)
                     end
                 end
@@ -35,38 +49,29 @@ function save_close_filelogger(model::JuMP.Model)
 end
 
 function _attach_logger!(model::JuMP.Model)
-    verbosity = _iesopt_config(model).verbosity
+    verbosity = @config(model, general.verbosity.core, String)
+    sym_verbosity = Symbol(uppercasefirst(verbosity))
+    logger = Logging.ConsoleLogger(getfield(Logging, sym_verbosity); meta_formatter=_new_metafmt)
 
-    logger = (
-        if verbosity == "warning"
-            Logging.ConsoleLogger(Logging.Warn; meta_formatter=_new_metafmt)
-        elseif verbosity == true
-            Logging.ConsoleLogger(Logging.Info; meta_formatter=_new_metafmt)
-        elseif verbosity == false
-            Logging.ConsoleLogger(Logging.Error; meta_formatter=_new_metafmt)
-        else
-            @warn "Unsupported `verbosity` config. Choose from `true`, `false` or `warning`. Falling back to `true`." verbosity =
-                verbosity
-            Logging.ConsoleLogger(Logging.Info; meta_formatter=_new_metafmt)
-        end
-    )
-
-    if _iesopt_config(model).optimization.high_performance
-        _iesopt(model).logger = logger
-    else
-        log_file = "$(_iesopt_config(model).names.scenario).log"
-        log_path = normpath(mkpath(_iesopt_config(model).paths.results), log_file)
+    if @config(model, general.performance.logfile, Bool)
+        scenario_name = @config(model, general.name.scenario, String)
+        log_file = "$(scenario_name).iesopt.log"
+        log_path = normpath(mkpath(@config(model, paths.results)), log_file)
         try
-            _iesopt(model).logger = LoggingExtras.TeeLogger(logger, FileLogger(log_path))
+            internal(model).logger = LoggingExtras.TeeLogger(logger, _FileLogger(log_path))
         catch
             @error (
                 "Could not create file logger, falling back to console logger only; if this happened after a " *
-                "previous model run, consider calling `save_close_filelogger(model)` after you are done with your " *
+                "previous model run, consider calling `safe_close_filelogger(model)` after you are done with your " *
                 "previous model - before re-generating a new one - to properly release the log file handle"
             )
-            _iesopt(model).logger = logger
+            internal(model).logger = logger
         end
+    else
+        internal(model).logger = logger
     end
+
+    return internal(model).logger::Union{Logging.ConsoleLogger, LoggingExtras.TeeLogger}
 end
 
 # Based on `default_metafmt` from ConsoleLogger.jl

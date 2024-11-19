@@ -8,7 +8,7 @@ Add the (potential) cost of this `unit`'s conversion (`unit.marginal_cost`) to t
 ```
 """
 function _unit_obj_marginal_cost!(unit::Unit)
-    if isnothing(unit.marginal_cost)
+    if _isempty(unit.marginal_cost)
         return nothing
     end
 
@@ -17,15 +17,15 @@ function _unit_obj_marginal_cost!(unit::Unit)
         _total(unit, unit.marginal_cost_carrier.inout, unit.marginal_cost_carrier.carrier.name)
 
     unit.obj.marginal_cost = JuMP.AffExpr(0.0)
-    for t in _iesopt(model).model.T
+    for t in get_T(model)
         JuMP.add_to_expression!(
             unit.obj.marginal_cost,
-            total_mc[_iesopt(model).model.snapshots[t].representative],
-            _weight(model, t) * _get(unit.marginal_cost, t),
+            total_mc[internal(model).model.snapshots[t].representative],
+            _weight(model, t) * access(unit.marginal_cost, t, Float64),
         )
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, unit.obj.marginal_cost)
+    push!(internal(model).model.objectives["total_cost"].terms, unit.obj.marginal_cost)
 
     return nothing
 end

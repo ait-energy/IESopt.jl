@@ -20,37 +20,37 @@ function _node_con_state_bounds!(node::Node)
 
     model = node.model
 
-    if !isnothing(node.state_lb)
+    if !_isempty(node.state_lb)
         node.con.state_lb = @constraint(
             model,
-            [t = _iesopt(model).model.T],
-            node.var.state[t] >= _get(node.state_lb, t),
-            base_name = _base_name(node, "state_lb"),
+            [t = get_T(model)],
+            node.var.state[t] >= access(node.state_lb, t),
+            base_name = make_base_name(node, "state_lb"),
             container = Array
         )
     end
-    if !isnothing(node.state_ub)
+    if !_isempty(node.state_ub)
         node.con.state_ub = @constraint(
             model,
-            [t = _iesopt(model).model.T],
-            node.var.state[t] <= _get(node.state_ub, t),
-            base_name = _base_name(node, "state_ub"),
+            [t = get_T(model)],
+            node.var.state[t] <= access(node.state_ub, t),
+            base_name = make_base_name(node, "state_ub"),
             container = Array
         )
     end
 
     # Handle constraint safety (if enabled).
-    if node.constraint_safety
-        if !isnothing(node.state_lb)
-            @simd for t in _iesopt(model).model.T
-                _iesopt(model).aux.constraint_safety_penalties[node.con.state_lb[t]] =
-                    (component_name=node.name, t=t, description="state_lb", penalty=node.constraint_safety_cost)
+    if node.soft_constraints
+        if !_isempty(node.state_lb)
+            @simd for t in get_T(model)
+                internal(model).aux.soft_constraints_penalties[node.con.state_lb[t]] =
+                    (component_name=node.name, t=t, description="state_lb", penalty=node.soft_constraints_penalty)
             end
         end
-        if !isnothing(node.state_ub)
-            @simd for t in _iesopt(model).model.T
-                _iesopt(model).aux.constraint_safety_penalties[node.con.state_ub[t]] =
-                    (component_name=node.name, t=t, description="state_ub", penalty=node.constraint_safety_cost)
+        if !_isempty(node.state_ub)
+            @simd for t in get_T(model)
+                internal(model).aux.soft_constraints_penalties[node.con.state_ub[t]] =
+                    (component_name=node.name, t=t, description="state_ub", penalty=node.soft_constraints_penalty)
             end
         end
     end

@@ -1,0 +1,2 @@
+name,type,capacity,node_from,node_to
+conn,Connection,5,node1,node2

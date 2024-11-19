@@ -1,0 +1,110 @@
+# Comments indicate points of this model file that changed compared to the previous examples. All other elements are not
+# explained/described anymore. See also: 05_basic_two_nodes_1y.iesopt.yaml
+
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 8760
+    solver:
+      name: highs
+  # We can define input files that are later referenced on here.
+  # This tells IESopt that we want to read in "example_data.csv" (this is relative to the location of the *.iesopt.yaml)
+  # and internally preload it under the name of "data" (so we can later reference it).
+  files:
+    data: example_data.csv
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    files: files
+
+carriers:
+  electricity: {unit: MWh}
+  gas: {unit: MWh}
+  co2: {unit: t}
+  wind: {unit: MWh}
+
+components:
+  node1:
+    type: Node
+    carrier: electricity
+  
+  node2:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 10
+
+  conn:
+    type: Connection
+    capacity: 5
+    node_from: node1
+    node_to: node2
+
+  availability:
+    type: Profile
+    mode: create
+    carrier: wind
+    node_to: wind
+
+  wind:
+    type: Node
+    carrier: wind
+  
+  plant_wind:
+    type: Unit
+    inputs: {wind: wind}
+    outputs: {electricity: node2}
+    conversion: 1 wind -> 1 electricity
+    capacity: 10 out:electricity
+    # Instead of cluttering our YAML with 8760 entries, we now just load it from a CSV. This is done by supplying the
+    # correct column (07_plant_wind_availability_factor) that can be found in the CSV (data) like so:
+    availability_factor: 07_plant_wind_availability_factor@data
+  
+  plant_gas:
+    type: Unit
+    inputs: {gas: gas_grid}
+    outputs: {electricity: node1, co2: total_co2}
+    conversion: 1 gas -> 0.4 electricity + 0.2 co2
+    capacity: 10 out:electricity
+  
+  demand1:
+    type: Profile
+    carrier: electricity
+    node_from: node1
+    # Again, now loading from CSV.
+    value: 07_demand1_value@data
+  
+  demand2:
+    type: Profile
+    carrier: electricity
+    node_from: node2
+    # Again, now loading from CSV.
+    value: 07_demand2_value@data
+
+  gas_grid:
+    type: Node
+    carrier: gas
+  
+  total_co2:
+    type: Node
+    carrier: co2
+
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: gas_grid
+    mode: create
+    cost: 50.0
+  
+  co2_emissions:
+    type: Profile
+    carrier: co2
+    node_from: total_co2
+    mode: destroy
+    cost: 100.0

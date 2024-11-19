@@ -1,0 +1,66 @@
+# todo: document this example
+
+# Parameters can either be loaded from an `*.iesopt.param.yaml` file, or directly given here:
+# ```
+# parameters:
+#   demand: 5
+# ```
+parameters: files/25/global.iesopt.param.yaml
+
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 1
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    components: files/25
+
+carriers:
+  electricity: {}
+
+# This replaces the following component code that could be used below:
+# ```
+#   demand:
+#     type: Profile
+#     carrier: electricity
+#     node_from: node2
+#     value: <demand>
+# ```
+load_components:
+  - components.csv
+
+# Expert tip:
+# You can remove the `<demand>` from the CSV file, leaving the cell empty. If you do this, IESopt will automatically try to
+# match the property based on the name of the column (in this case `value`). If you then supply `value: 10` in the
+# parameter YAML, it will default to this. This is especially useful when loading user defined components from a CSV
+# file. E.g. a component COMP that has a parameter `total_invest_cost`. If left empty, IESopt will take the value of the
+# global parameter `total_invest_cost` to substitute.
+
+components:
+  node1:
+    type: Node
+    carrier: electricity
+  
+  node2:
+    type: Node
+    carrier: electricity
+  
+  supply:
+    type: Profile
+    carrier: electricity
+    node_to: node1
+    mode: create
+    cost: 10
+
+  conn:
+    type: Connection
+    node_from: node1
+    node_to: node2

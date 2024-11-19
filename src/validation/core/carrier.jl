@@ -4,7 +4,7 @@ function _validate_carriers(carriers::Dict)
     try
         # TODO
     catch exception
-        valid &= _vassert(false, "An unexpected exception occured"; location="carriers")
+        valid &= _vassert(false, "An unexpected exception occurred"; location="carriers")
     end
 
     return valid

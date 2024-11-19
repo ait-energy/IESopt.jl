@@ -1,0 +1,100 @@
+# This describes a sample group of seven different components.
+#
+# Parameters:
+#   - bess_size: Total capacity of the installed BESS.
+#   - bess_power: Rated power for charging/discharging of the BESS.
+
+parameters:
+  bess_size: null    # Sets the maximum amount of energy stored in the BESS.
+  bess_power: null   # Sets the rated power for charging/discharging of the BESS.
+  cop_default: heatpump_cop_gs@default_data
+  real_efficiency_heatpump: 1.0
+  _internal_ts_cop: null
+
+functions:
+  validate: |
+    @check this.get("bess_size") > 0
+    @check this.get("bess_power") > 0
+    @check this.get("real_efficiency_heatpump") > 0
+    @check this.get("cop_default") isa String
+  prepare: |
+    # We can not set parameters that do not exist here, the following would fail:
+    # this.set("costs", 2)
+    # Parameters that you need only internally, and do not want to expose to the outside, can be prefixed with `_`.
+    # These CANNOT be set from the outside.
+
+    # We can however set parameters that are not properly defined yet. The lines below check if the parameters are set
+    # to any value and only if not (e.g., if they are still `null`), set them to a default value.
+    isnothing(this.get("bess_size")) && this.set("bess_size", 2)
+    isnothing(this.get("bess_power")) && this.set("bess_power", 1)
+
+    # Next we can modify a COP from some file.
+    # Note that using `this.get_ts("heatpump_cop_gs@default_data")` would work too!
+    cop_default = this.get_ts("cop_default")
+    cop_new = cop_default .* this.get("real_efficiency_heatpump")
+    
+    this.set("_internal_ts_cop", "cop_new@a_new_file")
+    this.set_ts("_internal_ts_cop", cop_new)
+    # We could've also done:
+    # this.set_ts("cop_new@a_new_file", cop_new)
+    # this.set("_internal_ts_cop", "cop_new@a_new_file")
+  finalize: |
+    # We could add functionality here (like an addon), or attach an addon onto this component.
+
+    # And we can add custom results, for this Template.
+    this.exp.setpoint = this.bess.discharging.exp.out_electricity - this.bess.charging.exp.in_electricity
+
+    # Which then allows: `get_component(model, "group").exp.setpoint`, assuming the component is named "group".
+    
+
+# Adding files is possible (but not mandatory) here.
+# files: {}
+
+components:
+  grid:
+    type: Node
+    carrier: electricity
+  
+  buy_elec:
+    type: Profile
+    carrier: electricity
+    node_to: <self>.grid
+    mode: create
+    cost: 100
+  
+  heat:
+    type: Node
+    carrier: heat
+
+  demand:
+    type: Profile
+    carrier: heat
+    node_from: <self>.heat
+    value: 5
+  
+  heatpump:
+    type: Heatpump
+    elec_from: <self>.grid
+    heat_to: <self>.heat
+    capacity: 5 out:heat
+    COP: <_internal_ts_cop>
+
+  wind:
+    type: Windturbine
+    capacity: 1
+    elec_to: <self>.grid
+    availability_factor: wind_availability_factor@default_data
+  
+  pv:
+    type: Photovoltaic
+    capacity: 1
+    elec_to: <self>.grid
+    availability_factor: pv_availability_factor@default_data
+  
+  bess:
+    type: BESS
+    elec_from: <self>.grid
+    elec_to: <self>.grid
+    rated_power_charge: <bess_power>
+    rated_power_discharge: <bess_power>
+    max_state: <bess_size>

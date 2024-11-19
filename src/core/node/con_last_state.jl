@@ -33,23 +33,25 @@ function _node_con_last_state!(node::Node)
     model = node.model
 
     factor = isnothing(node.state_percentage_loss) ? 1.0 : (1.0 - node.state_percentage_loss)
-    t = _iesopt(model).model.T[end]
+    t = get_T(model)[end]
 
     injection_t = t
     if _has_representative_snapshots(model)
-        if !_iesopt(model).model.snapshots[t].is_representative
-            injection_t = _iesopt(model).model.snapshots[t].representative
+        if !internal(model).model.snapshots[t].is_representative
+            injection_t = internal(model).model.snapshots[t].representative
         end
     end
 
-    lb = _get(node.state_lb, t)
-    ub = _get(node.state_ub, t)
+    lb = access(node.state_lb, t, OptionalScalarExpressionValue)
+    ub = access(node.state_ub, t, OptionalScalarExpressionValue)
 
     if !isnothing(node.state_final)
-        if (!isnothing(lb) && (node.state_final < lb)) || (!isnothing(ub) && (node.state_final > ub))
-            @warn "`state_final` is out of bounds and will be overwritten" node = node.name state_final =
-                node.state_final lb ub
-        end
+        # TODO: since lb/ub are potentially decision-containing expressions, we cannot check this here ...
+        #       re-work this somehow (and consider that a user might want to force a final state that is out of "bounds", when using a decision)
+        # if (!isnothing(lb) && (node.state_final < lb)) || (!isnothing(ub) && (node.state_final > ub))
+        #     @warn "`state_final` is out of bounds and will be overwritten" node = node.name state_final =
+        #         node.state_final lb ub
+        # end
 
         lb = node.state_final
         ub = node.state_final
@@ -59,7 +61,7 @@ function _node_con_last_state!(node::Node)
         node.con.last_state_lb = @constraint(
             model,
             lb <= node.var.state[t] * (factor^_weight(model, t)) + node.exp.injection[injection_t] * _weight(model, t),
-            base_name = _base_name(node, "last_state_lb"),
+            base_name = make_base_name(node, "last_state_lb"),
             container = Array
         )
     end
@@ -68,18 +70,18 @@ function _node_con_last_state!(node::Node)
         node.con.last_state_ub = @constraint(
             model,
             ub >= node.var.state[t] * (factor^_weight(model, t)) + node.exp.injection[injection_t] * _weight(model, t),
-            base_name = _base_name(node, "last_state_ub")
+            base_name = make_base_name(node, "last_state_ub")
         )
     end
 
-    if node.constraint_safety
-        if !isnothing(node.state_lb)
-            _iesopt(model).aux.constraint_safety_penalties[node.con.last_state_lb] =
-                (component_name=node.name, t=t, description="last_state_lb", penalty=node.constraint_safety_cost)
+    if node.soft_constraints
+        if !_isempty(node.state_lb)
+            internal(model).aux.soft_constraints_penalties[node.con.last_state_lb] =
+                (component_name=node.name, t=t, description="last_state_lb", penalty=node.soft_constraints_penalty)
         end
-        if !isnothing(node.state_ub)
-            _iesopt(model).aux.constraint_safety_penalties[node.con.last_state_ub] =
-                (component_name=node.name, t=t, description="last_state_ub", penalty=node.constraint_safety_cost)
+        if !_isempty(node.state_ub)
+            internal(model).aux.soft_constraints_penalties[node.con.last_state_ub] =
+                (component_name=node.name, t=t, description="last_state_ub", penalty=node.soft_constraints_penalty)
         end
     end
 

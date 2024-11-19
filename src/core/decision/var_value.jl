@@ -12,7 +12,7 @@ function _decision_var_value!(decision::Decision)
         model,
         binary = (decision.mode === :binary),
         integer = (decision.mode === :integer),
-        base_name = _base_name(decision, "value")
+        base_name = make_base_name(decision, "value")
     )
 
     if decision.mode === :fixed

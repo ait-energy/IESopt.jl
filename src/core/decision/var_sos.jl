@@ -15,7 +15,7 @@ function _decision_var_sos!(decision::Decision)
         [1:length(decision.sos)],
         binary = (decision.mode === :sos1),
         lower_bound = 0,
-        base_name = _base_name(decision, String(decision.mode)),
+        base_name = make_base_name(decision, String(decision.mode)),
         container = Array
     )
 
@@ -23,7 +23,7 @@ function _decision_var_sos!(decision::Decision)
         decision.var.sos1_value = @variable(
             model,
             [1:length(decision.sos)],
-            base_name = _base_name(decision, "sos1_value"),
+            base_name = make_base_name(decision, "sos1_value"),
             container = Array
         )
     end

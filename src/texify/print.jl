@@ -209,7 +209,7 @@ function _obj_tostring(model::JuMP.Model; digits=4)
             # Single value.
             obj_str *=
                 "{$(sign) " * string(abs(round(info[2][1]; digits=4))) * "\\cdot" * _escape_variable(varname, 0) * "}"
-        elseif length(info[1]) == length(_iesopt(model).model.T)
+        elseif length(info[1]) == length(get_T(model))
             # Full length.
             if allequal(info[2])
                 obj_str *=

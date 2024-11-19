@@ -1,0 +1,61 @@
+# todo: document this example
+# todo: add "initials" for Units, ... to this example
+parameters:
+  store_initial_state: null
+
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 3
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+
+components:
+  node1:
+    type: Node
+    carrier: electricity
+  
+  node2:
+    type: Node
+    carrier: electricity
+  
+  store:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_initial: <store_initial_state>
+    state_lb: 0
+    state_cyclic: disabled
+  
+  discharge:
+    type: Connection
+    node_from: store
+    node_to: node1
+
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: node2
+    value: [10, 10, 10]
+  
+  supply:
+    type: Profile
+    carrier: electricity
+    node_to: node1
+    mode: create
+    cost: 10
+
+  conn:
+    type: Connection
+    node_from: node1
+    node_to: node2

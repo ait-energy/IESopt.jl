@@ -14,25 +14,25 @@ function _unit_var_ison!(unit::Unit)
     model = unit.model
 
     # The lower bound `0 <= var_ison` is redundant since `0 <= var_conversion <= var_ison` holds always.
-    if isa(_get(unit.unit_count), Number)
+    if isa(access(unit.unit_count), Number)
         unit.var.ison = @variable(
             model,
-            [t = _iesopt(model).model.T],
+            [t = get_T(model)],
             binary = (unit.unit_commitment === :binary),
             integer = (unit.unit_commitment === :integer),
             lower_bound = 0,
-            upper_bound = _get(unit.unit_count),
-            base_name = _base_name(unit, "ison"),
+            upper_bound = access(unit.unit_count, Number),
+            base_name = make_base_name(unit, "ison"),
             container = Array
         )
     else
         unit.var.ison = @variable(
             model,
-            [t = _iesopt(model).model.T],
+            [t = get_T(model)],
             binary = (unit.unit_commitment === :binary),
             integer = (unit.unit_commitment === :integer),
             lower_bound = 0,
-            base_name = _base_name(unit, "ison"),
+            base_name = make_base_name(unit, "ison"),
             container = Array
         )
     end

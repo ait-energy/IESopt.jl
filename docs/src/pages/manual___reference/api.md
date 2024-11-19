@@ -46,7 +46,7 @@ optimize!
 ```
 
 ```@docs; canonical=true
-component
+get_component
 ```
 
 ```@docs; canonical=true

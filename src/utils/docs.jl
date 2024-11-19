@@ -23,10 +23,10 @@ function _docs_struct_to_table(datatype::Type)
     # Get proper binding from module, error if structure is unexpected.
     binding = Base.Docs.aliasof(datatype, typeof(datatype))
     dict = Base.Docs.meta(binding.mod; autoinit=false)
-    isnothing(dict) && @critical "Doc error occured" datatype
-    haskey(dict, binding) || @critical "Doc error occured" datatype dict binding
+    isnothing(dict) && @critical "Doc error occurred" datatype
+    haskey(dict, binding) || @critical "Doc error occurred" datatype dict binding
     multidoc = dict[binding]
-    haskey(multidoc.docs, Union{}) || @critical "Doc error occured" datatype multidoc.docs
+    haskey(multidoc.docs, Union{}) || @critical "Doc error occurred" datatype multidoc.docs
 
     # Get all fields that have a docstring.
     all_doc_fields = multidoc.docs[Union{}].data[:fields]
@@ -55,19 +55,21 @@ function _docs_docstr_to_admonition(f::Function)
     header = """
     !!! tip "How to?"
         Access this $(obj_longtype) by using:
+
         ```julia
         # Julia
-        component(model, "your_$(obj_cc)").$(obj_type).$(obj_name)
+        get_component(model, "your_$(obj_cc)").$(obj_type).$(obj_name)
         ```
+        
         ```python
         # Python
         model.get_component("your_$(obj_cc)").$(obj_type).$(obj_name)
         ```
 
-        You can find the full implementation and all details here: [`IESopt.jl`](https://github.com/$(f_path)).
+        You can find the full implementation and all details here: [`$(obj_cc)/$(obj_type)_$(obj_name) @ IESopt.jl`](https://github.com/$(f_path)).
     """
 
-    docstr = string(Base.Docs.doc(f))
+    docstr = string(@doc f)
     docstr = replace(docstr, r"```(?s).*```" => header)
     docstr = replace(docstr, "\n" => "\n    ", "\$\$" => "```math")      # TODO
 
@@ -121,8 +123,9 @@ function _finalize_docstring(datatype::Type)
     multidoc = Base.Docs.meta(@__MODULE__)[binding]
     old_data = multidoc.docs[Union{}].data
 
+    original_docstr = (@doc datatype)
     multidoc.docs[Union{}] = Base.Docs.docstr("""
-    $(Base.Docs.doc(datatype))
+    $(original_docstr)
 
     $(_docs_make_parameters(datatype))
 

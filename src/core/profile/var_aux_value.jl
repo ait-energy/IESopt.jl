@@ -10,7 +10,7 @@ interprets this, based on the setting of `profile.mode`:
 2. **create**, **destroy**, or **ranged**: This models the creation or destruction of energy - used mainly to represent model
    boundaries, and energy that comes into the model or leaves the model's scope. It is however important that `create` should mostly be used feeding into a `Node` (`profile.node_from = nothing`) and
    `destroy` withdrawing from a `Node` (`profile.node_to = nothing`). If `lb` and `ub` are defined, `ranged` can be used
-   that allows a more detailled control over the `Profile`, specifying upper and lower bounds for every `Snapshot`. See
+   that allows a more detailed control over the `Profile`, specifying upper and lower bounds for every `Snapshot`. See
    `_profile_con_value_bounds!(profile::Profile)` for details on the specific bounds for each case.
 
 This variable is added to the `profile.exp.value`. Additionally, the energy (that `profile.exp.value` represents)
@@ -32,21 +32,21 @@ function _profile_var_aux_value!(profile::Profile)
         if !_has_representative_snapshots(model)
             profile.var.aux_value = @variable(
                 model,
-                [t = _iesopt(model).model.T],
-                base_name = _base_name(profile, "aux_value"),
+                [t = get_T(model)],
+                base_name = make_base_name(profile, "aux_value"),
                 container = Array
             )
         else
             # Create all representatives.
             _repr = Dict(
-                t => @variable(model, base_name = _base_name(profile, "aux_value[$(t)]")) for
-                t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                t => @variable(model, base_name = make_base_name(profile, "aux_value[$(t)]")) for
+                t in get_T(model) if internal(model).model.snapshots[t].is_representative
             )
 
             # Create all variables, either as themselves or their representative.
             profile.var.aux_value = collect(
-                _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-                _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
             )
         end
 

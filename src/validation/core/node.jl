@@ -4,7 +4,7 @@ function _validate_node(name::String, properties::Dict)
     try
         # TODO
     catch exception
-        valid &= _vassert(false, "An unexpected exception occured"; location="Node", name=name)
+        valid &= _vassert(false, "An unexpected exception occurred"; location="Node", name=name)
     end
 
     return valid

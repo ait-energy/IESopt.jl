@@ -5,9 +5,8 @@ component's settings, as well as have associated costs.
 @kwdef struct Decision <: _CoreComponent
     # [Core] ===========================================================================================================
     model::JuMP.Model
-    init_state::Ref{Symbol} = Ref(:empty)
-    constraint_safety::Bool
-    constraint_safety_cost::_ScalarInput
+    soft_constraints::Bool
+    soft_constraints_penalty::_ScalarInput
 
     # [Mandatory] ======================================================================================================
     name::_String
@@ -144,7 +143,7 @@ function _result(decision::Decision, mode::String, field::String; result::Int=1)
     end
 
     if field in ["size", "count"]
-        @error "`decision:size` and `decision:count` are deprecated and most likely do not work as exepected; please change to extracting `decision:value`" decision =
+        @error "`decision:size` and `decision:count` are deprecated and most likely do not work as expected; please change to extracting `decision:value`" decision =
             decision.name mode = mode
     end
 
@@ -174,23 +173,23 @@ include("decision/var_sos.jl")
 include("decision/var_value.jl")
 
 function _construct_variables!(decision::Decision)
-    @profile decision.model _decision_var_fixed!(decision)
-    @profile decision.model _decision_var_sos!(decision)
-    @profile decision.model _decision_var_value!(decision)
+    _decision_var_fixed!(decision)
+    _decision_var_sos!(decision)
+    _decision_var_value!(decision)
     return nothing
 end
 
 function _construct_constraints!(decision::Decision)
-    @profile decision.model _decision_con_fixed!(decision)
-    @profile decision.model _decision_con_sos_value!(decision)
-    @profile decision.model _decision_con_sos1!(decision)
+    _decision_con_fixed!(decision)
+    _decision_con_sos_value!(decision)
+    _decision_con_sos1!(decision)
     return _decision_con_sos2!(decision)
 end
 
 function _construct_objective!(decision::Decision)
-    @profile decision.model _decision_obj_fixed!(decision)
-    @profile decision.model _decision_obj_sos!(decision)
-    @profile decision.model _decision_obj_value!(decision)
+    _decision_obj_fixed!(decision)
+    _decision_obj_sos!(decision)
+    _decision_obj_value!(decision)
     return nothing
 end
 

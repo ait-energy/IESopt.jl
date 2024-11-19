@@ -1,0 +1,67 @@
+# This example (at the time of writing) relies on a solver that supports SOS1 / SOS2 constraints directly, since JuMP
+# does not offer a bridge for that (e.g.: HiGHS.jl does not support it, while it's fine with Gurobi.jl).
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: MILP
+    solver:
+      name: highs
+    snapshots:
+      count: 1
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+
+components:
+  invest1:
+    type: Decision
+    mode: sos1
+    lb: 100
+    fixed_cost: 0
+    sos:
+      - {cost: 195, lb: 0, ub: 100}
+      - {cost: 145, lb: 100, ub: 500}
+      - {cost: 100, lb: 500, ub: 5000, fixed_cost: 2}
+
+  invest2:
+    type: Decision
+    mode: sos2
+    ub: 400
+    fixed_cost: 501
+    sos:
+      - {value: 0, cost: 0}
+      - {value: 100, cost: 10000}
+      - {value: 500, cost: 50000}
+  
+  grid1:
+    type: Node
+    carrier: electricity
+  
+  grid2:
+    type: Node
+    carrier: electricity
+
+  connection:
+    type: Connection
+    node_from: grid1
+    node_to: grid2
+    capacity: invest1:value + invest2:value
+
+  feedin:
+    type: Profile
+    carrier: electricity
+    node_to: grid1
+    mode: create
+    cost: 10
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: grid2
+    value: 450
+     

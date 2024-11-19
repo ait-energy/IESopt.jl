@@ -1,0 +1,98 @@
+# The configuration is used to organize general parameters that are used across the model The first line above makes
+# sure that compatible editors (like VS Code, using the YAML extension) pick up the IESopt schema to validate
+# this configuration file.
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    # This specifies the overall type of optimization problem. If using "LP" like here, no component can utilize
+    # formulations that are of a "higher" class (e.g. MILP).
+    problem_type: LP
+    # Here we define the snapshots (IESopt's representation of time steps, including auxiliary information). These are
+    # always given in the form of a list to highlight that they are considered to be ordered. Due to not needing any
+    # specific details, each snapshot currently only has a name.
+    snapshots:
+      count: 4
+    # The solver to be used (here `HiGHS`) as well as potential settings can be configured here:
+    solver:
+      name: highs
+
+# Here we define the three carriers that will be used in the model. They are currently empty because we do not use any
+# detailed information (like plotting colors or units) here. Using a carrier that is not defined will prompt an error.
+carriers:
+  electricity: {}
+  gas: {}
+  co2: {}
+
+# Here we define all components that form the model. Keep in mind that component names should be unique, even across
+# types (meaning that having a Node "AT" and a Unit "AT" is not allowed).
+components:
+  # This is the single node power grid that connects everything. It includes a storage without any losses.
+  node:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 10
+  
+  # This is a simple gas power plant with an installed capacity of 10 units electricity. It converts 1 unit of gas into
+  # 0.4 units of electricity and 0.2 units of CO2. It draws from "gas_grid" and outputs to "node" and "total_co2".
+  plant_gas:
+    type: Unit
+    inputs: {gas: gas_grid}
+    outputs: {electricity: node, co2: total_co2}
+    conversion: 1 gas -> 0.4 electricity + 0.2 co2
+    capacity: 10 out:electricity
+  
+  # This is a simple wind power plant with an installed capacity of 10 units electricity. Since no inputs are specified
+  # it will "create" the units of wind it uses. This means they will not (easily) show up somewhere else in the model.
+  # Furthermore, its capacity depends on the current availability, that is given as factor of capacity. 
+  plant_wind:
+    type: Unit
+    outputs: {electricity: node}
+    conversion: ~ -> 1 electricity
+    capacity: 10 out:electricity
+    availability_factor: [0.9, 0.1, 0.1, 0.1]
+  
+  # This models a time varying demand, that draws a fixed amount of electricity from "node". Using a Profile ensures
+  # that energy is created/destroyed (= imported/exported into/from the model) and not "created from thin air". Since
+  # this Profile does not specify its "mode" parameter the default ("fixed") is used, which either creates or destroys
+  # energy depending on whether "node_from" or "node_to" is set.
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: node
+    value: [1, 4, 5, 5]
+  
+  # This is a single node representing the current gas supply. Since it has no storage the amount that is drawn from it
+  # (this is what "plant_gas" uses) must equal the supply (that is created by "create_gas").
+  gas_grid:
+    type: Node
+    carrier: gas
+  
+  # This is a single node representing the total amount of CO2 that is emitted during each snapshot.
+  total_co2:
+    type: Node
+    carrier: co2
+
+  # This Profile is used to correctly create gas (import it from somewhere, produce it, ...) with a fixed cost. Setting
+  # the "mode" to "create" is only allowed while specifying a "node_to" and enables a variable creation of gas, that is
+  # bounded from below by 0 (to prevent the destruction of gas through negative values).
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: gas_grid
+    mode: create
+    cost: 50.0
+  
+  # This Profile is used to correctly "destroy" CO2 (meaning it leaves the scope of the model) and associates a fixed
+  # cost with that action. That will - in more complex models - allow multiple Units to share a common CO2 price.
+  # Setting the "mode" to "destroy" is only allowed while specifying a "node_from" and enables a variable destruction of
+  # CO2, that is bounded from below by 0 (to prevent the creation of CO2 through negative values).
+  co2_emissions:
+    type: Profile
+    carrier: co2
+    node_from: total_co2
+    mode: destroy
+    cost: 100.0

@@ -1,0 +1,21 @@
+# Basic Wind Turbine model.
+#
+# The default availability factor is based on data obtained from renewables.ninja, at Vienna (48.2084/16.3725), using
+# the default parameters (year = 2019; hub height = 80; model = Vestas v90 2000).
+#
+# Parameters:
+#   - elec_to: `Node` to feed electricity to.
+#   - capacity: Capacity of this wind turbine.
+#   - availability_factor: Availability factor (default based on renewables.ninja; hourly resolution for one year).
+
+parameters:
+  elec_to: null
+  capacity: null
+  availability_factor: null
+
+component:
+  type: Unit
+  conversion: ~ -> 1 electricity
+  outputs: {electricity: <elec_to>}
+  availability_factor: <availability_factor>
+  capacity: <capacity> out:electricity

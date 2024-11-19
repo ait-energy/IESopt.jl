@@ -1,0 +1,62 @@
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: MILP
+    snapshots:
+      count: 8760
+    solver:
+      name: highs
+  files:
+    data: example_data.csv
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    files: files
+    components: files/09
+
+carriers:
+  electricity: {}
+  heat: {}
+
+components:
+  heatpump:
+    type: Unit
+    capacity: 100 out:heat
+    conversion: 1 electricity -> 15_cop@data heat
+    conversion_at_min: 1 electricity -> 1 heat
+    min_conversion: 0.2
+    unit_commitment: binary
+    inputs: { electricity : power_grid }
+    outputs: { heat : heat_grid }
+
+  power_grid:
+    type: Node
+    carrier: electricity
+
+  heat_grid:
+    type: Node
+    carrier: heat
+
+  buy_electricity:
+    type: Profile
+    carrier: electricity
+    cost: 10
+    mode: create
+    node_to: power_grid
+
+  heat_demand:
+    type: Profile
+    carrier: heat
+    mode: fixed
+    node_from: heat_grid
+    value: 15_heatdemand@data
+
+  # We allow "throwing away heat" (essentially allowing the heat_demand to extend beyond the set value)
+  heat_demand_deviation:
+    type: Profile
+    carrier: heat
+    mode: destroy
+    node_from: heat_grid

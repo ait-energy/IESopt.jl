@@ -1,0 +1,158 @@
+parameters:
+  enable_AT: true
+  enable_DE: true
+  enable_CH: true
+  mode: "individual" # or "coupled"
+  
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 3
+    solver:
+      name: highs
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+
+components:
+  node_AT:
+    type: Node
+    carrier: electricity
+    # We can use global parameters and the `enabled` parameter to conditionally enable components.
+    enabled: <enable_AT>
+
+  node_DE:
+    type: Node
+    carrier: electricity
+    # We can also use the `disabled` parameter analogously.
+    # Negation of boolean global parameters can be done with `not`.
+    disabled: not <enable_DE>
+
+  node_CH:
+    type: Node
+    carrier: electricity
+    # We can also use julia syntax (! for not).
+    disabled: (!<enable_CH>)
+
+  demand_AT:
+    type: Profile
+    carrier: electricity
+    node_from: node_AT
+    enabled: <enable_AT>
+    value: [1, 2, 3]
+
+  demand_DE:
+    type: Profile
+    carrier: electricity
+    node_from: node_DE
+    enabled: <enable_DE>
+    value: [8, 5, 7]
+
+  demand_CH:
+    type: Profile
+    carrier: electricity
+    node_from: node_CH
+    enabled: <enable_CH>
+    value: [1, 2, 1]
+
+  res_AT:
+    type: Profile
+    carrier: electricity
+    node_to: node_AT
+    enabled: <enable_AT>
+    value: [2, 1, 0]
+
+  res_DE:
+    type: Profile
+    carrier: electricity
+    node_to: node_DE
+    enabled: <enable_DE>
+    value: [3, 6, 4]
+
+  res_CH:
+    type: Profile
+    carrier: electricity
+    node_to: node_CH
+    enabled: <enable_CH>
+    value: [1, 1, 1]
+
+  curtailment_AT:
+    type: Profile
+    carrier: electricity
+    node_from: node_AT
+    mode: destroy
+    enabled: <enable_AT>
+
+  curtailment_DE:
+    type: Profile
+    carrier: electricity
+    node_from: node_DE
+    mode: destroy
+    enabled: <enable_DE>
+
+  curtailment_CH:
+    type: Profile
+    carrier: electricity
+    node_from: node_CH
+    mode: destroy
+    enabled: <enable_CH>
+
+  thermal_AT:
+    type: Unit
+    outputs:
+      electricity: node_AT
+    conversion: ~ -> 1 electricity
+    capacity: 3 out:electricity
+    marginal_cost: 50 per out:electricity
+    enabled: <enable_AT>
+
+  thermal_DE:
+    type: Unit
+    outputs:
+      electricity: node_DE
+    conversion: ~ -> 1 electricity
+    capacity: 8 out:electricity
+    marginal_cost: 40 per out:electricity
+    enabled: <enable_DE>
+
+  thermal_CH:
+    type: Unit
+    outputs:
+      electricity: node_CH
+    conversion: ~ -> 1 electricity
+    capacity: 2 out:electricity
+    marginal_cost: 30 per out:electricity
+    enabled: <enable_CH>
+
+  conn_AT_DE:
+    type: Connection
+    carrier: electricity
+    capacity: 2
+    node_from: node_AT
+    node_to: node_DE
+    # Furthermore, more complex statements in julia syntax can be used in the `enabled` and `disabled` parameters of
+    # components, if they return boolean values.
+    enabled: <enable_AT> && <enable_DE> && <mode> == "coupled"
+
+  conn_DE_CH:
+    type: Connection
+    carrier: electricity
+    capacity: 1
+    node_from: node_DE
+    node_to: node_CH
+    enabled: <enable_DE> && <enable_CH> && <mode> == "coupled"
+
+  conn_CH_AT:
+    type: Connection
+    carrier: electricity
+    capacity: 1
+    node_from: node_CH
+    node_to: node_AT
+    enabled: <enable_CH> && <enable_AT> && <mode> == "coupled"

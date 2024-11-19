@@ -7,6 +7,19 @@ include("core/core.jl")
 include("yaml/yaml.jl")
 include("addons/addons.jl")
 
+"""
+    validate(toplevel_config_file::String)
+
+Validate the model description bsaed on the given top-level configuration file. This function checks the top-level
+configuration file and all referenced files for validity. The function returns `true` if the model description is valid,
+and `false` otherwise. If the model description is invalid, the function will print an error message.
+
+# Arguments
+- `toplevel_config_file::String`: The path to the top-level configuration file.
+
+# Returns
+- `valid::Bool`: Whether the model description is valid (true), or not (false).
+"""
 function validate(toplevel_config_file::String)
     toplevel_config_file = abspath(toplevel_config_file)
     model_path = dirname(toplevel_config_file)

@@ -3,13 +3,13 @@
 
 Add the constraint defining the bounds of the flow (related to `connection`) to the `model`.
 
-Specifiying `capacity` will lead to symmetric bounds (``\text{lb} := -capacity`` and ``\text{ub} := capacity``), while
-asymmetric bounds can be set by explicitly specifiying `lb` and `ub`.
+Specifying `capacity` will lead to symmetric bounds (``\text{lb} := -capacity`` and ``\text{ub} := capacity``), while
+asymmetric bounds can be set by explicitly specifying `lb` and `ub`.
 
 !!! note
     Usage of `etdf` is currently not fully tested, and not documented.
 
-Upper and lower bounds can be "infinite" (by not setting them) resulting in the repective constraints not being added,
+Upper and lower bounds can be "infinite" (by not setting them) resulting in the respective constraints not being added,
 and the flow variable therefore being (partially) unconstrained. Depending on the configuration the `flow` is calculated
 differently:
 - if `connection.etdf` is set, it is based on an ETDF sum flow,
@@ -30,80 +30,124 @@ This flow is then constrained:
 """
 function _connection_con_flow_bounds!(connection::Connection)
     model = connection.model
-    components = _iesopt(model).model.components
+    components = internal(model).model.components
 
     # todo: rework only getting/checking lb/ub once
-    if !isnothing(connection.capacity) || !isnothing(_get(connection.lb, 1))
-        connection.con.flow_lb = Vector{JuMP.ConstraintRef}(undef, _iesopt(model).model.T[end])
+    if !_isempty(connection.capacity) || !_isempty(connection.lb)
+        ccflb = connection.con.flow_lb = Vector{JuMP.ConstraintRef}(undef, get_T(model)[end])
     end
-    if !isnothing(connection.capacity) || !isnothing(_get(connection.ub, 1))
-        connection.con.flow_ub = Vector{JuMP.ConstraintRef}(undef, _iesopt(model).model.T[end])
+    if !_isempty(connection.capacity) || !_isempty(connection.ub)
+        ccfub = connection.con.flow_ub = Vector{JuMP.ConstraintRef}(undef, get_T(model)[end])
     end
 
     if !isnothing(connection.etdf)
         etdf_flow = sum(components[id].exp.injection .* connection.etdf[id] for id in keys(connection.etdf))
     end
 
-    for t in _iesopt(model).model.T
+    cvf = connection.var.flow::Vector{JuMP.VariableRef}
+    for t in get_T(model)
         # If a Snapshot is representative, it's either representative or there are no activated representative Snapshots.
-        !_iesopt(model).model.snapshots[t].is_representative && continue
+        !internal(model).model.snapshots[t].is_representative && continue
 
-        # Calculate proper lower and upper bounds of the flow.
-        lb = isnothing(connection.capacity) ? _get(connection.lb, t) : -_get(connection.capacity, t)
-        ub = isnothing(connection.capacity) ? _get(connection.ub, t) : _get(connection.capacity, t)
+        # NOTE: See below for a rough outline how the naive constraints were being constructed.
+        if _isempty(connection.capacity)
+            v = cvf[t]::JuMP.VariableRef
 
-        constrained_flow = if !isnothing(connection.etdf)
-            etdf_flow
-        elseif _hasexp(connection, :pf_flow)
-            connection.exp.pf_flow
+            if !_isempty(connection.lb)
+                b = access(connection.lb, t, NonEmptyScalarExpressionValue)::NonEmptyScalarExpressionValue
+                ccflb[t] = @constraint(
+                    model::JuMP.Model,
+                    v >= b,
+                    base_name = make_base_name(connection, "flow_lb", t)
+                )::JuMP.ConstraintRef
+            end
+
+            if !_isempty(connection.ub)
+                b = access(connection.ub, t, NonEmptyScalarExpressionValue)::NonEmptyScalarExpressionValue
+                ccfub[t] = @constraint(
+                    model::JuMP.Model,
+                    v <= b,
+                    base_name = make_base_name(connection, "flow_ub", t)
+                )::JuMP.ConstraintRef
+            end
         else
-            connection.var.flow
+            c = access(connection.capacity, t, NonEmptyScalarExpressionValue)::NonEmptyScalarExpressionValue
+            v = cvf[t]::JuMP.VariableRef
+
+            e = JuMP.@expression(model::JuMP.Model, c + v)
+            ccflb[t] = @constraint(
+                model::JuMP.Model,
+                e::JuMP.AffExpr >= 0.0,
+                base_name = make_base_name(connection, "flow_lb", t)
+            )::JuMP.ConstraintRef
+
+            JuMP.add_to_expression!(e, v, -2.0)
+            ccfub[t] = @constraint(
+                model::JuMP.Model,
+                e::JuMP.AffExpr >= 0.0,
+                base_name = make_base_name(connection, "flow_ub", t)
+            )::JuMP.ConstraintRef
         end
 
-        if !isnothing(lb)
-            connection.con.flow_lb[t] =
-                @constraint(model, constrained_flow[t] >= lb, base_name = _base_name(connection, "flow_lb[$t]"))
-        end
-        if !isnothing(ub)
-            connection.con.flow_ub[t] =
-                @constraint(model, constrained_flow[t] <= ub, base_name = _base_name(connection, "flow_ub[$t]"))
-        end
+        # # Calculate proper lower and upper bounds of the flow.
+        # lb = _isempty(connection.capacity) ? access(connection.lb, t, NonEmptyScalarExpressionValue) : -access(connection.capacity, t, NonEmptyScalarExpressionValue)
+        # ub = _isempty(connection.capacity) ? access(connection.ub, t, NonEmptyScalarExpressionValue) : access(connection.capacity, t, NonEmptyScalarExpressionValue)
+
+        # constrained_flow = if !isnothing(connection.etdf)
+        #     etdf_flow
+        # elseif _hasexp(connection, :pf_flow)
+        #     connection.exp.pf_flow
+        # else
+        #     connection.var.flow
+        # end
+
+        # if !isnothing(lb)
+        #     connection.con.flow_lb[t] =
+        #         @constraint(model, constrained_flow[t] >= lb, base_name = make_base_name(connection, "flow_lb", t))
+        # end
+        # if !isnothing(ub)
+        #     connection.con.flow_ub[t] =
+        #         @constraint(model, constrained_flow[t] <= ub, base_name = make_base_name(connection, "flow_ub", t))
+        # end
     end
 
     if _has_representative_snapshots(model)
         # Use the constructed representatives.
-        for t in _iesopt(model).model.T
-            _iesopt(model).model.snapshots[t].is_representative && continue
+        for t in get_T(model)
+            internal(model).model.snapshots[t].is_representative && continue
 
-            if !isnothing(connection.capacity) || !isnothing(connection.lb)
-                connection.con.flow_lb[t] = connection.con.flow_lb[_iesopt(model).model.snapshots[t].representative]
+            if !_isempty(connection.capacity) || !_isempty(connection.lb)
+                connection.con.flow_lb[t] = connection.con.flow_lb[internal(model).model.snapshots[t].representative]
             end
-            if !isnothing(connection.capacity) || !isnothing(connection.ub)
-                connection.con.flow_ub[t] = connection.con.flow_ub[_iesopt(model).model.snapshots[t].representative]
+            if !_isempty(connection.capacity) || !_isempty(connection.ub)
+                connection.con.flow_ub[t] = connection.con.flow_ub[internal(model).model.snapshots[t].representative]
             end
         end
     end
 
     # Handle constraint safety (if enabled).
-    if connection.constraint_safety
-        for t in _iesopt(model).model.T
-            # Skip constraint safety for non-representative Snapshots.
-            !_iesopt(model).model.snapshots[t].is_representative && continue
+    if connection.soft_constraints
+        _for_lb = !_isempty(connection.capacity) || !_isempty(connection.lb)
+        _for_ub = !_isempty(connection.capacity) || !_isempty(connection.ub)
 
-            if !isnothing(connection.capacity) || !isnothing(connection.lb)
-                _iesopt(model).aux.constraint_safety_penalties[connection.con.flow_lb[t]] = (
+        for t in get_T(model)
+            # Skip constraint safety for non-representative Snapshots.
+            !internal(model).model.snapshots[t].is_representative && continue
+
+            if _for_lb
+                internal(model).aux.soft_constraints_penalties[connection.con.flow_lb[t]] = (
                     component_name=connection.name,
                     t=t,
                     description="flow_lb",
-                    penalty=connection.constraint_safety_cost,
+                    penalty=connection.soft_constraints_penalty,
                 )
             end
-            if !isnothing(connection.capacity) || !isnothing(connection.ub)
-                _iesopt(model).aux.constraint_safety_penalties[connection.con.flow_ub[t]] = (
+            if _for_ub
+                internal(model).aux.soft_constraints_penalties[connection.con.flow_ub[t]] = (
                     component_name=connection.name,
                     t=t,
                     description="flow_ub",
-                    penalty=connection.constraint_safety_cost,
+                    penalty=connection.soft_constraints_penalty,
                 )
             end
         end

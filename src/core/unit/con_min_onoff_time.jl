@@ -9,12 +9,12 @@ This constructs the constraints
     & \sum_{t' = t}^{t + \text{min\_on\_time}} ison_{t'} >= \text{min\_on\_time} \cdot (ison_t - ison_{t-1}) \qquad \forall t \in T \\
     & \sum_{t' = t}^{t + \text{min\_off\_time}} (1 - ison_{t'}) >= \text{min\_off\_time} \cdot (ison_{t-1} - ison_t) \qquad \forall t \in T
 \end{align}
+```
 
 respecting `on_time_before` and `off_time_before`, and `is_on_before`. See the code for more details.
 
 !!! info "Aggregated units"
     This is currently not fully adapted to account for `Unit`s with `unit_count > 1`.
-```
 """
 function _unit_con_min_onoff_time!(unit::Unit)
     if unit.unit_commitment === :off
@@ -22,7 +22,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
     end
 
     model = unit.model
-    T = _iesopt(model).model.T
+    T = get_T(model)
 
     # Pre-calculate the cumulative sum of all Snapshots.
     duration_sum = cumsum(_weight(model, t) for t in T)
@@ -67,7 +67,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
             if T_min_on[t].force
                 push!(
                     unit.con.min_on_time,
-                    @constraint(model, unit.var.ison[t] == 1, base_name = _base_name(unit, "min_on_time[$t]"))
+                    @constraint(model, unit.var.ison[t] == 1, base_name = make_base_name(unit, "min_on_time", t))
                 )
             else
                 prev = (t == 1) ? Int64(unit.is_on_before) : unit.var.ison[t - 1]
@@ -77,7 +77,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
                         model,
                         sum(unit.var.ison[_t] for _t in t:(T_min_on[t].t_end)) >=
                         T_min_on[t].max_dur * (unit.var.ison[t] - prev),
-                        base_name = _base_name(unit, "min_on_time[$t]")
+                        base_name = make_base_name(unit, "min_on_time", t)
                     )
                 )
             end
@@ -124,7 +124,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
             if T_min_off[t].force
                 push!(
                     unit.con.min_off_time,
-                    @constraint(model, unit.var.ison[t] == 0, base_name = _base_name(unit, "min_off_time[$t]"))
+                    @constraint(model, unit.var.ison[t] == 0, base_name = make_base_name(unit, "min_off_time", t))
                 )
             else
                 prev = (t == 1) ? Int64(unit.is_on_before) : unit.var.ison[t - 1]
@@ -134,7 +134,7 @@ function _unit_con_min_onoff_time!(unit::Unit)
                         model,
                         sum((1 - unit.var.ison[_t]) for _t in t:(T_min_off[t].t_end)) >=
                         T_min_off[t].max_dur * (prev - unit.var.ison[t]),
-                        base_name = _base_name(unit, "min_off_time[$t]")
+                        base_name = make_base_name(unit, "min_off_time", t)
                     )
                 )
             end

@@ -14,13 +14,13 @@ function _decision_con_fixed!(decision::Decision)
         decision.con.fixed = @constraint(
             model,
             decision.var.value <= decision.var.fixed * maximum(it["value"] for it in decision.sos),
-            base_name = _base_name(decision, "fixed")
+            base_name = make_base_name(decision, "fixed")
         )
     else
         decision.con.fixed = @constraint(
             model,
             decision.var.value <= decision.var.fixed * decision.ub,
-            base_name = _base_name(decision, "fixed")
+            base_name = make_base_name(decision, "fixed")
         )
     end
 

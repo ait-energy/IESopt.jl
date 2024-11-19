@@ -29,7 +29,7 @@ function _decision_obj_fixed!(decision::Decision)
         JuMP.add_to_expression!(decision.obj.fixed, decision.var.fixed, decision.fixed_cost)
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, decision.obj.fixed)
+    push!(internal(model).model.objectives["total_cost"].terms, decision.obj.fixed)
 
     return nothing
 end

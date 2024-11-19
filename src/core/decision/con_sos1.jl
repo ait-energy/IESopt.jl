@@ -13,7 +13,7 @@ function _decision_con_sos1!(decision::Decision)
     decision.con.sos_set = @constraint(
         model,
         decision.var.sos in JuMP.SOS1([item["cost"] for item in decision.sos]),      # todo: considered fixed_cost here for the weight!
-        base_name = _base_name(decision, "sos_set")
+        base_name = make_base_name(decision, "sos_set")
     )
 
     decision.con.sos1_lb = Vector{JuMP.ConstraintRef}()
@@ -26,7 +26,7 @@ function _decision_con_sos1!(decision::Decision)
             @constraint(
                 model,
                 decision.sos[i]["lb"] * decision.var.sos[i] <= decision.var.sos1_value[i],
-                base_name = _base_name(decision, "sos1_lb[$(i)]")
+                base_name = make_base_name(decision, "sos1_lb[$(i)]")
             )
         )
         push!(
@@ -34,7 +34,7 @@ function _decision_con_sos1!(decision::Decision)
             @constraint(
                 model,
                 decision.var.sos1_value[i] <= decision.sos[i]["ub"] * decision.var.sos[i],
-                base_name = _base_name(decision, "sos1_ub[$(i)]")
+                base_name = make_base_name(decision, "sos1_ub[$(i)]")
             )
         )
     end

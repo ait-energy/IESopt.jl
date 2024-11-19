@@ -16,11 +16,11 @@ function _unit_obj_startup_cost!(unit::Unit)
     model = unit.model
 
     unit.obj.startup_cost = JuMP.AffExpr(0.0)
-    for t in _iesopt(model).model.T
+    for t in get_T(model)
         JuMP.add_to_expression!(unit.obj.startup_cost, unit.var.startup[t], unit.startup_cost)
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, unit.obj.startup_cost)
+    push!(internal(model).model.objectives["total_cost"].terms, unit.obj.startup_cost)
 
     return nothing
 end

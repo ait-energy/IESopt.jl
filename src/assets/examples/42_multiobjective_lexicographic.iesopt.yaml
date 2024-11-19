@@ -1,0 +1,89 @@
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: LP+MO
+    snapshots:
+      count: 4
+    objectives:
+      emissions: []                                 # initialize it empty and later add to it; see: co2_emissions below!
+    multiobjective:
+      mode: Lexicographic
+      terms: [total_cost, emissions]                # this requires AT LEAST two objectives
+      settings:
+        MOI.TimeLimitSec: 10                        # terminate if taking longer than 10 seconds
+        MOA.LexicographicAllPermutations: false     # do not try out all permutation, only use the given order
+        MOA.ObjectiveRelativeTolerance: [0.10]      # we allow 10% deviation for the first objective
+    solver:
+      name: highs
+      attributes:
+        solver: ipm
+  # ------------------------------------------------------------------------------------------------------------------ #
+  results:
+    enabled: true
+    memory_only: true
+
+# Note:
+# If you are using all permutations, remember to also define the relative tolerance for the last objective.
+# If not it is not necessary.   
+
+carriers:
+  electricity: {}
+  gas: {}
+  co2: {}
+
+components:
+  node:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 10
+
+  plant_gas:
+    type: Unit
+    inputs: {gas: gas_grid}
+    outputs: {electricity: node, co2: total_co2}
+    conversion: 1 gas -> 0.4 electricity + 0.2 co2
+    capacity: 10 out:electricity
+
+  plant_wind:
+    type: Unit
+    outputs: {electricity: node}
+    conversion: ~ -> 1 electricity
+    capacity: build_wind:value out:electricity
+    availability_factor: [0.9, 0.1, 0.1, 0.1]
+  
+  build_wind:
+    type: Decision
+    cost: 10000
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: node
+    value: [1, 4, 5, 5]
+
+  gas_grid:
+    type: Node
+    carrier: gas
+
+  total_co2:
+    type: Node
+    carrier: co2
+
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: gas_grid
+    mode: create
+    cost: 50.0
+
+  co2_emissions:
+    type: Profile
+    objectives: {emissions: expr_value}
+    carrier: co2
+    node_from: total_co2
+    mode: destroy
+    cost: 100.0

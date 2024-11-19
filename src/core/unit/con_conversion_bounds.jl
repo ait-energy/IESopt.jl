@@ -56,31 +56,36 @@ function _unit_con_conversion_bounds!(unit::Unit)
         return nothing
     end
 
+    uvc = unit.var.conversion::Vector{JuMP.VariableRef}
+    uc = unit.capacity::Expression
+
     if !_has_representative_snapshots(model)
         # Construct the upper bound.
         unit.con.conversion_ub = @constraint(
             model,
-            [t = _iesopt(model).model.T],
-            _get(limits[:min], t) * _get(unit.capacity, t) + unit.var.conversion[t] <=
-            _get(limits[:online], t) * _get(unit.capacity, t),
-            base_name = _base_name(unit, "conversion_ub"),
+            [t = get_T(model)],
+            # NOTE: this is `min[t] * capacity[t] + conversion[t] <= online[t] * capacity[t]`
+            # equal to: conversion[t] <= capacity[t] * (online[t] - min[t])
+            uvc[t] <= access(uc, t, NonEmptyScalarExpressionValue) * (_get(limits[:online], t) - _get(limits[:min], t)),
+            base_name = make_base_name(unit, "conversion_ub"),
             container = Array
         )
     else
+        # TODO: reformulate as above to cache access
         # Create all representatives.
         _repr = Dict(
             t => @constraint(
                 model,
-                _get(limits[:min], t) * _get(unit.capacity, t) + unit.var.conversion[t] <=
-                _get(limits[:online], t) * _get(unit.capacity, t),
-                base_name = _base_name(unit, "conversion_ub[t]")
-            ) for t in _iesopt(model).model.T if _iesopt(model).model.snapshots[t].is_representative
+                _get(limits[:min], t) * access(uc, t, NonEmptyScalarExpressionValue) + uvc[t] <=
+                _get(limits[:online], t) * access(uc, t, NonEmptyScalarExpressionValue),
+                base_name = make_base_name(unit, "conversion_ub[t]")
+            ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
         )
 
         # Create all constraints, either as themselves or their representative.
         unit.con.conversion_ub = collect(
-            _iesopt(model).model.snapshots[t].is_representative ? _repr[t] :
-            _repr[_iesopt(model).model.snapshots[t].representative] for t in _iesopt(model).model.T
+            internal(model).model.snapshots[t].is_representative ? _repr[t] :
+            _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
         )
     end
 

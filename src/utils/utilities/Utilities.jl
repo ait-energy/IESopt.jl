@@ -10,20 +10,18 @@ import ..IESopt: @critical
 import ArgCheck: @argcheck
 import JuMP
 
-include("model_wrapper.jl")
-
 """
-    annuity(total::Number; lifetime::Number, rate::Float64, fraction::Float64)
+    annuity(total::Real; lifetime::Real, rate::Float64, fraction::Float64)
 
 Calculate the annuity of a total amount over a lifetime with a given interest rate.
 
 # Arguments
 
-- `total::Number`: The total amount to be annuitized.
+- `total::Real`: The total amount to be annuitized.
 
 # Keyword Arguments
 
-- `lifetime::Number`: The lifetime over which the total amount is to be annuitized.
+- `lifetime::Real`: The lifetime over which the total amount is to be annuitized.
 - `rate::Float64`: The interest rate at which the total amount is to be annuitized.
 - `fraction::Float64`: The fraction of a year that the annuity is to be calculated for (default: 1.0).
 
@@ -48,7 +46,7 @@ for a fraction of a year (given by `MODEL.yearspan`, which is the total timespan
 set("capex", IESU.annuity(1000.0; lifetime=10, rate=0.05, fraction=MODEL.yearspan))
 ```
 """
-function annuity(total::Number; lifetime::Number, rate::Float64, fraction::Float64=1.0)::Float64
+function annuity(total::Real; lifetime::Real, rate::Float64, fraction::Float64=1.0)::Float64
     @argcheck total >= 0
     @argcheck 0 < lifetime < 1e3
     @argcheck 0.0 < rate < 1.0
@@ -56,18 +54,26 @@ function annuity(total::Number; lifetime::Number, rate::Float64, fraction::Float
     return total * rate / (1 - (1 + rate)^(-lifetime)) * fraction
 end
 
-function annuity(total::Number, lifetime::Number, rate::Number)
+function annuity(total::Real, lifetime::Real, rate::Real)
     msg = "Error trying to call `annuity($(total), $(lifetime), $(rate))`"
     reason = "`lifetime` and `rate` must be passed as keyword arguments to `annuity(...)`"
     example = "`annuity(1000.0; lifetime=10, rate=0.05)`"
     @critical msg reason example
 end
 
-function annuity(total::Number, lifetime::Number, rate::Number, fraction::Number)
+function annuity(total::Real, lifetime::Real, rate::Real, fraction::Real)
     msg = "Error trying to call `annuity($(total), $(lifetime), $(rate), $(fraction))`"
     reason = "`lifetime`, `rate`, and `fraction` must be passed as keyword arguments to `annuity(...)`"
     example = "`annuity($(total); lifetime=$(lifetime), rate=$(rate), fraction=$(fraction))`"
     @critical msg reason example
+end
+
+function timespan(model::JuMP.Model)::Float64
+    return sum(s.weight for s in values(IESopt._iesopt_model(model).snapshots))
+end
+
+function yearspan(model::JuMP.Model)::Float64
+    return timespan(model) / 8760.0
 end
 
 end

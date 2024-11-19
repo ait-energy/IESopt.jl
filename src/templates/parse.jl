@@ -5,7 +5,7 @@ function _parse_noncore_component!(
     cname::String,
 )::Dict{String, Any}
     # Get template and file.
-    template = _iesopt(model).input.noncore[:templates][type]
+    template = internal(model).input.noncore[:templates][type]
     parameters = deepcopy(get(template.yaml, "parameters", Dict{String, Any}()))
 
     # Parse parameters from configuration.
@@ -47,7 +47,7 @@ function _parse_noncore_component!(
     end
 
     # Add global parameters
-    for (k, v) in _iesopt(model).input.parameters
+    for (k, v) in internal(model).input.parameters
         if haskey(parameters, k)
             @warn "Ambiguous parameter in component and global specification; using local value" component = cname parameter =
                 k
@@ -56,16 +56,38 @@ function _parse_noncore_component!(
         parameters[k] = v
     end
 
-    # Validate and then prepare.
-    template.functions[:validate](parameters, cname) || @critical "Template validation failed" component = cname
-    template.functions[:prepare](parameters, cname)
+    # Write the final version of parameters into the Virtual.
+    virtual = internal(model).model.components[cname]
+    merge!(virtual._parameters, parameters)
 
-    # Add an entry for finalization.
-    _iesopt(model).results._templates[cname] =
-        (finalize=template.functions[:finalize], parameters=parameters, items=Vector{Any}())
+    if haskey(template.yaml, "functions")
+        @warn "It is highly recommended NOT to use `functions` in single component templates that just \"rename\" another template" template =
+            template.name maxlog = 1
+
+        # Validate and then prepare.
+        template.functions[:validate](virtual) || @critical "Template validation failed" component = cname
+        template.functions[:prepare](virtual)
+
+        # Add an entry for finalization.
+        push!(virtual._finalizers, template.functions[:finalize])
+    end
+
+    # Convert data types that do not "render" well to strings using JSON. (SEE BELOW)
+    # Example:
+    # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
+    # which then messes with replacement in the YAML parsing.
+
+    # This would result in modifying the original `parameters` dictionary, which is not desired.
+    # Therefore, we keep a copy (not a deep copy!) and modify that, only duplicating potential json-ed items.
+    parameters = copy(virtual._parameters)
+
+    for (k, v) in parameters
+        (v isa Dict) || continue
+        parameters[k] = JSON.json(v)
+    end
 
     # Construct the parsed core component with all parameter replacements.
-    replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))
+    replacements = Regex(join(["<$k>" for k in keys(parameters)], "|")::String)
     if length(parameters) == 0
         comp = template.yaml["component"]
     else
@@ -75,10 +97,10 @@ function _parse_noncore_component!(
                 replace(YAML.write(v), replacements => p -> parameters[p[2:(end - 1)]]),
                 "\"" => "",  # this is necessary to prevent `Number`s being enclosed with "", ending up as `String`
                 "nothing" => "null", # this is necessary to properly preserve "null" (as nothing)
-            )
+            )::String
             if occursin("<", _new_component_str)
-                param_begin = findfirst("<", _new_component_str)[1]
-                param_end = findnext(">", _new_component_str, param_begin)[1]
+                param_begin = (findfirst("<", _new_component_str)::UnitRange{Int64})[1]
+                param_end = (findnext(">", _new_component_str, param_begin)::UnitRange{Int64})[1]
                 parameter = _new_component_str[param_begin:param_end]
                 @critical "Parameter placeholder not replaced" component = cname parameter
             end
@@ -90,10 +112,10 @@ function _parse_noncore_component!(
     if haskey(template.yaml, "files")
         for file in template.yaml["files"]
             filedescr = replace(file[1], replacements => p -> parameters[p[2:(end - 1)]])
-            haskey(_iesopt(model).input.files, filedescr) && continue
+            haskey(internal(model).input.files, filedescr) && continue
 
             filename = replace(file[2], replacements => p -> parameters[p[2:(end - 1)]])
-            _iesopt(model).input.files[filedescr] = _getfile(model, filename)
+            internal(model).input.files[filedescr] = _getfile(model, filename)
         end
     end
 
@@ -114,7 +136,7 @@ function _parse_container!(
     type::String,
 )::Vector{String}
     # Get template and file.
-    template = _iesopt(model).input.noncore[:templates][type]
+    template = internal(model).input.noncore[:templates][type]
     parameters = copy(get(template.yaml, "parameters", Dict{String, Any}()))
 
     # Get top-level configuration.
@@ -162,7 +184,7 @@ function _parse_container!(
     end
 
     # Add global parameters
-    for (k, v) in _iesopt(model).input.parameters
+    for (k, v) in internal(model).input.parameters
         if haskey(parameters, k)
             @warn "Ambiguous parameter in component and global specification; using local value" component = name parameter =
                 k
@@ -171,24 +193,41 @@ function _parse_container!(
         parameters[k] = v
     end
 
+    # Write the final version of parameters into the Virtual.
+    virtual = internal(model).model.components[name]
+    merge!(virtual._parameters, parameters)
+
     # Validate and then prepare.
-    template.functions[:validate](parameters, name) || @critical "Template validation failed" component = name
-    template.functions[:prepare](parameters, name)
+    template.functions[:validate](virtual) || @critical "Template validation failed" component = name
+    template.functions[:prepare](virtual)
 
     # Add an entry for finalization.
-    _iesopt(model).results._templates[name] =
-        (finalize=template.functions[:finalize], parameters=parameters, items=Vector{Any}())
+    push!(virtual._finalizers, template.functions[:finalize])
+
+    # Convert data types that do not "render" well to strings using JSON. (SEE BELOW)
+    # Example:
+    # `Dict{String, Any}("electricity" => 1)` will just be rendered as `"Dict{String, Any}("electricity" => 1)"`,
+    # which then messes with replacement in the YAML parsing.
+
+    # This would result in modifying the original `parameters` dictionary, which is not desired.
+    # Therefore, we keep a copy (not a deep copy!) and modify that, only duplicating potential json-ed items.
+    parameters = copy(virtual._parameters)
+
+    for (k, v) in parameters
+        (v isa Dict) || continue
+        parameters[k] = JSON.json(v)
+    end
 
     # Construct the parsed container with all parameter replacements.
-    replacements = Regex(join(["<$k>" for k in keys(parameters)], "|"))
+    replacements = Regex(join(["<$k>" for k in keys(parameters)], "|")::String)
     _new_components_str = replace(
         replace(YAML.write(template.yaml["components"]), replacements => p -> parameters[p[2:(end - 1)]]),
         "\"" => "",  # this is necessary to prevent `Number`s being enclosed with "", ending up as `String`
         "nothing" => "null", # this is necessary to properly preserve "null" (as nothing)
-    )
+    )::String
     if occursin("<", _new_components_str)
-        param_begin = findfirst("<", _new_components_str)[1]
-        param_end = findnext(">", _new_components_str, param_begin)[1]
+        param_begin = (findfirst("<", _new_components_str)::UnitRange{Int64})[1]
+        param_end = (findnext(">", _new_components_str, param_begin)::UnitRange{Int64})[1]
         parameter = _new_components_str[param_begin:param_end]
         @critical "Parameter placeholder not replaced" component = name parameter
     end
@@ -198,9 +237,9 @@ function _parse_container!(
     if haskey(template.yaml, "files")
         for file in template.yaml["files"]
             filedescr = replace(file[1], replacements => p -> parameters[p[2:(end - 1)]])
-            haskey(_iesopt(model).input.files, filedescr) && continue
+            haskey(internal(model).input.files, filedescr) && continue
             filename = replace(file[2], replacements => p -> parameters[p[2:(end - 1)]])
-            _iesopt(model).input.files[filedescr] = _getfile(model, filename)
+            internal(model).input.files[filedescr] = _getfile(model, filename)
         end
     end
 
@@ -284,10 +323,18 @@ function _parse_noncore!(model::JuMP.Model, description::Dict{String, Any}, cnam
 
     type = pop!(description[cname], "type")
     template = _require_template(model, type)
-    # if !haskey(_iesopt(model).input.noncore[:templates], type)
+
+    # Remember its name and type properly, before that is lost due to flattening, by constructing a Virtual.
+    internal(model).model.components[cname] = Virtual(; model, name=cname, type, _template=template)
+
+    # Properly tag the new Virtual.
+    !haskey(internal(model).model.tags, type) && (internal(model).model.tags[type] = Vector{String}())
+    push!(internal(model).model.tags[type], cname)
+
+    # if !haskey(internal(model).input.noncore[:templates], type)
     #     valid_templates = [
     #         path for
-    #         path in _iesopt(model).input.noncore[:paths] if isfile(normpath(path, string(type, ".iesopt.template.yaml")))
+    #         path in internal(model).input.noncore[:paths] if isfile(normpath(path, string(type, ".iesopt.template.yaml")))
     #     ]
     #     (length(valid_templates) == 0) && error("Type template <$type.iesopt.template.yaml> could not be found")
     #     (length(valid_templates) != 1) && error("Type template <$type.iesopt.template.yaml> is ambiguous")
@@ -295,13 +342,13 @@ function _parse_noncore!(model::JuMP.Model, description::Dict{String, Any}, cnam
     #     template_path = valid_templates[1]
     #     template_file = normpath(template_path, string(type, ".iesopt.template.yaml"))
 
-    #     _iesopt(model).input.noncore[:templates][type] = YAML.load_file(template_file; dicttype=Dict{String, Any})
-    #     _iesopt(model).input.noncore[:templates][type]["path"] = template_path
+    #     internal(model).input.noncore[:templates][type] = YAML.load_file(template_file; dicttype=Dict{String, Any})
+    #     internal(model).input.noncore[:templates][type]["path"] = template_path
     #     @info "Encountered non-core component" type = type template = template_file
     # end
 
-    # is_container = haskey(_iesopt(model).input.noncore[:templates][type], "components")
-    # is_component = haskey(_iesopt(model).input.noncore[:templates][type], "component")
+    # is_container = haskey(internal(model).input.noncore[:templates][type], "components")
+    # is_component = haskey(internal(model).input.noncore[:templates][type], "component")
 
     if _is_component(template)
         description[cname] = _parse_noncore_component!(model, type, description[cname], cname)

@@ -21,7 +21,7 @@ function _decision_obj_sos!(decision::Decision)
         end
     end
 
-    push!(_iesopt(model).model.objectives["total_cost"].terms, decision.obj.sos)
+    push!(internal(model).model.objectives["total_cost"].terms, decision.obj.sos)
 
     return nothing
 end

@@ -1,6 +1,6 @@
 function _load_template(model::JuMP.Model, filename::String; read_file::Bool=false)
     name = _get_template_name(filename)
-    read_file && @info "Loading template file" name
+    read_file && @info "Loading template file" name filename
 
     template = CoreTemplate(;
         model=model,
@@ -10,14 +10,22 @@ function _load_template(model::JuMP.Model, filename::String; read_file::Bool=fal
         _status=read_file ? Ref(:raw) : Ref(:empty),
     )
 
-    _iesopt(model).input.noncore[:templates][name] = template
+    internal(model).input.noncore[:templates][name] = template
     return template
 end
 
-_load_template(template::CoreTemplate) =
-    _load_template(template.model, normpath(template.path, "$(template.name).iesopt.template.yaml"); read_file=true)
+function _load_template(template::CoreTemplate)
+    ((template._status[]::Symbol) == :empty) || return template
+    return _load_template(
+        template.model,
+        normpath(template.path, "$(template.name).iesopt.template.yaml");
+        read_file=true,
+    )
+end
 
 function _load_template_yaml!(template::CoreTemplate)
+    ((template._status[]::Symbol) == :raw) || return template
+
     merge!(template.yaml, YAML.load(template.raw; dicttype=Dict{String, Any}))
     template._status[] = :yaml
 
@@ -25,9 +33,9 @@ function _load_template_yaml!(template::CoreTemplate)
     has_component = haskey(template.yaml, "component")
 
     if has_components && !has_component
-        template.type[] = :container
+        _set_type!(template, :container)
     elseif !has_components && has_component
-        template.type[] = :component
+        _set_type!(template, :component)
     else
         @critical "Template type could not be determined" template = template.name
     end
@@ -37,16 +45,16 @@ function _load_template_yaml!(template::CoreTemplate)
     _build_template_function_validate(template)
     _build_template_function_finalize(template)
 
-    return nothing
+    return template
 end
 
 function _scan_all_templates(model::JuMP.Model)
     # Prepare the templates dictionary.
-    _iesopt(model).input.noncore[:templates] = Dict{String, CoreTemplate}()
+    internal(model).input.noncore[:templates] = Dict{String, CoreTemplate}()
 
     # Scan for templates in template folder and core internal templates.
     all_template_files = Set{String}()
-    for dir in [_iesopt_config(model).paths.templates, _PATHS[:templates]]
+    for dir in [@config(model, paths.templates), Assets.get_path("templates")]
         for (root, _, files) in walkdir(dir)
             isempty(files) && continue
             for filename in files
@@ -62,11 +70,11 @@ function _scan_all_templates(model::JuMP.Model)
         _load_template(model, template_file)
     end
 
-    @info "Finished scanning templates" count = length(_iesopt(model).input.noncore[:templates])
+    @info "Finished scanning templates" count = length(internal(model).input.noncore[:templates])
 
     # valid_templates = [
     #     path for
-    #     path in _iesopt(model).input.noncore[:paths] if isfile(normpath(path, string(type, ".iesopt.template.yaml")))
+    #     path in internal(model).input.noncore[:paths] if isfile(normpath(path, string(type, ".iesopt.template.yaml")))
     # ]
     # (length(valid_templates) == 0) && error("Type template <$type.iesopt.template.yaml> could not be found")
     # (length(valid_templates) != 1) && error("Type template <$type.iesopt.template.yaml> is ambiguous")
@@ -74,20 +82,13 @@ function _scan_all_templates(model::JuMP.Model)
     # template_path = valid_templates[1]
     # template_file = normpath(template_path, string(type, ".iesopt.template.yaml"))
 
-    # _iesopt(model).input.noncore[:templates][type] = YAML.load_file(template_file; dicttype=Dict{String, Any})
-    # _iesopt(model).input.noncore[:templates][type]["path"] = template_path
+    # internal(model).input.noncore[:templates][type] = YAML.load_file(template_file; dicttype=Dict{String, Any})
+    # internal(model).input.noncore[:templates][type]["path"] = template_path
     # @info "Encountered non-core component" type = type template = template_file
 end
 
 function _require_template(model::JuMP.Model, name::String)
-    haskey(_iesopt(model).input.noncore[:templates], name) || @critical "`CoreTemplate` not found" name
-    template = _iesopt(model).input.noncore[:templates][name]
-
-    if template._status[] == :empty
-        template = _load_template(template)
-    end
-
-    (template._status[] == :raw) && _load_template_yaml!(template)
-
-    return template
+    haskey(internal(model).input.noncore[:templates], name) || @critical "`CoreTemplate` not found" name
+    template = internal(model).input.noncore[:templates][name] |> _load_template |> _load_template_yaml!
+    return template::CoreTemplate
 end

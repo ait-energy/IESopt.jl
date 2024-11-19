@@ -1,0 +1,107 @@
+# This example (at the time of writing) relies on a solver that supports SOS1 / SOS2 constraints directly, since JuMP
+# does not offer a bridge for that (e.g.: HiGHS.jl does not support it, while it's fine with Gurobi.jl).
+config:
+  general:
+    version:
+      core: 2.0.0
+  optimization:
+    problem_type: MILP
+    solver:
+      name: highs
+    snapshots:
+      count: 35040
+  files:
+    data: data.csv
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    files: ./files/33
+
+carriers:
+  electricity: {}
+
+components:
+  invest1:
+    type: Decision
+    mode: sos2
+    sos:
+      - {value: 0, cost: 0}
+      - {value: 10, cost: 1985000}
+      - {value: 20, cost: 2361000}
+      - {value: 30, cost: 2612000}
+      - {value: 40, cost: 2807000}
+      - {value: 50, cost: 2968000}
+      - {value: 60, cost: 3107000}
+      - {value: 70, cost: 3229000}
+      - {value: 80, cost: 3338000}
+      - {value: 90, cost: 3438000}
+      - {value: 100, cost: 3530000}
+
+  invest2:
+    type: Decision
+    mode: sos2
+    sos:
+      - {value: 0, cost: 0}
+      - {value: 10, cost: 1442000}
+      - {value: 20, cost: 1984000}
+      - {value: 30, cost: 2390000}
+      - {value: 40, cost: 2728000}
+      - {value: 50, cost: 3023000}
+      - {value: 60, cost: 3288000}
+      - {value: 70, cost: 3530000}
+      - {value: 80, cost: 3753000}
+      - {value: 90, cost: 3962000}
+      - {value: 100, cost: 4159000}
+  
+  invest_storage:
+    type: Decision
+    mode: sos2
+    ub: 1000
+    sos:
+      - {value: 0, cost: 0}
+      - {value: 100, cost: 2337897}
+      - {value: 200, cost: 4302609}
+      - {value: 300, cost: 6147410}
+      - {value: 400, cost: 7918415}
+      - {value: 500, cost: 9636494}
+      - {value: 600, cost: 11313541}
+      - {value: 700, cost: 12957217}
+      - {value: 800, cost: 14572855}
+      - {value: 900, cost: 16164373}
+      - {value: 1000, cost: 17734765}
+
+  grid:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: invest_storage:value
+    soft_constraints: false
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: grid
+    value: demand@data
+  
+  shedding:
+    type: Profile
+    carrier: electricity
+    node_to: grid
+    mode: create
+    cost: 10000
+  
+  res1:
+    type: Unit
+    outputs: {electricity: grid}
+    conversion: ~ -> 1 electricity
+    capacity: invest1:value out:electricity
+    availability_factor: res1@data
+
+  res2:
+    type: Unit
+    outputs: {electricity: grid}
+    conversion: ~ -> 1 electricity
+    capacity: invest2:value out:electricity
+    availability_factor: res2@data

@@ -1,62 +1,82 @@
-include("names.jl")
-include("paths.jl")
-include("files.jl")
-include("results.jl")
-include("optimization.jl")
+include("sections/general.jl")
+include("sections/optimization.jl")
+include("sections/files.jl")
+include("sections/results.jl")
+include("sections/paths.jl")
 
-struct _Config
-    names::_ConfigNames
+function _replace_config_from_user(model::JuMP.Model)
+    isnothing(model.ext[:_iesopt_kwargs][:config]) && return nothing
+    data = internal(model).input._tl_yaml["config"]
 
-    optimization::_ConfigOptimization
-    files::_ConfigFiles
-    results::_ConfigResults
-    paths::_ConfigPaths
-
-    progress::Bool
-    verbosity::Union{String, Bool}
-    verbosity_solve::Bool
-
-    parametric::Bool    # todo: remove / refactor after "expression rework"
-end
-
-function _Config(model::JuMP.Model)
-    config = _iesopt(model).input._tl_yaml["config"]
-
-    model_path = model.ext[:_iesopt_wd]
-    verbosity = model.ext[:_iesopt_verbosity]
-
-    names_str = (
-        if !haskey(config, "name")
-            ("my_model", "scenario_\$TIME\$")
-        else
-            if haskey(config["name"], "run")
-                @warn "Using `run` in the `name` section of the configuration is deprecated, use `scenario` instead"
+    for (k, v) in model.ext[:_iesopt_kwargs][:config]
+        accessors = split(k, '.')
+        current = data
+        for (i, accessor) in enumerate(accessors)
+            if i == length(accessors)
+                current[accessor] = v
+            else
+                current = get!(current, accessor, Dict{String, Any}())
             end
-
-            name_model = get(config["name"], "model", "my_model")
-            name_scenario = get(config["name"], "scenario", get(config["name"], "run", "scenario_\$TIME\$"))
-            (name_model, name_scenario)
         end
-    )
-    names = _ConfigNames(replace.(names_str, "\$TIME\$" => Dates.format(Dates.now(), "yyyy_mm_dd_HHMMSSs"))...)
-    paths = _ConfigPaths(get(config, "paths", Dict{String, Any}()), model_path, names)
-
-    verbosity = isnothing(verbosity) ? get(config, "verbosity", true) : verbosity
-    return _Config(
-        names,
-        _ConfigOptimization(get(config, "optimization", Dict{String, Any}())),
-        _ConfigFiles(get(config, "files", Dict{String, Any}()), paths),
-        _ConfigResults(get(config, "results", Dict{String, Any}())),
-        paths,
-        get(config, "progress", verbosity === true),
-        verbosity,
-        get(config, "verbosity_solve", verbosity === true),
-        false,
-    )
+    end
 end
 
-_has_representative_snapshots(model::JuMP.Model) =
-    !isnothing(_iesopt_config(model).optimization.snapshots.representatives)
-_is_multiobjective(model::JuMP.Model) = (:mo in _iesopt_config(model).optimization.problem_type)
-_is_lp(model::JuMP.Model) = (:lp in _iesopt_config(model).optimization.problem_type)
-_is_milp(model::JuMP.Model) = (:milp in _iesopt_config(model).optimization.problem_type)
+function _prepare_config_and_logger!(model::JuMP.Model)
+    _replace_config_from_user(model)
+
+    _prepare_config_general!(model)
+
+    verbosity = @config(model, general.verbosity.core, String)
+
+    if !(verbosity in ["debug", "info", "warn", "error"])
+        @warn "Unsupported `verbosity` config. Choose from `debug`, `info`, `warn`, or `error`. Falling back to `info`."
+        @config(model, general.verbosity.core) = verbosity = "info"
+    end
+
+    logger = Logging.ConsoleLogger(
+        global_logger().stream,
+        Logging.LogLevel(getfield(Logging, Symbol(uppercasefirst(verbosity)))),
+    )
+
+    return logger
+end
+
+function _prepare_config!(model::JuMP.Model)
+    with_logger(_prepare_config_and_logger!(model)) do
+        _prepare_config_optimization!(model)
+        _prepare_config_files!(model)
+        _prepare_config_results!(model)
+        _prepare_config_paths!(model)
+
+        current_version_core = string(pkgversion(@__MODULE__))::String
+        version_core = @config(model, general.version.core)::String
+        if version_core != current_version_core
+            @error "The `version.core` (v$(version_core)) entry in the configuration file is different from the current version of `IESopt.jl` (v$(current_version_core)), which might lead to unexpected behavior or errors"
+        end
+
+        unknown_sections = [
+            k for k in keys(internal(model).input._tl_yaml["config"]) if
+            !(k in ["general", "optimization", "files", "results", "paths"])
+        ]
+        if !isempty(unknown_sections)
+            @error "Unknown configuration sections found in the configuration file: $(join(unknown_sections, ", "))"
+        end
+
+        @debug "Configuration loaded"
+        @debug "[general]" Dict(Symbol(k) => v for (k, v) in @config(model, general))...
+        @debug "[optimization]" Dict(Symbol(k) => v for (k, v) in @config(model, optimization))...
+        @debug "[files]" Dict(Symbol(k) => v for (k, v) in @config(model, files))...
+        @debug "[results]" Dict(Symbol(k) => v for (k, v) in @config(model, results))...
+        @debug "[paths]" Dict(Symbol(k) => v for (k, v) in @config(model, paths))...
+    end
+
+    return nothing
+end
+
+# "parametric" ?
+
+_has_representative_snapshots(model::JuMP.Model) = false  # TODO
+
+_is_multiobjective(model::JuMP.Model) = (:mo in @config(model, optimization.problem_type))::Bool
+_is_lp(model::JuMP.Model) = (:lp in @config(model, optimization.problem_type))::Bool
+_is_milp(model::JuMP.Model) = (:milp in @config(model, optimization.problem_type))::Bool

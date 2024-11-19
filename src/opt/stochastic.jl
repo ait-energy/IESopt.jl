@@ -142,7 +142,7 @@ function stochastic(
 
     # Scan for Decisions / non-Decisions.
     _cname_non_decisions = []
-    for (cname, component) in stochastic_data.main.ext[:iesopt].model.components
+    for (cname, component) in stochastic_data.main.ext[:_iesopt].model.components
         if component isa Decision
             push!(stochastic_data.decisions, cname)
         else
@@ -153,7 +153,7 @@ function stochastic(
     # Disable everything that is not a Decision in the main-problem.
     @info "[stochastic] Modify main model"
     for cname in _cname_non_decisions
-        delete!(stochastic_data.main.ext[:iesopt].model.components, cname)
+        delete!(stochastic_data.main.ext[:_iesopt].model.components, cname)
     end
 
     # Build main-problem.
@@ -169,10 +169,10 @@ function stochastic(
 
     @showprogress "Modifying sub models: " for sub in stochastic_data.subs
         for comp_name in stochastic_data.decisions
-            component(sub, comp_name).mode = :fixed
-            component(sub, comp_name).cost = nothing
-            component(sub, comp_name).fixed_cost = nothing
-            component(sub, comp_name).fixed_value = 0.0
+            get_component(sub, comp_name).mode = :fixed
+            get_component(sub, comp_name).cost = nothing
+            get_component(sub, comp_name).fixed_cost = nothing
+            get_component(sub, comp_name).fixed_value = 0.0
         end
     end
 
@@ -207,19 +207,19 @@ function stochastic(
     end
 
     # Check constraints safety.
-    if !isempty(stochastic_data.main.ext[:iesopt].aux.constraint_safety_penalties)
-        @info "[stochastic] Relaxing constraints based on constraint_safety (MAIN)"
-        stochastic_data.main.ext[:constraint_safety_expressions] = JuMP.relax_with_penalty!(
+    if !isempty(stochastic_data.main.ext[:_iesopt].aux.soft_constraints_penalties)
+        @info "[stochastic] Relaxing constraints based on soft_constraints (MAIN)"
+        stochastic_data.main.ext[:soft_constraints_expressions] = JuMP.relax_with_penalty!(
             stochastic_data.main,
-            Dict(k => v.penalty for (k, v) in stochastic_data.main.ext[:iesopt].aux.constraint_safety_penalties),
+            Dict(k => v.penalty for (k, v) in stochastic_data.main.ext[:_iesopt].aux.soft_constraints_penalties),
         )
     end
-    if !isempty(stochastic_data.subs[1].ext[:iesopt].aux.constraint_safety_penalties)
-        @info "[stochastic] Relaxing constraints based on constraint_safety (SUBs)"
+    if !isempty(stochastic_data.subs[1].ext[:_iesopt].aux.soft_constraints_penalties)
+        @info "[stochastic] Relaxing constraints based on soft_constraints (SUBs)"
         @showprogress "Modifying sub models: " for sub in stochastic_data.subs
-            sub.ext[:constraint_safety_expressions] = JuMP.relax_with_penalty!(
+            sub.ext[:soft_constraints_expressions] = JuMP.relax_with_penalty!(
                 sub,
-                Dict(k => v.penalty for (k, v) in sub.ext[:iesopt].aux.constraint_safety_penalties),
+                Dict(k => v.penalty for (k, v) in sub.ext[:_iesopt].aux.soft_constraints_penalties),
             )
         end
     end
@@ -286,7 +286,7 @@ function _iterative_stochastic(stochastic_data::StochasticData)
         # Update the sub-problems.
         for sub in stochastic_data.subs
             for (comp_name, value) in current_decisions
-                JuMP.fix(component(sub, comp_name).var.value, value; force=true)
+                JuMP.fix(get_component(sub, comp_name).var.value, value; force=true)
             end
         end
 
@@ -339,7 +339,7 @@ function _iterative_stochastic(stochastic_data::StochasticData)
                 stochastic_data.main[:θ][i] >=
                 obj_subs[i] + sum(
                     extract_result(stochastic_data.subs[i], comp_name, "value"; mode="dual") *
-                    (component(stochastic_data.main, comp_name).var.value - value) for
+                    (get_component(stochastic_data.main, comp_name).var.value - value) for
                     (comp_name, value) in current_decisions
                 )
             )

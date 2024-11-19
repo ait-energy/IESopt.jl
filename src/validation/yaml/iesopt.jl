@@ -1,4 +1,4 @@
-function _validate_raw_yaml_iesopt(filename::String)
+function _validate_raw_yamlinternal(filename::String)
     valid = true
 
     content = Dict{String, Any}()
