@@ -102,8 +102,13 @@
         )
     end
 
-    # Clean up output files after testing is done.
-    rm(normpath(__dir, "out"); force=true, recursive=true)
+    try
+        # Clean up output files after testing is done.
+        rm(normpath(__dir, "out"); force=true, recursive=true)
+    catch
+        @warn "Failed to cleanup output files after precompilation, left-overs might be present" path =
+            normpath(__dir, "out")
+    end
 end
 
 precompile(_attach_optimizer, (JuMP.Model,))

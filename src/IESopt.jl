@@ -609,7 +609,13 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
             lcsn = lowercase(JuMP.solver_name(model))
             scenario_name = @config(model, general.name.scenario)
             log_file = abspath(@config(model, paths.results), "$(scenario_name).$(lcsn).log")
-            rm(log_file; force=true)
+
+            try
+                rm(log_file; force=true)
+            catch
+                @warn "Failed to cleanup solver log file; maybe it appends, maybe it overwrites, maybe it fails - we do not know" log_file
+            end
+
             if JuMP.solver_name(model) == "Gurobi"
                 @info "Logging solver output" log_file
                 JuMP.set_attribute(model, "LogFile", log_file)
