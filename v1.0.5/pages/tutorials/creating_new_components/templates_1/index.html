@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Templates: Part I · -- IESopt --</title><meta name="title" content="Templates: Part I · -- IESopt --"/><meta property="og:title" content="Templates: Part I · -- IESopt --"/><meta property="twitter:title" content="Templates: Part I · -- IESopt --"/><meta name="description" content="Documentation for -- IESopt --."/><meta property="og:description" content="Documentation for -- IESopt --."/><meta property="twitter:description" content="Documentation for -- IESopt --."/><meta property="og:url" content="https://ait-energy.github.io/IESopt.jl/pages/tutorials/creating_new_components/templates_1/"/><meta property="twitter:url" content="https://ait-energy.github.io/IESopt.jl/pages/tutorials/creating_new_components/templates_1/"/><link rel="canonical" href="https://ait-energy.github.io/IESopt.jl/pages/tutorials/creating_new_components/templates_1/"/><script data-outdated-warner src="../../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../../assets/documenter.js"></script><script src="../../../../search_index.js"></script><script src="../../../../siteinfo.js"></script><script src="../../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../../assets/themeswap.js"></script><link href="../../../../assets/base_template.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../../../">-- IESopt --</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../setup/">Installation</a></li><li><a class="tocitem" href="../../first_model/">First steps</a></li><li><a class="tocitem" href="../../next_steps/">Next steps</a></li><li><a class="tocitem" href="../../results/">Result extraction</a></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox" checked/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Creating new components</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../">Custom Components</a></li><li class="is-active"><a class="tocitem" href>Templates: Part I</a><ul class="internal"><li><a class="tocitem" href="#The-basic-structure"><span>The basic structure</span></a></li><li><a class="tocitem" href="#Accounting-for-different-configurations"><span>Accounting for different configurations</span></a></li><li><a class="tocitem" href="#The-finalize-function"><span>The <code>finalize</code> function</span></a></li><li><a class="tocitem" href="#Finalizing-the-docstring"><span>Finalizing the docstring</span></a></li><li><a class="tocitem" href="#Conclusion"><span>Conclusion</span></a></li><li><a class="tocitem" href="#Next-steps"><span>Next steps</span></a></li></ul></li><li><a class="tocitem" href="../templates_2/">Templates: Part II</a></li></ul></li></ul></li><li><span class="tocitem">User Guide</span><ul><li><a class="tocitem" href="../../../user_guide/general/">General</a></li><li><input class="collapse-toggle" id="menuitem-3-2" type="checkbox"/><label class="tocitem" for="menuitem-3-2"><span class="docs-label">Sectors</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../user_guide/sectors/electricity/">Electricity</a></li><li><a class="tocitem" href="../../../user_guide/sectors/heat/">Heat</a></li><li><a class="tocitem" href="../../../user_guide/sectors/gas/">Gas</a></li></ul></li><li><a class="tocitem" href="../../../user_guide/solvers/">Solvers</a></li><li><input class="collapse-toggle" id="menuitem-3-4" type="checkbox"/><label class="tocitem" for="menuitem-3-4"><span class="docs-label">Custom functionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../../user_guide/custom_functionality/templates/">Templates</a></li><li><a class="tocitem" href="../../../user_guide/custom_functionality/addons/">Addons</a></li></ul></li><li><span class="tocitem">Examples</span></li></ul></li><li><span class="tocitem">Manual / Reference</span><ul><li><a class="tocitem" href="../../../manual___reference/yaml/">YAML</a></li><li><a class="tocitem" href="../../../manual___reference/core_components/">Model formulation</a></li><li><a class="tocitem" href="../../../manual___reference/templates/">Templates</a></li><li><a class="tocitem" href="../../../manual___reference/api/">API</a></li></ul></li><li><a class="tocitem" href="../../../references/">References</a></li><li><a class="tocitem" href="../../../dev_docs/">Developer Documentation</a></li><li><a class="tocitem" href="../../../changelog/">Changelog</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li><a class="is-disabled">Creating new components</a></li><li class="is-active"><a href>Templates: Part I</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Templates: Part I</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/ait-energy/IESopt.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/ait-energy/IESopt.jl/blob/dev/docs/src/pages/tutorials/creating_new_components/templates_1.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Templates:-Part-I"><a class="docs-heading-anchor" href="#Templates:-Part-I">Templates: Part I</a><a id="Templates:-Part-I-1"></a><a class="docs-heading-anchor-permalink" href="#Templates:-Part-I" title="Permalink"></a></h1><p>Templates are a powerful feature of IESopt that allow you to define new types of &quot;components&quot; by yourself. This makes use of the existing <code>CoreComponent</code>s, and combines them in multiple ways, which allows for a high degree of flexibility without having to write any mathematical model yourself.</p><p>This tutorial will guide you through the process of creating a new template, and we will do that on the example of creating the <code>HeatPump</code> template (a template shipped via IESoptLib).</p><h2 id="The-basic-structure"><a class="docs-heading-anchor" href="#The-basic-structure">The basic structure</a><a id="The-basic-structure-1"></a><a class="docs-heading-anchor-permalink" href="#The-basic-structure" title="Permalink"></a></h2><p>A template is defined by a YAML file, similar to the <code>config.iesopt.yaml</code> file that you already know. First, we need to think about the parameters that we want to define for our heat pump. Let&#39;s create a new file for that. The pre-defined one in IESoptLib is called <code>HeatPump</code>, so we need a different name: Templates must always have a unique name.</p><p>Possiblities for that could be:</p><ul><li><code>CustomHeatPump</code>, if you do not have any more details</li><li><code>GroundSourceHeatPump</code>, if we want to implement a ground-source heat pump with different parameters/features than the standard one</li><li><code>FooHeatPump</code>, if you need it specifically for a project called &quot;Foo&quot;</li></ul><div class="admonition is-info"><header class="admonition-header">Naming conventions</header><div class="admonition-body"><p>Templates follow a naming convention similar to <code>PascalCase</code>:</p><ul><li>The name must start with an upper-case letter</li><li>It must consist of at least two letters</li><li>Numbers and special characters are not allowed</li></ul></div></div><p>Let&#39;s go with <code>CustomHeatPump</code> for now. Create a new file <code>CustomHeatPump.iesopt.template.yaml</code> (if you are already working on a model, the best place to put this would be a <code>templates/</code> folder), and add the following lines:</p><pre><code class="language-yaml hljs">parameters:
+  p_nom: null
+  electricity_from: null
+  heat_from: null
+  heat_to: null
+  cop: null</code></pre><p>This defines the basic parameters that we want to use for our heat pump. The <code>null</code> values indicate that they all default to <code>nothing</code> in Julia, which corresponds to <code>None</code> in Python. Let&#39;s go through them:</p><ul><li><code>p_nom</code>: The nominal power of the heat pump, which will be specified on the electricity input side</li><li><code>electricity_from</code>: The <code>Node</code> that this heat pump is connected to for electricity input</li><li><code>heat_from</code>: The <code>Node</code> that this heat pump is connected to for heat input</li><li><code>heat_to</code>: The <code>Node</code> that this heat pump is connected to for heat output</li><li><code>cop</code>: The coefficient of performance of the heat pump</li></ul><p>Next, we will set up the actual component. This is done in the <code>component</code> section of the template file. Let&#39;s add the following lines:</p><pre><code class="language-yaml hljs">component:
+  type: Unit
+  inputs: {electricity: &lt;electricity_from&gt;, heat: &lt;heat_from&gt;}
+  outputs: {heat: &lt;heat_to&gt;}
+  conversion: 1 electricity + (&lt;cop&gt; - 1) heat -&gt; &lt;cop&gt; heat
+  capacity: &lt;p_nom&gt; in:electricity</code></pre><p>This defines the component that we want to create. The <code>type</code> is <code>Unit</code>, which is a core component type in IESopt that you are already familiar with. Instead of providing fixed values, we make use of the parameters that we defined above. This is done by using the <code>&lt;...&gt;</code> syntax.</p><p>That&#39;s it! You have created a new template. You can now use this template in your model configuration, as you would with any other component. For example, you could add the following lines to your <code>config.iesopt.yaml</code> file:</p><pre><code class="language-yaml hljs"># other parts of the configuration file
+# ...
+
+components:
+  # some other components
+  # ...
+
+  heat_pump:
+    template: CustomHeatPump
+    parameters:
+      p_nom: 10
+      electricity_from: electricity
+      heat_from: ambient
+      heat_to: heating
+      cop: 3</code></pre><h2 id="Accounting-for-different-configurations"><a class="docs-heading-anchor" href="#Accounting-for-different-configurations">Accounting for different configurations</a><a id="Accounting-for-different-configurations-1"></a><a class="docs-heading-anchor-permalink" href="#Accounting-for-different-configurations" title="Permalink"></a></h2><p>But wait. What if you want to have different configurations for your heat pump? For example, you might want to have a heat pump that does not explicitly consume any heat, because they low-temperature heat source is not explicitly modeled. Currently, the template does not allow for that, because the <code>heat_from</code> parameter is mandatory.</p><p>Why do we know it is mandatory? Because it is used in the <code>inputs</code> section of the <code>Unit</code> definition. But that is not clear, or transparent. Before we continue, we will fill in the mandatory documentation fields for the template. We do that by adding the following information directly at the beginning of the template file, right before the <code>parameters</code>:</p><pre><code class="language-yaml hljs"># # Custom Heat Pump
+
+# A (custom) heat pump that consumes electricity and heat, and produces heat.
+
+# ## Parameters
+# - `p_nom`: The nominal power (electricity) of the heat pump.
+# - `electricity_from`: The `Node` that this heat pump is connected to for electricity input.
+# - `heat_from`: The `Node` that this heat pump is connected to for heat input.
+# - `heat_to`: The `Node` that this heat pump is connected to for heat output.
+# - `cop`: The coefficient of performance of the heat pump.
+
+# ## Components
+# _to be added_
+
+# ## Usage
+# _to be added_
+
+# ## Details
+# _to be added_
+
+parameters:
+  # ...</code></pre><div class="admonition is-info"><header class="admonition-header">Docstring format</header><div class="admonition-body"><p>All of that is actually just Markdown inserted into your template. However, make sure to stick to separating the leading <code>#</code> from the actual text by a space, as this is required for IESopt to better understand your documentation.</p></div></div><p>Now, every user of the template will see this information, and they will notice, that none of the parameters are marked as optional. As you see, there are a lot of other sections to be added, but we will fill them out at the end, after we have finished the template, see the section on <a href="#Finalizing-the-docstring">finalizing the docstring</a>.</p><p>Let&#39;s continue with accounting for different configurations. We will cover the following steps:</p><ol><li>Making the <code>heat_from</code> parameter optional</li><li>Extending the template to allow for sizing the heat pump (an investment decision)</li><li>Handling more complex COP configurations</li></ol><h3 id="Optional-parameter-and-sizing-decision"><a class="docs-heading-anchor" href="#Optional-parameter-and-sizing-decision">Optional parameter and sizing decision</a><a id="Optional-parameter-and-sizing-decision-1"></a><a class="docs-heading-anchor-permalink" href="#Optional-parameter-and-sizing-decision" title="Permalink"></a></h3><p>While there are multiple ways to make a parameter optional, we will make use of the most powerful one, so that you are able to apply it for your models as well. For that, we will add &quot;complex&quot; functionalities to the template, which is done using three different &quot;functions&quot;:</p><ol><li><code>validate</code>: This function is called when the template is parsed, and it is used to check if the parameters are valid. If they are not, an error is thrown. This helps to inform the user of any misconfiguration.</li><li><code>prepare</code>: This function is called when the template is instantiated, and it is used to prepare the component for usage. This can be used to set default values, or to calculate derived parameters (which we will use to tackle the three additions mentioned above).</li><li><code>finalize</code>: This function is called when the template is finalized, and it enables a wide range of options. We will  use this to allow a smooth result extraction for the heat pump, but you could also use it to add additional (more  complex) constraints to the component, or even modify the model&#39;s objective function.</li></ol><p>Let&#39;s start by adding the <code>functions</code> entry (which we suggest doing at the end of the file):</p><pre><code class="language-yaml hljs"># ... the whole docstring ...
+
+parameters:
+  # ...
+
+component:
+  # ...
+
+functions:
+  validate: |
+    # ... we will put the validation code here ...
+  prepare: |
+    # ... we will put the preparation code here ...
+  finalize: |
+    # ... we will put the finalization code here ...</code></pre><blockquote><p>The <code>|</code> at the end of the line indicates that the following lines are a multiline string. This is a YAML feature that allows you to write more complex code in a more readable way.</p></blockquote><p>Let&#39;s start by filling out the validation function. Everything you do and write here, is interpreted as Julia code, and compiled directly into your model. This means that you can use all the power of Julia, but also that you need to be careful with what you do. You have access to certain helper functions and constants, which we will introduce here. If you have never written a line of Julia code, don&#39;t worry. We will guide you through this - it&#39;s actually (at least for the parts that you will need) extremely similar to Python.</p><h4 id="Validation"><a class="docs-heading-anchor" href="#Validation">Validation</a><a id="Validation-1"></a><a class="docs-heading-anchor-permalink" href="#Validation" title="Permalink"></a></h4><p>The validation function is used to check if the parameters are valid. Add the following code to the <code>validate</code> section:</p><pre><code class="language-yaml hljs">functions:
+  validate: |
+    # Check if `p_nom` is non-negative.
+    @check get(&quot;p_nom&quot;) isa Number
+    @check get(&quot;p_nom&quot;) &gt;= 0
+
+    # Check if the `Node` parameters are `String`s, where `heat_from` may also be `nothing`.
+    @check get(&quot;electricity_from&quot;) isa String
+    @check get(&quot;heat_from&quot;) isa String || isnothing(get(&quot;heat_from&quot;))
+    @check get(&quot;heat_to&quot;) isa String
+
+    # Check if `cop` is positive.
+    @check get(&quot;cop&quot;) isa Number
+    @check get(&quot;cop&quot;) &gt; 0
+  # ... the rest of the template ...</code></pre><p>Let&#39;s go through this step by step:</p><ul><li>You can start comments (as separate line or inline) with <code>#</code>, as you would in Python.</li><li>You can use <code>get(&quot;some_param&quot;)</code> to access the value of a parameter.</li><li>You can use <code>@check</code> to check if a condition is met. If it is not, an error will be thrown. All statements starting with <code>@</code> are so called &quot;macros&quot;, which are just &quot;special&quot; functions. You can do <code>@check(condition)</code> or <code>@check condition</code>, since macros do not require parentheses.</li><li>You can use <code>isa</code> to check if a value is of a certain type. This is similar to <code>isinstance</code> in Python. While it is a special keyword, if you prefer, you can also call it in a more conventional way: <code>isa(get(&quot;p_nom&quot;), Number)</code>.</li><li>Data types are capitalized in Julia, so it is <code>String</code> instead of <code>string</code>, and <code>Number</code> is a superset of all numeric types (if necessary you could instead, e.g., check for <code>get(&quot;some_param&quot;) isa Int</code>).</li><li>Logical operators are similar to Python, so <code>||</code> is like <code>or</code>, and <code>&amp;&amp;</code> is like <code>and</code>.</li><li>If all checks pass, the template is considered valid, and the model can be built.</li></ul><h4 id="Preparation"><a class="docs-heading-anchor" href="#Preparation">Preparation</a><a id="Preparation-1"></a><a class="docs-heading-anchor-permalink" href="#Preparation" title="Permalink"></a></h4><p>Next, we will add the preparation function. This function is used to prepare the component for usage. Since we would like to make the <code>heat_from</code> parameter optional, and we would like to account for optional sizing, we will first modify the parameters accordingly:</p><pre><code class="language-yaml hljs">parameters:
+  p_nom: null
+  p_nom_max: null
+  electricity_from: null
+  heat_from: null
+  heat_to: null
+  cop: null
+  _inputs: null
+  _conversion: null
+  _capacity: null
+  _invest: null</code></pre><p>One step at a time. We added the following parameters:</p><ul><li><code>p_nom_max</code>: The maximum nominal power of the heat pump. This is optional, and if not specified, it will default to <code>p_nom</code>, which will disable the sizing feature.</li><li><code>_inputs</code>: This is an internal / private parameter (since it starts with an underscore), which we will user later. These parameters are not exposed to the user, and can not be set or modified from the outside.</li><li><code>_capacity</code>: This is another internal parameter, which we will use to store the capacity of the heat pump (which could now either bne <code>p_nom</code> or whatever the investment decision results in).</li><li><code>_conversion</code>: This is another internal parameter, which we will use to store the conversion formula.</li></ul><p>Before we can actually add the code for the <code>prepare</code> function, we need to modify our component definition, as well. We (1) will change from <code>component</code> to <code>components</code> (since it now contains more than just one), (2) will add a <code>Decision</code> that should handle the sizing / investment, and modify the <code>Unit</code> slightly:</p><pre><code class="language-yaml hljs">components:
+  unit:
+    type: Unit
+    inputs: &lt;_inputs&gt;
+    outputs: {heat: &lt;heat_to&gt;}
+    conversion: &lt;_conversion&gt;
+    capacity: &lt;_capacity&gt; in:electricity
+  
+  decision:
+    type: Decision
+    enabled: &lt;_invest&gt;
+    lb: &lt;p_nom&gt;
+    ub: &lt;p_nom_max&gt;</code></pre><p>So ... a lot of changes. Let&#39;s go through them step by step:</p><ul><li>We changed <code>component</code> to <code>components</code>, because we now have multiple components.</li><li>We added a <code>unit</code> component, which is the actual heat pump. We replaced the fixed values with the internal parameters.</li><li>We added a new component <code>decision</code>, which is a <code>Decision</code>. This component is used to handle investment decisions. It is enabled if <code>_invest</code> evaluates to <code>true</code>. It has a lower bound <code>lb</code> and an upper bound <code>ub</code>, which are the minimum and maximum values that the decision can take. In our case, the decision is the nominal power of the heat pump, which can be between <code>p_nom</code> and <code>p_nom_max</code>.</li></ul><div class="admonition is-info"><header class="admonition-header">Naming the components</header><div class="admonition-body"><p>The names of the components are arbitrary, and you can choose whatever you like. However, it is recommended to use meaningful names, so that you can easily understand what the component does. Component names follow a naming convention similar to <code>snake_case</code>: They must start with a lower-case letter, and can contain numbers and underscores (but are not allowed to end in an <code>_</code>). They can further contain <code>.</code>, but this is &quot;dangerous&quot; and an expert feature, that you should not use unless you know what it does, and why you need it.</p></div></div><p>Onto the actual functionality. Let&#39;s add the <code>prepare</code> function, and some additional validation code:</p><pre><code class="language-yaml hljs">functions:
+  validate: |
+    # ... the previous validation code ...
+
+    # Check if `p_nom_max` is either `nothing` or at least `p_nom`.
+    @check isnothing(get(&quot;p_nom_max&quot;)) || (get(&quot;p_nom_max&quot;) isa Number &amp;&amp; get(&quot;p_nom_max&quot;) &gt;= get(&quot;p_nom&quot;))
+  prepare: |
+    # Determine if investment should be enabled, and set the parameter (used to enable `decision`).
+    invest = !isnothing(get(&quot;p_nom_max&quot;)) &amp;&amp; get(&quot;p_nom_max&quot;) &gt; get(&quot;p_nom&quot;)
+    self = get(&quot;self&quot;)
+
+    set(&quot;_invest&quot;, invest)
+    if invest
+        # Set the capacity to the size of the decision variable.
+        set(&quot;_capacity&quot;, &quot;$(self).decision:value&quot;)
+    else
+        # Set the capacity to the value of `p_nom`.
+        set(&quot;_capacity&quot;, get(&quot;p_nom&quot;))
+    end
+
+    # Prepare some helper variables to make the code afterwards more readable.
+    elec_from = get(&quot;electricity_from&quot;)
+    heat_from = get(&quot;heat_from&quot;)
+    cop = get(&quot;cop&quot;)
+
+    # Handle the optional `heat_from` parameter.
+    if isnothing(heat_from)
+        # If `heat_from` is not specified, we just use electricity as input.
+        set(&quot;_inputs&quot;, &quot;{electricity: $(elec_from)}&quot;)
+        set(&quot;_conversion&quot;, &quot;1 electricity -&gt; $(cop) heat&quot;)
+    else
+        # If `heat_from` is specified, we now have to account for two inputs.
+        set(&quot;_inputs&quot;, &quot;{electricity: $(elec_from), heat: $(heat_from)}&quot;)
+        set(&quot;_conversion&quot;, &quot;1 electricity + $(cop - 1) heat -&gt; $(cop) heat&quot;)
+    end</code></pre><p>Once again, let&#39;s go through this step by step:</p><p>To be added.</p><h3 id="Complex-COP-configurations"><a class="docs-heading-anchor" href="#Complex-COP-configurations">Complex COP configurations</a><a id="Complex-COP-configurations-1"></a><a class="docs-heading-anchor-permalink" href="#Complex-COP-configurations" title="Permalink"></a></h3><p>To be added.</p><h2 id="The-finalize-function"><a class="docs-heading-anchor" href="#The-finalize-function">The <code>finalize</code> function</a><a id="The-finalize-function-1"></a><a class="docs-heading-anchor-permalink" href="#The-finalize-function" title="Permalink"></a></h2><p>To be added.</p><h2 id="Finalizing-the-docstring"><a class="docs-heading-anchor" href="#Finalizing-the-docstring">Finalizing the docstring</a><a id="Finalizing-the-docstring-1"></a><a class="docs-heading-anchor-permalink" href="#Finalizing-the-docstring" title="Permalink"></a></h2><p>To be added.</p><h2 id="Conclusion"><a class="docs-heading-anchor" href="#Conclusion">Conclusion</a><a id="Conclusion-1"></a><a class="docs-heading-anchor-permalink" href="#Conclusion" title="Permalink"></a></h2><p>To be added.</p><details class="admonition is-details"><summary class="admonition-header">Complete template YAML</summary><div class="admonition-body"><pre><code class="language-yaml hljs"># # Custom Heat Pump
+
+# A (custom) heat pump that consumes electricity and heat, and produces heat.
+
+# ## Parameters
+# - `p_nom`: The nominal power (electricity) of the heat pump.
+# - `electricity_from`: The `Node` that this heat pump is connected to for electricity input.
+# - `heat_from`: The `Node` that this heat pump is connected to for heat input.
+# - `heat_to`: The `Node` that this heat pump is connected to for heat output.
+# - `cop`: The coefficient of performance of the heat pump.
+
+# ## Components
+# _to be added_
+
+# ## Usage
+# _to be added_
+
+# ## Details
+# _to be added_
+
+parameters:
+  p_nom: null
+  p_nom_max: null
+  electricity_from: null
+  heat_from: null
+  heat_to: null
+  cop: null
+  _inputs: null
+  _conversion: null
+  _capacity: null
+  _invest: null
+
+components:
+  unit:
+    type: Unit
+    inputs: &lt;_inputs&gt;
+    outputs: {heat: &lt;heat_to&gt;}
+    conversion: &lt;_conversion&gt;
+    capacity: &lt;_capacity&gt; in:electricity
+    
+  decision:
+    type: Decision
+    enabled: &lt;_invest&gt;
+    lb: &lt;p_nom&gt;
+    ub: &lt;p_nom_max&gt;
+
+functions:
+  validate: |
+    # Check if `p_nom` is non-negative.
+    @check get(&quot;p_nom&quot;) isa Number
+    @check get(&quot;p_nom&quot;) &gt;= 0
+
+    # Check if the `Node` parameters are `String`s, where `heat_from` may also be `nothing`.
+    @check get(&quot;electricity_from&quot;) isa String
+    @check get(&quot;heat_from&quot;) isa String || isnothing(get(&quot;heat_from&quot;))
+    @check get(&quot;heat_to&quot;) isa String
+
+    # Check if `cop` is positive.
+    @check get(&quot;cop&quot;) isa Number
+    @check get(&quot;cop&quot;) &gt; 0
+
+    # Check if `p_nom_max` is either `nothing` or at least `p_nom`.
+    @check isnothing(get(&quot;p_nom_max&quot;)) || (get(&quot;p_nom_max&quot;) isa Number &amp;&amp; get(&quot;p_nom_max&quot;) &gt;= get(&quot;p_nom&quot;))
+  prepare: |
+    # Determine if investment should be enabled, and set the parameter (used to enable `decision`).
+    invest = !isnothing(get(&quot;p_nom_max&quot;)) &amp;&amp; get(&quot;p_nom_max&quot;) &gt; get(&quot;p_nom&quot;)
+    self = get(&quot;self&quot;)
+
+    set(&quot;_invest&quot;, invest)
+    if invest
+        # Set the capacity to the size of the decision variable.
+        set(&quot;_capacity&quot;, &quot;$(self).decision:value&quot;)
+    else
+        # Set the capacity to the value of `p_nom`.
+        set(&quot;_capacity&quot;, get(&quot;p_nom&quot;))
+    end
+
+    # Prepare some helper variables to make the code afterwards more readable.
+    elec_from = get(&quot;electricity_from&quot;)
+    heat_from = get(&quot;heat_from&quot;)
+    cop = get(&quot;cop&quot;)
+
+    # Handle the optional `heat_from` parameter.
+    if isnothing(heat_from)
+        # If `heat_from` is not specified, we just use electricity as input.
+        set(&quot;_inputs&quot;, &quot;{electricity: $(elec_from)}&quot;)
+        set(&quot;_conversion&quot;, &quot;1 electricity -&gt; $(cop) heat&quot;)
+    else
+        # If `heat_from` is specified, we now have to account for two inputs.
+        set(&quot;_inputs&quot;, &quot;{electricity: $(elec_from), heat: $(heat_from)}&quot;)
+        set(&quot;_conversion&quot;, &quot;1 electricity + $(cop - 1) heat -&gt; $(cop) heat&quot;)
+    end</code></pre></div></details><h2 id="Next-steps"><a class="docs-heading-anchor" href="#Next-steps">Next steps</a><a id="Next-steps-1"></a><a class="docs-heading-anchor-permalink" href="#Next-steps" title="Permalink"></a></h2><p>While the above template is already quite powerful, it can become hard to maintain and understand if it grows too large. In the next tutorial, we will cover how to separate the <code>functions</code> part of the template into a separate file, and later will see how this approach can then be extended even further (a concept that we call <code>Addon</code>s), which allows intercepting steps of the model build process.</p><p>But ... before we go there, let&#39;s start &quot;small&quot;. Check out the section <a href="../templates_2/#Templates:-Part-II">Templates: Part II</a>, where we walk through the process of &quot;out-sourcing&quot; the <code>functions</code> part of the template.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Custom Components</a><a class="docs-footer-nextpage" href="../templates_2/">Templates: Part II »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.7.0 on <span class="colophon-date" title="Wednesday 11 September 2024 16:41">Wednesday 11 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
