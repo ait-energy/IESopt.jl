@@ -1,5 +1,5 @@
 function py_and_jl_convert(docstr::Docs.DocStr)
-    return string(Markdown.parse(join(docstr.text), '\n'))::String
+    return string(Markdown.parse(join(docstr.text, '\n')))::String
 end
 
 function py_and_jl_convert(docstr::Markdown.MD)
