@@ -1,5 +1,5 @@
 function py_and_jl_convert(docstr::Docs.DocStr)
-    return string(join(docstr.text), '\n')::String
+    return string(Markdown.parse(join(docstr.text), '\n'))::String
 end
 
 function py_and_jl_convert(docstr::Markdown.MD)
@@ -84,7 +84,6 @@ function _docs_docstr_to_admonition(f_name::String)
     # Delete the method signature and restore `math` code block tags from `$$` (from Markdown.parse).
     docstr = py_and_jl_convert(@eval @doc($(Symbol(f_name))))
     docstr = replace(docstr, r"```\n(?s).*```\n\n" => "")
-    # docstr = replace(docstr, r"\$\$(.*?)\$\$"s => c -> """\n```math\n$(strip(c[3:(end-2)]))\n```\n""")
     docstr = string(strip(docstr))
 
     return Dict(
