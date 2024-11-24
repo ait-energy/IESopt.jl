@@ -74,7 +74,7 @@ function _docs_docstr_to_admonition(f_name::String)
     # """
 
     # Delete the method signature and restore `math` code block tags from `$$` (from Markdown.parse).
-    docstr = string(@eval @doc($(Symbol(f_name))))
+    docstr = String(string(@eval @doc($(Symbol(f_name)))))
     docstr = replace(docstr, r"```\n(?s).*```\n\n" => "")
     docstr = replace(docstr, r"\$\$(.*?)\$\$"s => c -> """\n```math\n$(strip(c[3:(end-2)]))\n```\n""")
     docstr = string(strip(docstr))
@@ -175,7 +175,7 @@ function _get_dynamic_documentation(datatype::Type)
 
     # Return all information in a dictionary.
     return Dict{String, Union{String, Dict, Vector}}(
-        "docstr_main" => string(@eval @doc($(Symbol(nameof(datatype))))),
+        "docstr_main" => String(string(@eval @doc($(Symbol(nameof(datatype)))))),
         "fields_all" => string.(all_fields),
         "fields_documented" => string.(keys(all_doc_fields)),
         "docstr_fields" => Dict{String, Dict}(
