@@ -1,8 +1,8 @@
-function py_and_jl_convert(docstr::Docs.DocStr)
+function _py_and_jl_convert(docstr::Docs.DocStr)
     return string(Markdown.parse(join(docstr.text, '\n')))::String
 end
 
-function py_and_jl_convert(docstr::Markdown.MD)
+function _py_and_jl_convert(docstr::Markdown.MD)
     return string(docstr)::String
 end
 
@@ -82,7 +82,7 @@ function _docs_docstr_to_admonition(f_name::String)
     # """
 
     # Delete the method signature and restore `math` code block tags from `$$` (from Markdown.parse).
-    docstr = py_and_jl_convert(@eval @doc($(Symbol(f_name))))
+    docstr = _py_and_jl_convert(@eval @doc($(Symbol(f_name))))
     docstr = replace(docstr, r"```\n(?s).*```\n\n" => "")
     docstr = string(strip(docstr))
 
@@ -182,7 +182,7 @@ function _get_dynamic_documentation(datatype::Type)
 
     # Return all information in a dictionary.
     return Dict{String, Union{String, Dict, Vector}}(
-        "docstr_main" => py_and_jl_convert(@eval @doc($(Symbol(nameof(datatype))))),
+        "docstr_main" => _py_and_jl_convert(@eval @doc($(Symbol(nameof(datatype))))),
         "fields_all" => string.(all_fields),
         "fields_documented" => string.(keys(all_doc_fields)),
         "docstr_fields" => Dict{String, Dict}(
