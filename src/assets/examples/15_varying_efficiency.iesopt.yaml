@@ -1,7 +1,7 @@
 config:
   general:
     version:
-      core: 2.0.2
+      core: 2.0.3
   optimization:
     problem_type: MILP
     snapshots:
@@ -25,7 +25,7 @@ components:
   heatpump:
     type: Unit
     capacity: 100 out:heat
-    conversion: 1 electricity -> 15_cop@data heat
+    conversion: 1 electricity -> ex15_cop@data heat
     conversion_at_min: 1 electricity -> 1 heat
     min_conversion: 0.2
     unit_commitment: binary
@@ -52,7 +52,7 @@ components:
     carrier: heat
     mode: fixed
     node_from: heat_grid
-    value: 15_heatdemand@data
+    value: ex15_heatdemand@data
 
   # We allow "throwing away heat" (essentially allowing the heat_demand to extend beyond the set value)
   heat_demand_deviation:

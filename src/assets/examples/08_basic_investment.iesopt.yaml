@@ -3,7 +3,7 @@
 config:
   general:
     version:
-      core: 2.0.2
+      core: 2.0.3
   optimization:
     problem_type: LP
     snapshots:
@@ -87,7 +87,7 @@ components:
     outputs: {electricity: elec}
     conversion: ~ -> 1 electricity
     capacity: 1 out:electricity
-    availability_factor: 08_pv@data
+    availability_factor: ex08_pv@data
   
   electrolysis:
     type: Unit
@@ -100,6 +100,6 @@ components:
     type: Profile
     carrier: h2
     node_from: h2_south
-    value: 08_demand@data
+    value: ex08_demand@data
 
   

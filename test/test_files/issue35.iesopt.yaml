@@ -1,0 +1,28 @@
+config:
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 1
+    solver:
+      name: highs
+
+carriers:
+  electricity: {}
+
+components:
+  electricity_node:
+    type: Node
+    carrier: electricity
+
+  electricity_market:
+    type: Profile
+    carrier: electricity
+    node_to: electricity_node
+    cost: 50
+    mode: ranged
+
+  electricity_demand:
+    type: Profile
+    carrier: electricity
+    node_from: electricity_node
+    value: 1e-6 * 7

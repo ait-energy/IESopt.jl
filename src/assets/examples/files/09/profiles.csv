@@ -1,5 +1,5 @@
 name,type,mode,carrier,node_to,node_from,value,cost
 availability,Profile,create,wind,wind,,,
-demand1,Profile,,electricity,,node1,07_demand1_value@data,
-demand2,Profile,,electricity,,node2,07_demand2_value@data,
+demand1,Profile,,electricity,,node1,ex07_demand1_value@data,
+demand2,Profile,,electricity,,node2,ex07_demand2_value@data,
 create_gas,Profile,create,gas,gas_grid,,,50

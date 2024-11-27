@@ -1,4 +1,4 @@
-07_plant_wind_availability_factor,07_demand1_value,07_demand2_value,08_pv,08_demand,15_cop,15_cop_minconversion,15_heatdemand,17_capacity
+ex07_plant_wind_availability_factor,ex07_demand1_value,ex07_demand2_value,ex08_pv,ex08_demand,ex15_cop,ex15_cop_minconversion,ex15_heatdemand,ex17_capacity
 0.88,2.06,4.88,0,0,2.12,1.484,45,5
 0.07,4.11,3.32,0,0,2.12,1.484,45,3
 0.87,4.07,1.53,0.02,0,2.12,1.484,46,1

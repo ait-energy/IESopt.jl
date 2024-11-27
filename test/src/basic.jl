@@ -14,6 +14,9 @@
     model = generate!(joinpath(PATH_TESTFILES, "availability_test_failure.iesopt.yaml"))
     @suppress optimize!(model)      # `@test_logs` fails because: https://github.com/JuliaLang/julia/issues/48456
     @test JuMP.termination_status(model) == JuMP.MOI.INFEASIBLE
+
+    model = generate!(joinpath(PATH_TESTFILES, "issue35.iesopt.yaml"))
+    @test access(get_component(model, "electricity_demand").value) ≈ 7e-6
 end
 
 @testset "Filesystem paths" verbose = true begin
