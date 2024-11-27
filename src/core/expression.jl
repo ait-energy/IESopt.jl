@@ -27,10 +27,10 @@ function _string_to_fevalexpr(@nospecialize(str::AbstractString))
                         str command = join(JuliaSyntax.untokenize.((last_token, token), str))
                 end
 
-                seperator = popfirst!(tokens)   # TODO: this is actually just `next_token`
-                next_token = popfirst!(tokens)  # this is the token after the seperator
+                separator = popfirst!(tokens)   # TODO: this is actually just `next_token`
+                next_token = popfirst!(tokens)  # this is the token after the separator
 
-                push!(access_order, join(JuliaSyntax.untokenize.((token, seperator, next_token), str)))
+                push!(access_order, join(JuliaSyntax.untokenize.((token, separator, next_token), str)))
                 write(buf, "__el[$(length(access_order) - starting_access_index + 1)]")
                 last_token = next_token
             else
