@@ -1,6 +1,6 @@
 name = "IESopt"
 uuid = "ed3f0a38-8ad9-4cf8-877e-929e8d190fe9"
-version = "2.0.2"
+version = "2.0.3"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
