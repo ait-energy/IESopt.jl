@@ -110,12 +110,12 @@ include("core/unit.jl")
 include("core/virtual.jl")
 
 # Finalize the docstrings of the core components.
-_finalize_docstring(Connection)
-_finalize_docstring(Decision)
-_finalize_docstring(Node)
-_finalize_docstring(Profile)
-_finalize_docstring(Unit)
-_finalize_docstring(Virtual)
+# _finalize_docstring(Connection)
+# _finalize_docstring(Decision)
+# _finalize_docstring(Node)
+# _finalize_docstring(Profile)
+# _finalize_docstring(Unit)
+# _finalize_docstring(Virtual)
 
 @recompile_invalidations begin
     function Base.show(io::IO, @nospecialize(cc::_CoreComponent))

@@ -4,7 +4,7 @@
 config:
   general:
     version:
-      core: 2.0.0
+      core: 2.0.2
   optimization:
     # This specifies the overall type of optimization problem. If using "LP" like here, no component can utilize
     # formulations that are of a "higher" class (e.g. MILP).
