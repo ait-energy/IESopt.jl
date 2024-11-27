@@ -35,7 +35,7 @@ components:
 
   conn:
     type: Connection
-    capacity: 17_capacity@data
+    capacity: ex17_capacity@data
     node_from: node1
     node_to: node2
   

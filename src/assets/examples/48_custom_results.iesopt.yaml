@@ -48,7 +48,7 @@ components:
     conversion: ~ -> 1 electricity
     capacity: 10 out:electricity
     marginal_cost: 10 per out:electricity
-    availability_factor: 07_plant_wind_availability_factor@data
+    availability_factor: ex07_plant_wind_availability_factor@data
   
   storage:
     type: CustomStorage

@@ -57,7 +57,7 @@ components:
     outputs: {electricity: node2}
     conversion: 1 wind -> 1 electricity
     capacity: 20 out:electricity
-    availability_factor: 07_plant_wind_availability_factor@data
+    availability_factor: ex07_plant_wind_availability_factor@data
 
   gas_certificates:
     type: Node
@@ -98,13 +98,13 @@ components:
     type: Profile
     carrier: electricity
     node_from: node1
-    value: 07_demand1_value@data
+    value: ex07_demand1_value@data
   
   demand2:
     type: Profile
     carrier: electricity
     node_from: node2
-    value: 07_demand2_value@data
+    value: ex07_demand2_value@data
 
   gas_grid:
     type: Node

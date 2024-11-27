@@ -63,8 +63,8 @@ components:
     conversion: 1 wind -> 1 electricity
     capacity: 10 out:electricity
     # Instead of cluttering our YAML with 8760 entries, we now just load it from a CSV. This is done by supplying the
-    # correct column (07_plant_wind_availability_factor) that can be found in the CSV (data) like so:
-    availability_factor: 07_plant_wind_availability_factor@data
+    # correct column (ex07_plant_wind_availability_factor) that can be found in the CSV (data) like so:
+    availability_factor: ex07_plant_wind_availability_factor@data
   
   plant_gas:
     type: Unit
@@ -78,14 +78,14 @@ components:
     carrier: electricity
     node_from: node1
     # Again, now loading from CSV.
-    value: 07_demand1_value@data
+    value: ex07_demand1_value@data
   
   demand2:
     type: Profile
     carrier: electricity
     node_from: node2
     # Again, now loading from CSV.
-    value: 07_demand2_value@data
+    value: ex07_demand2_value@data
 
   gas_grid:
     type: Node
