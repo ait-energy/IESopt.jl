@@ -1,6 +1,5 @@
 function _string_to_fevalexpr(@nospecialize(str::AbstractString))
     buf = IOBuffer(; sizehint=length(str))
-    it = eachsplit(str, r"(?<=[+\-*/ ()])|(?=[+\-*/ ()])")
 
     # Instead of interpolating the explicit things a user might access in a string directly into the returned
     # expression, we extract them, and replace them by consecutive placeholders. This way, the function that is
@@ -11,9 +10,32 @@ function _string_to_fevalexpr(@nospecialize(str::AbstractString))
     starting_access_index = 1
     extracted_expressions = NamedTuple[]
 
-    for elem in it
-        if any(isletter(c) for c in elem)
-            if !contains(elem, r"[:|@]")
+    tokens = JuliaSyntax.tokenize(str)
+    TOK_TOMB = JuliaSyntax.Token(JuliaSyntax.SyntaxHead(JuliaSyntax.K"TOMBSTONE", 0), 0:0)
+    last_token = TOK_TOMB
+
+    while !isempty(tokens)
+        token = popfirst!(tokens)
+        if JuliaSyntax.kind(token) == JuliaSyntax.K"Identifier"
+            if !isempty(tokens) && (
+                JuliaSyntax.kind(first(tokens)) == JuliaSyntax.K"@" ||
+                JuliaSyntax.kind(first(tokens)) == JuliaSyntax.K":"
+            )
+                if JuliaSyntax.kind(last_token) in
+                   (JuliaSyntax.K"Identifier", JuliaSyntax.K"Integer", JuliaSyntax.K"Float")
+                    @critical "Detected ambiguous command in expression; if you are using, e.g., a column accessor of a file that starts with a number, we cannot determine that properly because `4x` has the same meaning as `4*x` in Julia, but you could also mean a column named `\"4x\"`; please refactor this and run the model again" expression =
+                        str command = join(JuliaSyntax.untokenize.((last_token, token), str))
+                end
+
+                seperator = popfirst!(tokens)   # TODO: this is actually just `next_token`
+                next_token = popfirst!(tokens)  # this is the token after the seperator
+
+                push!(access_order, join(JuliaSyntax.untokenize.((token, seperator, next_token), str)))
+                write(buf, "__el[$(length(access_order) - starting_access_index + 1)]")
+                last_token = next_token
+            else
+                # This is a "carrier" as part of a conversion expression.
+                elem = JuliaSyntax.untokenize(token, str)
                 e = JuliaSyntax.parsestmt(Expr, String(take!(buf)))
 
                 if length(access_order) >= starting_access_index
@@ -26,12 +48,12 @@ function _string_to_fevalexpr(@nospecialize(str::AbstractString))
                     value = convert(Float64, eval(e))
                     push!(extracted_expressions, (name=elem, val=value))
                 end
-            else
-                push!(access_order, elem)
-                write(buf, "__el[$(length(access_order) - starting_access_index + 1)]")
+
+                last_token = TOK_TOMB
             end
         else
-            write(buf, elem)
+            write(buf, JuliaSyntax.untokenize(token, str))
+            last_token = token
         end
     end
 
@@ -50,6 +72,36 @@ function _string_to_fevalexpr(@nospecialize(str::AbstractString))
     end
 
     return extracted_expressions
+end
+
+@testitem "string_to_fevalexpr" tags = [:unittest] begin
+    stf = IESopt._string_to_fevalexpr
+
+    @test stf("1 + 1")[1].name == ""
+    @test stf("1 + 1")[1].val == 2.0
+
+    @test stf("10 * col@file")[1].func(2) == 20
+    @test stf("1e3 * col@file")[1].func(2) == 2000.0
+    @test stf("1e-2 * col@file")[1].func(2) == 2e-2
+    @test stf("1e-2-1.5*col@file")[1].func(2) == 1e-2 - 1.5 * 2
+
+    @test stf("1e-6 * 7 + col@file/10.3e4 * (sizing:value*0.3e-11-col2@file2)")[1].func([1, 2, 3]) ≈ -2.21262136e-5
+
+    @test_throws ErrorException stf("(08_pv@data+13) * testdec:value /0.4 + 08_pv@data/0.76")
+    @test stf("(a08_pv@data+13) * testdec:value /0.4 + a08_pv@data/0.76")[1].func([1, 2, 3]) ≈ 73.94736842105263
+
+    @test_throws ErrorException stf("08_pv@data electricity")
+    @test_throws ErrorException stf("1.0*08_pv@data")
+    @test_throws ErrorException stf("08_pv@data-3")
+    @test_throws ErrorException stf("1+08_pv@data")
+    @test_throws ErrorException stf("(08_pv@data)")
+
+    e = stf("(0.01 + pv@data)/0.01 electricity + pv@data*10 heat")
+    @test length(e) == 2
+    @test e[1].name == "electricity"
+    @test e[2].name == "heat"
+    @test e[1].func(10.0) == 1001.0
+    @test e[2].func(10.0) == 100.0
 end
 
 abstract type _AbstractExpressionType end
