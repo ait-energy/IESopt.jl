@@ -402,7 +402,7 @@ function _attach_optimizer(model::JuMP.Model)
         try
             @info "Trying to import solver interface" solver
             # Main.eval(Meta.parse("import $(solver)"))
-            Base.require(@__MODULE__, solver)
+            Base.require(Main, solver)
         catch
             rethrow(ErrorException("Failed to setup solver interface; please install it manually"))
             # @info "Solver interface could not be imported; trying to install and precompile it" solver
@@ -639,9 +639,11 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
     if JuMP.result_count(model) == 1
         if JuMP.termination_status(model) == JuMP.MOI.OPTIMAL
             @info "Finished optimizing, solution optimal"
+        elseif JuMP.is_solved_and_feasible(model; allow_local=true)
+            @warn "Finished optimizing, but only a local optimum was found" solver_status = JuMP.raw_status(model)
         else
-            @error "Finished optimizing, solution non-optimal" status_code = JuMP.termination_status(model) solver_status =
-                JuMP.raw_status(model)
+            @error "Finished optimizing, a solution is available, but it seems to be non-optimal/infeasible" status_code =
+                JuMP.termination_status(model) solver_status = JuMP.raw_status(model)
         end
     elseif JuMP.result_count(model) == 0
         @error "No results returned after call to `optimize!`. This most likely indicates an infeasible or unbounded model. You can check with `IESopt.compute_IIS(model)` which constraints make your model infeasible. Note: this requires a solver that supports this (e.g. Gurobi)"
@@ -650,8 +652,12 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
         if !isnothing(@config(model, optimization.multiobjective))
             if JuMP.termination_status(model) == JuMP.MOI.OPTIMAL
                 @info "Finished optimizing, solution(s) optimal" result_count = JuMP.result_count(model)
+            elseif JuMP.is_solved_and_feasible(model; allow_local=true)
+                @warn "Finished optimizing, but only local optima were found" result_count = JuMP.result_count(model) solver_status =
+                    JuMP.raw_status(model)
             else
-                @error "Finished optimizing, solution non-optimal" status_code = JuMP.termination_status(model) solver_status =
+                @error "Finished optimizing, solution(s) are available, but seem to be non-optimal/infeasible" result_count =
+                    JuMP.result_count(model) status_code = JuMP.termination_status(model) solver_status =
                     JuMP.raw_status(model)
             end
         else
