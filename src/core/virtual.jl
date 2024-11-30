@@ -13,7 +13,7 @@ might expect (and want) to be able to interact with "my_storage_foo". Since the 
     type::_String  # The actual type of the component, e.g., "Battery".
 
     # [Optional] =======================================================================================================
-    # -
+    config::Dict{String, Any} = Dict()
 
     # [Internal] =======================================================================================================
     _parameters = Dict{String, Any}()
