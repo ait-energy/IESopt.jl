@@ -325,7 +325,13 @@ function _parse_noncore!(model::JuMP.Model, description::Dict{String, Any}, cnam
     template = _require_template(model, type)
 
     # Remember its name and type properly, before that is lost due to flattening, by constructing a Virtual.
-    internal(model).model.components[cname] = Virtual(; model, name=cname, type, _template=template)
+    internal(model).model.components[cname] = Virtual(;
+        model,
+        name=cname,
+        type,
+        _template=template,
+        config=pop!(description[cname], "config", Dict{String, Any}()),
+    )
 
     # Properly tag the new Virtual.
     !haskey(internal(model).model.tags, type) && (internal(model).model.tags[type] = Vector{String}())
