@@ -28,5 +28,9 @@ include("src/examples.jl")
         include("src/basic.jl")
     end
 
+    @testset "Fixes (IESopt.jl)" verbose = true begin
+        include("src/issues.jl")
+    end
+
     @run_package_tests verbose = true filter = ti -> (:examples in ti.tags)
 end
