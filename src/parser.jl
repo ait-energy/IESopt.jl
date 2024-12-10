@@ -289,15 +289,15 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             nodal_balance = Symbol(pop!(prop, "nodal_balance", :enforce))
 
             components[name] = Node(;
-                model=model,
-                name=name,
-                carrier=carrier,
-                soft_constraints=soft_constraints,
-                soft_constraints_penalty=soft_constraints_penalty,
-                state_lb=state_lb,
-                state_ub=state_ub,
-                state_cyclic=state_cyclic,
-                nodal_balance=nodal_balance,
+                model,
+                name,
+                carrier,
+                soft_constraints,
+                soft_constraints_penalty,
+                state_lb,
+                state_ub,
+                state_cyclic,
+                nodal_balance,
                 Dict(Symbol(k) => v for (k, v) in prop)...,
             )
         elseif type == "Connection"
@@ -342,17 +342,17 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
 
             # Initialize.
             components[name] = Connection(;
-                model=model,
-                name=name,
-                soft_constraints=soft_constraints,
-                soft_constraints_penalty=soft_constraints_penalty,
-                carrier=carrier,
-                lb=lb,
-                ub=ub,
-                capacity=capacity,
-                cost=cost,
-                loss=loss,
-                loss_mode=loss_mode,
+                model,
+                name,
+                soft_constraints,
+                soft_constraints_penalty,
+                carrier,
+                lb,
+                ub,
+                capacity,
+                cost,
+                loss,
+                loss_mode,
                 Dict(Symbol(k) => v for (k, v) in prop)...,
             )
         elseif type == "Profile"
@@ -371,17 +371,17 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
 
             # Initialize.
             components[name] = Profile(;
-                model=model,
-                name=name,
-                carrier=carrier,
-                soft_constraints=soft_constraints,
-                soft_constraints_penalty=soft_constraints_penalty,
-                value=value,
-                mode=mode,
-                lb=lb,
-                ub=ub,
-                cost=cost,
-                allow_deviation=allow_deviation,
+                model,
+                namee,
+                carrier,
+                soft_constraints,
+                soft_constraints_penalty,
+                value,
+                mode,
+                lb,
+                ub,
+                cost,
+                allow_deviation,
                 Dict(Symbol(k) => v for (k, v) in prop)...,
             )
         elseif type == "Unit"
@@ -430,20 +430,20 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
 
             # Initialize.
             components[name] = Unit(;
-                model=model,
-                name=name,
-                soft_constraints=soft_constraints,
-                soft_constraints_penalty=soft_constraints_penalty,
-                inputs=inputs,
-                outputs=outputs,
-                availability=availability,
-                availability_factor=availability_factor,
-                unit_count=unit_count,
-                capacity=capacity,
-                marginal_cost=marginal_cost,
-                unit_commitment=unit_commitment,
-                capacity_carrier=capacity_carrier,
-                marginal_cost_carrier=marginal_cost_carrier,
+                model,
+                name,
+                soft_constraints,
+                soft_constraints_penalty,
+                inputs,
+                outputs,
+                availability,
+                availability_factor,
+                unit_count,
+                capacity,
+                marginal_cost,
+                unit_commitment,
+                capacity_carrier,
+                marginal_cost_carrier,
                 Dict(Symbol(k) => v for (k, v) in prop)...,
             )
         elseif type == "Decision"
@@ -460,14 +460,14 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
 
             # Initialize.
             components[name] = Decision(;
-                model=model,
-                name=name,
-                soft_constraints=soft_constraints,
-                soft_constraints_penalty=soft_constraints_penalty,
-                mode=mode,
-                lb=lb,
-                ub=ub,
-                cost=cost,
+                model,
+                name,
+                soft_constraints,
+                soft_constraints_penalty,
+                mode,
+                lb,
+                ub,
+                cost,
                 Dict(Symbol(k) => v for (k, v) in prop)...,
             )
             # elseif type == "Expression"
