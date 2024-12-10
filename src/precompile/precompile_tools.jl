@@ -7,9 +7,9 @@
         fn = String(normpath(__dir, "01_basic_single_node.iesopt.yaml"))
 
         @suppress safe_close_filelogger(generate!(fn; config=Dict("general.verbosity.core" => "debug")))
-        
+
         set_global!("config", "optimization.solver.log", false)
-        
+
         @suppress safe_close_filelogger(generate!(fn; config=Dict("general.verbosity.core" => "info")))
         @suppress safe_close_filelogger(generate!(fn; config=Dict("general.verbosity.core" => "warn")))
 
