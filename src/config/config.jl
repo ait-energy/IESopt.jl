@@ -5,7 +5,7 @@ include("sections/results.jl")
 include("sections/paths.jl")
 
 function _replace_config_from_user(model::JuMP.Model)
-    isnothing(model.ext[:_iesopt_kwargs][:config]) && return nothing
+    isempty(model.ext[:_iesopt_kwargs][:config]) && return nothing
     data = internal(model).input._tl_yaml["config"]
 
     for (k, v) in model.ext[:_iesopt_kwargs][:config]
