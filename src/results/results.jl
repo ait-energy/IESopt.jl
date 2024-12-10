@@ -62,7 +62,6 @@ include("duckdb/ResultsDuckDB.jl")
 
 function _handle_result_extraction(model::JuMP.Model)
     if @config(model, results.enabled, Bool)
-        @info "Begin extracting results"
         # TODO: include content of result config section
         if !JuMP.is_solved_and_feasible(model)
             @error "Extracting results is only possible for a solved and feasible model"

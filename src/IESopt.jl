@@ -20,7 +20,7 @@ include("templates/templates.jl")
 function _build_model!(model::JuMP.Model)
     if @config(model, general.performance.string_names, Bool) != model.set_string_names_on_creation
         new_val = @config(model, general.performance.string_names, Bool)
-        @info "Overwriting `string_names_on_creation` to `$(new_val)` based on config"
+        @debug "Overwriting `string_names_on_creation` to `$(new_val)` based on config"
         JuMP.set_string_names_on_creation(model, new_val)
     end
 
@@ -85,7 +85,7 @@ function _build_model!(model::JuMP.Model)
         end
     end
 
-    @info "Finalizing Virtuals"
+    @debug "Finalizing Virtuals"
     for component in corder
         component isa Virtual || continue
         finalizers = component._finalizers::Vector{Function}
@@ -268,15 +268,14 @@ function generate!(
     # TODO: "re-enable" by refactoring to TimerOutputs
 
     try
-        if !skip_validation
-            @info "Performing validation; this can be turned off (by passing `skip_validation = true`) since it takes quite some time" filename
-            # Validate before parsing.
-            !validate(filename) && return nothing
-        end
+        # Validate before parsing.
+        skip_validation || validate(filename) || return nothing
 
         # Parse & build the model.
         parse!(model, filename; kwargs...) || return model
         with_logger(_iesopt_logger(model)) do
+            skip_validation || (@info "YAML file validation was done; pass `skip_validation = true` to save some time")
+
             if JuMP.mode(model) != JuMP.DIRECT && JuMP.MOIU.state(JuMP.backend(model)) == JuMP.MOIU.NO_OPTIMIZER
                 _attach_optimizer(model)
             end
@@ -344,9 +343,10 @@ end
 _setoptnow(model::JuMP.Model, ::Val{:none}, moa::Bool) = @critical "This code should never be reached"
 
 function _attach_optimizer(model::JuMP.Model)
-    @info "Setting up Optimizer"
-
     solver_name = @config(model, optimization.solver.name)
+
+    @info "Attaching solver `$(solver_name)` to model"
+
     solver = get(
         Dict{String, Symbol}(
             "highs" => :HiGHS,
@@ -377,7 +377,7 @@ function _attach_optimizer(model::JuMP.Model)
         end
     else
         try
-            @info "Trying to import solver interface" solver
+            @debug "Trying to import solver interface" solver
             # Main.eval(Meta.parse("import $(solver)"))
             Base.require(Main, solver)
         catch
@@ -401,14 +401,14 @@ function _attach_optimizer(model::JuMP.Model)
 
     if _is_multiobjective(model)
         moa_mode = @config(model, optimization.multiobjective.mode)
-        @info "Setting MOA mode" mode = moa_mode
+        @debug "Setting MOA mode" mode = moa_mode
         JuMP.set_attribute(model, MOA.Algorithm(), eval(Meta.parse("MOA.$moa_mode()")))
     end
 
     for (attr, value) in @config(model, optimization.solver.attributes)
         try
             @suppress JuMP.set_attribute(model, attr, value)
-            @info "Setting attribute" attr value
+            @debug "Setting attribute" attr value
         catch
             @error "Failed to set attribute" attr value
         end
@@ -424,7 +424,7 @@ function _attach_optimizer(model::JuMP.Model)
                 else
                     JuMP.set_attribute(model, eval(Meta.parse("$attr()")), value)
                 end
-                @info "Setting attribute" attr value
+                @debug "Setting attribute" attr value
             catch
                 @error "Failed to set attribute" attr value
             end

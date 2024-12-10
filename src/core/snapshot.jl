@@ -91,7 +91,7 @@ function _parse_snapshots!(model::JuMP.Model)
         representatives =
             [ismissing(_repr[t]) ? t : internal(model).model.T[repr_indices[t]] for t in internal(model).model.T]
 
-        @info "Activated representative Snapshots" n = sum(is_representative)
+        @debug "Activated representative Snapshots" n = sum(is_representative)
         _has_representative_snapshots(model) = true
 
         if any(weights[t] != weights[1] for t in internal(model).model.T[2:end])
@@ -112,7 +112,7 @@ function _parse_snapshots!(model::JuMP.Model)
         ) for t in internal(model).model.T
     )
 
-    @info "Parsed $(length(internal(model).model.snapshots)) snapshots"
+    @debug "Parsed $(length(internal(model).model.snapshots)) snapshots"
 
     return nothing
 end

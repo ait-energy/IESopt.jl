@@ -17,13 +17,13 @@ function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global
         @info "IESopt.jl (core)  |  2021 © AIT Austrian Institute of Technology GmbH" authors = "Stefan Strömer, Daniel Schwabeneder, and contributors" version =
             pkgversion(@__MODULE__) top_level_config = basename(filename) path = abspath(dirname(filename))
         if !isempty(internal(model).input.parameters)
-            @info "Global parameters loaded" Dict(Symbol(k) => v for (k, v) in internal(model).input.parameters)...
+            @debug "Global parameters loaded" Dict(Symbol(k) => v for (k, v) in internal(model).input.parameters)...
         end
 
         # Pre-load all registered files.
         merge!(internal(model).input.files, _parse_inputfiles(model, @config(model, files)))
         if !isempty(internal(model).input.files)
-            @info "Successfully read $(length(internal(model).input.files)) input file(s)"
+            @debug "Successfully read $(length(internal(model).input.files)) input file(s)"
         end
 
         description = get(internal(model).input._tl_yaml, "components", Dict{String, Any}())
@@ -67,7 +67,7 @@ function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global
         # could choose to use it separately.
         # -> this is already done when creating the IESopt internal data structure.
 
-        @info "Profiling results after `parse` [time, top 5]" _profiling_format_top(model, 5)...
+        # @info "Profiling results after `parse` [time, top 5]" _profiling_format_top(model, 5)...
     end
 
     return true
@@ -163,14 +163,14 @@ function _parse_global_specification!(model::JuMP.Model, @nospecialize(global_pa
 end
 
 function _parse_global_addons(model::JuMP.Model, @nospecialize(addons::Dict{String, Any}))
-    @info "Preloading global addons"
+    @debug "Preloading global addons"
     return Dict{String, NamedTuple}(
         filename => (addon=_getfile(model, string(filename, ".jl")), config=prop) for (filename, prop) in addons
     )
 end
 
 function _parse_inputfiles(model::JuMP.Model, files::Dict{String, Any})
-    isempty(files) || @info "Detected input files: Start preloading"
+    isempty(files) || @debug "Detected input files: Start preloading"
     return Dict{String, Union{DataFrames.DataFrame, Module}}(
         name => _getfile(model, filename) for (name, filename) in files
     )
@@ -317,7 +317,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
                 if node_from_carrier != carrier
                     @critical "Carrier mismatch in Connection, wrong Carrier given" component = name
                 end
-                @info "Specifying `carrier` in Connection is not necessary" maxlog = 1
+                @debug "Specifying `carrier` in Connection is not necessary" maxlog = 1
                 carrier = internal(model).model.carriers[carrier]
             end
 

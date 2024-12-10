@@ -35,7 +35,7 @@ function safe_close_filelogger(model::JuMP.Model)
             if length(tl.loggers) == 2
                 if tl.loggers[2] isa IESopt._FileLogger
                     if isopen(tl.loggers[2].logger.stream)
-                        @info "Safely closing the file logger's iostream"
+                        @debug "Safely closing the file logger's iostream"
                         close(tl.loggers[2].logger.stream)
                     end
                 end

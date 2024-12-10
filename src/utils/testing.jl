@@ -17,7 +17,7 @@ end
             filename = cfg_name
         end
 
-        @info "TestExampleModule" mode = "run" file = filename raw = cfg_name
+        @debug "TestExampleModule" mode = "run" file = filename raw = cfg_name
 
         m = generate!(String(Assets.get_path("examples", "$filename.iesopt.yaml")); kwargs...)
         optimize!(m)
@@ -34,7 +34,7 @@ end
             filename = cfg_name
         end
 
-        @info "TestExampleModule" mode = "run" file = filename raw = cfg_name
+        @debug "TestExampleModule" mode = "run" file = filename raw = cfg_name
 
         m = generate!(String(Assets.get_path("examples", "$filename.iesopt.yaml")); kwargs...)
         optimize!(m)

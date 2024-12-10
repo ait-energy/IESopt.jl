@@ -59,7 +59,7 @@ let
     if !isempty(__unknowns)
         @warn "Detected a total of \$(length(__unknowns)) unknown precompile entries"
         for elem in __unknowns
-            @info "Missing: \$(elem.scope).\$(elem.var)"
+            @debug "Missing: \$(elem.scope).\$(elem.var)"
         end
     end
 
