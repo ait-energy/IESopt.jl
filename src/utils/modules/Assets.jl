@@ -24,7 +24,7 @@ Assets.get_path("templates")
 ```
 """
 function get_path(asset_type::String)
-    return (@path normpath(@__DIR__, asset_type))::RelocatableFolders.Path
+    return (@path normpath(@__DIR__, "..", "..", "..", "assets", asset_type))::RelocatableFolders.Path
 end
 
 """
