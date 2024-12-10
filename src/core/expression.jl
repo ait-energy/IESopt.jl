@@ -30,42 +30,80 @@ function _string_to_fevalexpr(model::JuMP.Model, @nospecialize(str::AbstractStri
                 separator = popfirst!(tokens)   # TODO: this is actually just `next_token`
                 next_token = popfirst!(tokens)  # this is the token after the separator
 
-                push!(access_order, join(JuliaSyntax.untokenize.((token, separator, next_token), str)))
+                push!(access_order, join(JuliaSyntax.untokenize.((token, separator, next_token), str)))  # TODO: the join is waste, untokenize everything at once
                 write(buf, "__el[$(length(access_order) - starting_access_index + 1)]")
                 last_token = next_token
-            else
-                # This may be a "carrier" as part of a conversion expression, or ...
-                # we may know that this is NOT a conversion expression.
-                elem = JuliaSyntax.untokenize(token, str)
 
-                if is_conv_expr && haskey(internal(model).model.carriers::Dict{String, IESopt.Carrier}, elem)
-                    # A conversion expression (nice) AND it is a valid carrier.
-                    e = JuliaSyntax.parsestmt(Expr, String(take!(buf)))
+                continue
+            end
 
-                    if length(access_order) >= starting_access_index
-                        f = @RuntimeGeneratedFunction(:(function (__el::Vector{Union{Float64, String}})
-                            return $e
-                        end))
-                        push!(
-                            extracted_expressions,
-                            (name=elem, func=f, elements=access_order[starting_access_index:end]),
-                        )
-                        starting_access_index = length(access_order) + 1
+            if !isempty(tokens) && (JuliaSyntax.kind(first(tokens)) == JuliaSyntax.K".")
+                # This might be something like `foobar.electricity_supply.size:value`, so we need to peek ahead.
+                if length(tokens) < 2
+                    @critical "Failed to parse string to valid Julia syntax, since it seems to end with a `.`?" input =
+                        str token = JuliaSyntax.untokenize(token, str)
+                end
+
+                continue_outer_loop = true
+                for i in eachindex(tokens)[2:end]
+                    next_token = tokens[i]
+
+                    JuliaSyntax.kind(next_token) == JuliaSyntax.K"Identifier" && continue
+                    JuliaSyntax.kind(next_token) == JuliaSyntax.K"." && continue
+
+                    if JuliaSyntax.kind(next_token) == JuliaSyntax.K":"
+                        # Ok, we found an access to a Decision after some other stuff.
+                        #   => Handle it and skip the code below.
+
+                        if (length(tokens) < (i + 1)) || JuliaSyntax.kind(tokens[i + 1]) != JuliaSyntax.K"Identifier"
+                            @critical "Failed to parse string to valid Julia syntax" input = str token =
+                                JuliaSyntax.untokenize(token, str)
+                        end
+
+                        push!(access_order, join(JuliaSyntax.untokenize.((token, tokens[1:(i + 1)]...), str)))  # TODO: the join is waste, untokenize everything at once
+                        write(buf, "__el[$(length(access_order) - starting_access_index + 1)]")
+                        last_token = last([popfirst!(tokens) for _ in 1:(i + 1)])
+
+                        continue_outer_loop = false
+                        break
                     else
-                        value = convert(Float64, eval(e))
-                        push!(extracted_expressions, (name=elem, val=value))
+                        # Ok, something else was found.
+                        #   => Just continue with the code below.
+                        break
                     end
+                end
 
-                    last_token = TOK_TOMB
+                continue_outer_loop || continue
+            end
+
+            # This may be a "carrier" as part of a conversion expression, or ...
+            # we may know that this is NOT a conversion expression.
+            elem = JuliaSyntax.untokenize(token, str)
+
+            if is_conv_expr && haskey(internal(model).model.carriers::Dict{String, IESopt.Carrier}, elem)
+                # A conversion expression (nice) AND it is a valid carrier.
+                e = JuliaSyntax.parsestmt(Expr, String(take!(buf)))
+
+                if length(access_order) >= starting_access_index
+                    f = @RuntimeGeneratedFunction(:(function (__el::Vector{Union{Float64, String}})
+                        return $e
+                    end))
+                    push!(extracted_expressions, (name=elem, func=f, elements=access_order[starting_access_index:end]))
+                    starting_access_index = length(access_order) + 1
                 else
-                    # It is not (either one). Let's hope it's valid Julia syntax (e.g., `sqrt(2)`).
-                    try
-                        # This is the same code as in the "else" below, but chances for errors are higher here ...
-                        write(buf, elem)
-                        last_token = token
-                    catch
-                        @critical "Failed to parse string to valid Julia syntax" input = str token = elem
-                    end
+                    value = convert(Float64, eval(e))
+                    push!(extracted_expressions, (name=elem, val=value))
+                end
+
+                last_token = TOK_TOMB
+            else
+                # It is not (either one). Let's hope it's valid Julia syntax (e.g., `sqrt(2)`).
+                try
+                    # This is the same code as in the "else" below, but chances for errors are higher here ...
+                    write(buf, elem)
+                    last_token = token
+                catch
+                    @critical "Failed to parse string to valid Julia syntax" input = str token = elem
                 end
             end
         else
@@ -75,7 +113,8 @@ function _string_to_fevalexpr(model::JuMP.Model, @nospecialize(str::AbstractStri
     end
 
     if isempty(extracted_expressions)
-        e = JuliaSyntax.parsestmt(Expr, String(take!(buf)))
+        expr_str = String(take!(buf))
+        e = JuliaSyntax.parsestmt(Expr, expr_str)
 
         if length(access_order) >= starting_access_index
             f = @RuntimeGeneratedFunction(:(function (__el::Vector{Union{Float64, String}})
