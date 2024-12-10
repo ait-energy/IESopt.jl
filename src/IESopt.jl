@@ -191,21 +191,12 @@ Build, optimize, and return a model.
 
 # Keyword Arguments
 
-Keyword arguments are passed to the [`normpath(__dir, !`](@ref) function.
+Keyword arguments are passed to the `generate!(...)` function.
 """
-function run(
-    filename::String;
-    parameters::Union{Nothing, Dict}=nothing,
-    config::Union{Nothing, Dict}=nothing,
-    addons::Union{Nothing, Dict}=nothing,
-    carriers::Union{Nothing, Dict}=nothing,
-    components::Union{Nothing, Dict}=nothing,
-    load_components::Union{Nothing, Dict}=nothing,
-    skip_validation::Bool=false,
-)
-    @nospecialize parameters config addons carriers components load_components
+function run(filename::String; kwargs...)
+    @nospecialize
 
-    model = generate!(filename; parameters, config, addons, carriers, components, load_components, skip_validation)
+    model = generate!(filename; kwargs...)
 
     if pop!(model.ext, :_iesopt_failed_generate, false)
         @error "Errors in model generation; skipping optimization"
@@ -235,20 +226,11 @@ To be documented.
 # Returns
 - `model::JuMP.Model`: The generated IESopt model.
 """
-function generate!(
-    filename::String;
-    parameters::Union{Nothing, Dict}=nothing,
-    config::Union{Nothing, Dict}=nothing,
-    addons::Union{Nothing, Dict}=nothing,
-    carriers::Union{Nothing, Dict}=nothing,
-    components::Union{Nothing, Dict}=nothing,
-    load_components::Union{Nothing, Dict}=nothing,
-    skip_validation::Bool=false,
-)
-    @nospecialize parameters config addons carriers components load_components
+function generate!(filename::String; kwargs...)
+    @nospecialize
 
     model = JuMP.Model()::JuMP.Model
-    generate!(model, filename; parameters, config, addons, carriers, components, load_components, skip_validation)
+    generate!(model, filename; kwargs...)
 
     return model::JuMP.Model
 end
@@ -277,15 +259,10 @@ To be documented.
 function generate!(
     model::JuMP.Model,
     filename::String;
-    parameters::Union{Nothing, Dict}=nothing,
-    config::Union{Nothing, Dict}=nothing,
-    addons::Union{Nothing, Dict}=nothing,
-    carriers::Union{Nothing, Dict}=nothing,
-    components::Union{Nothing, Dict}=nothing,
-    load_components::Union{Nothing, Dict}=nothing,
-    skip_validation::Bool=false,
+    skip_validation::Bool=_global_settings.skip_validation,
+    kwargs...,
 )
-    @nospecialize parameters config addons carriers components load_components
+    @nospecialize
 
     # local stats_parse, stats_build, stats_total
     # TODO: "re-enable" by refactoring to TimerOutputs
@@ -298,7 +275,7 @@ function generate!(
         end
 
         # Parse & build the model.
-        parse!(model, filename; parameters, config, addons, carriers, components, load_components) || return model
+        parse!(model, filename; kwargs...) || return model
         with_logger(_iesopt_logger(model)) do
             if JuMP.mode(model) != JuMP.DIRECT && JuMP.MOIU.state(JuMP.backend(model)) == JuMP.MOIU.NO_OPTIMIZER
                 _attach_optimizer(model)
@@ -478,12 +455,12 @@ To be documented.
 function parse!(
     model::JuMP.Model,
     filename::AbstractString;
-    parameters::Union{Nothing, Dict}=nothing,
-    config::Union{Nothing, Dict}=nothing,
-    addons::Union{Nothing, Dict}=nothing,
-    carriers::Union{Nothing, Dict}=nothing,
-    components::Union{Nothing, Dict}=nothing,
-    load_components::Union{Nothing, Dict}=nothing,
+    parameters::Dict=_global_settings.parameters,
+    config::Dict=_global_settings.config,
+    addons::Dict=_global_settings.addons,
+    carriers::Dict=_global_settings.carriers,
+    components::Dict=_global_settings.components,
+    load_components::Dict=_global_settings.load_components,
 )
     @nospecialize
 
@@ -504,10 +481,10 @@ function parse!(
         :load_components => load_components,
     )
     # TODO
-    isnothing(addons) || @error "The `addons` keyword argument is not yet supported"
-    isnothing(carriers) || @error "The `carriers` keyword argument is not yet supported"
-    isnothing(components) || @error "The `components` keyword argument is not yet supported"
-    isnothing(load_components) || @error "The `load_components` keyword argument is not yet supported"
+    isempty(addons) || @error "The `addons` keyword argument is not yet supported"
+    isempty(carriers) || @error "The `carriers` keyword argument is not yet supported"
+    isempty(components) || @error "The `components` keyword argument is not yet supported"
+    isempty(load_components) || @error "The `load_components` keyword argument is not yet supported"
 
     # Load the model specified by `filename`.
     _parse_model!(model, filename, global_parameters) || (@critical "Error while parsing model" filename)
