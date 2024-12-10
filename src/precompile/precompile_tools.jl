@@ -71,6 +71,10 @@
         safe_close_filelogger(generate!(normpath(__dir, "47_disable_components.iesopt.yaml")))
     end
 
+    # Reset global settings.
+    empty!(get_global("config"))
+    set_global!("skip_validation", false)
+
     try
         # Clean up output files after testing is done.
         rm(normpath(__dir, "out"); force=true, recursive=true)
