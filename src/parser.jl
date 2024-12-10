@@ -372,7 +372,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             # Initialize.
             components[name] = Profile(;
                 model,
-                namee,
+                name,
                 carrier,
                 soft_constraints,
                 soft_constraints_penalty,
