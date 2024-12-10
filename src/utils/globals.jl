@@ -23,6 +23,8 @@ these). User passed settings will override these defaults.
 
 # Example
 ```julia
+using IESopt
+
 set_global!("config", "general.verbosity.core", "error")
 ```
 """
@@ -51,6 +53,8 @@ these). User passed settings will override these defaults.
 
 # Example
 ```julia
+using IESopt
+
 set_global!("skip_validation", true)
 ```
 """
@@ -65,6 +69,24 @@ function set_global!(type::String, value::Bool)
     return nothing
 end
 
+"""
+    get_global(type::String)
+
+Get a global setting for IESopt.
+
+# Arguments
+- `type::String`: The type of global setting. Currently supports: "parameters", "config", "addons", "carriers", "components", "load_components", "skip_validation".
+
+# Returns
+- The global setting.
+
+# Example
+```julia
+using IESopt
+
+get_global("skip_validation")
+```
+"""
 function get_global(type::String)
     sym_type = Symbol(type)
     if !hasproperty(_global_settings, sym_type)
