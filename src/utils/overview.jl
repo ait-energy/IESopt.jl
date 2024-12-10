@@ -10,7 +10,7 @@ function overview(file::String)
         @critical "Unsupported file format" file
     end
 
-    @info "Unpacking IESopt model"
+    @debug "Unpacking IESopt model"
     info = unpack(file)
     root_path = dirname(info["config"])
 

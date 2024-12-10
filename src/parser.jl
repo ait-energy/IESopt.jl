@@ -14,16 +14,16 @@ function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global
     logger = _attach_logger!(model)
 
     with_logger(logger) do
-        @info "IESopt.jl (core)  |  2021 © AIT Austrian Institute of Technology GmbH" authors = "Stefan Strömer, Daniel Schwabeneder, and contributors" version =
+        @info "IESopt.jl (core)  |  2021-now © AIT Austrian Institute of Technology GmbH" authors = "Stefan Strömer, Daniel Schwabeneder, and contributors" version =
             pkgversion(@__MODULE__) top_level_config = basename(filename) path = abspath(dirname(filename))
         if !isempty(internal(model).input.parameters)
-            @info "Global parameters loaded" Dict(Symbol(k) => v for (k, v) in internal(model).input.parameters)...
+            @debug "Global parameters loaded" Dict(Symbol(k) => v for (k, v) in internal(model).input.parameters)...
         end
 
         # Pre-load all registered files.
         merge!(internal(model).input.files, _parse_inputfiles(model, @config(model, files)))
         if !isempty(internal(model).input.files)
-            @info "Successfully read $(length(internal(model).input.files)) input file(s)"
+            @debug "Successfully read $(length(internal(model).input.files)) input file(s)"
         end
 
         description = get(internal(model).input._tl_yaml, "components", Dict{String, Any}())
@@ -60,14 +60,17 @@ function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global
         end
 
         # Parse all components into a unified storage and keep a reference of "name=>id" matchings.
-        return _parse_components!(model, description)
+        _parse_components!(model, description)
 
+        @info "[parse] Successfully created a total of $(length(internal(model).model.components)) core components"
+
+        return nothing
         # Construct the dictionary that holds all constraints that wish to be relaxed. These include (as value)
         # their respective penalty. This exists, even if the model soft_constraints setting is off, since individual
         # could choose to use it separately.
         # -> this is already done when creating the IESopt internal data structure.
 
-        @info "Profiling results after `parse` [time, top 5]" _profiling_format_top(model, 5)...
+        # @info "Profiling results after `parse` [time, top 5]" _profiling_format_top(model, 5)...
     end
 
     return true
@@ -163,21 +166,21 @@ function _parse_global_specification!(model::JuMP.Model, @nospecialize(global_pa
 end
 
 function _parse_global_addons(model::JuMP.Model, @nospecialize(addons::Dict{String, Any}))
-    @info "Preloading global addons"
+    @debug "Preloading global addons"
     return Dict{String, NamedTuple}(
         filename => (addon=_getfile(model, string(filename, ".jl")), config=prop) for (filename, prop) in addons
     )
 end
 
 function _parse_inputfiles(model::JuMP.Model, files::Dict{String, Any})
-    isempty(files) || @info "Detected input files: Start preloading"
+    isempty(files) || @debug "Detected input files: Start preloading"
     return Dict{String, Union{DataFrames.DataFrame, Module}}(
         name => _getfile(model, filename) for (name, filename) in files
     )
 end
 
 function _flatten_model!(model::JuMP.Model, @nospecialize(description::Dict{String, Any}))
-    @info "Begin flattening model"
+    @info "[parse] Flatten model into base core components"
 
     cnt_disabled_components = 0
     toflatten::Vector{String} = collect(keys(description))
@@ -196,7 +199,7 @@ function _flatten_model!(model::JuMP.Model, @nospecialize(description::Dict{Stri
         type = description[cname]["type"]::String
 
         if type == "Expression"
-            @critical "The `Expression` Core Component is deprecated" component = cname
+            @critical "[parse] The `Expression` Core Component is deprecated" component = cname
         end
 
         # Skip core components.
@@ -209,11 +212,11 @@ function _flatten_model!(model::JuMP.Model, @nospecialize(description::Dict{Stri
         toflatten = vcat(toflatten, new_components)
     end
 
-    @info "Finished flattening model" number_of_disabled_components = cnt_disabled_components
+    @info "[parse] Finished flattening model (disabled $(cnt_disabled_components) components)"
 end
 
 function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{String, Any}))
-    @info "Parsing components from YAML" n_components = length(description)
+    @info "[parse] Creating and parameterizing $(length(description)) core components"
 
     components = internal(model).model.components
 
@@ -224,7 +227,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
 
     for (desc, prop) in description
         if _parse_bool(model, pop!(prop, "disabled", false)) || !_parse_bool(model, pop!(prop, "enabled", true))
-            @critical "Disabled components should not end up in parse"
+            @critical "[parse] Disabled components should not end up in parse"
         end
 
         type = pop!(prop, "type")
@@ -261,7 +264,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
         if haskey(prop, "objectives")
             for (obj, term) in pop!(prop, "objectives")
                 if !haskey(internal(model).aux._obj_terms, obj)
-                    @critical "Objective not found in `objectives` definition" objective = obj component = name
+                    @critical "[parse] Objective not found in `objectives` definition" objective = obj component = name
                 end
                 _add_obj_term!(model, term; component=name, objective=obj)
             end
@@ -308,16 +311,16 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             end
 
             if node_from_carrier != node_to_carrier
-                @critical "Carrier mismatch in Connection, connecting wrong Nodes" component = name
+                @critical "[parse] Carrier mismatch in Connection, connecting wrong Nodes" component = name
             end
 
             if isnothing(carrier)
                 carrier = internal(model).model.carriers[node_from_carrier]
             else
                 if node_from_carrier != carrier
-                    @critical "Carrier mismatch in Connection, wrong Carrier given" component = name
+                    @critical "[parse] Carrier mismatch in Connection, wrong Carrier given" component = name
                 end
-                @info "Specifying `carrier` in Connection is not necessary" maxlog = 1
+                @debug "[parse] Specifying `carrier` in Connection is not necessary" maxlog = 1
                 carrier = internal(model).model.carriers[carrier]
             end
 
@@ -377,7 +380,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             # The capacity is mandatory.
             capacity_str = pop!(prop, "capacity")::String
             if !(capacity_str isa AbstractString) || (!occursin("in:", capacity_str) && !occursin("out:", capacity_str))
-                @critical "`capacity` must be specified with either `out:carrier` or `in:carrier`" unit = name
+                @critical "[parse] `capacity` must be specified with either `out:carrier` or `in:carrier`" unit = name
             end
             _capacity, _capacity_port = rsplit(capacity_str, " "; limit=2)
             _capacity_inout, _capacity_carrier = split(_capacity_port, ":")
@@ -388,7 +391,8 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             if haskey(prop, "marginal_cost")
                 marginal_cost_str = pop!(prop, "marginal_cost")::String
                 if !occursin("in:", marginal_cost_str) && !occursin("out:", marginal_cost_str)
-                    @critical "`marginal_cost` must be specified with either `out:carrier` or `in:carrier`" unit = name
+                    @critical "[parse] `marginal_cost` must be specified with either `out:carrier` or `in:carrier`" unit =
+                        name
                 end
                 _marginal_cost, _marginal_cost_port = strip.(rsplit(marginal_cost_str, "per"; limit=2))
                 _marginal_cost_inout, _marginal_cost_carrier = split(_marginal_cost_port, ":")
@@ -472,9 +476,6 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
         end
     end
 
-    tag_info = [Symbol(tag) => length(model_tags[tag]) for tag in keys(model_tags)]
-    @info "Finished parsing a total of $(length(components)) components" tag_info...
-
     return internal(model).debug = "parse complete"
 end
 
@@ -486,6 +487,8 @@ function _parse_components_csv!(
 )
     !haskey(data, "load_components") && return
 
+    @info "[parse] Loading components from registered CSV files"
+
     # Prepare path.
     path = isnothing(path) ? @config(model, paths.components) : path
 
@@ -494,7 +497,7 @@ function _parse_components_csv!(
     for entry in data["load_components"]
         if entry == ".csv"
             length(data["load_components"]) == 1 ||
-                @critical "Using `.csv` in `load_components` is only allowed as sole entry"
+                @critical "[parse] Using `.csv` in `load_components` is only allowed as sole entry"
             for (root, dirs, files) in walkdir(path)
                 for file in files
                     endswith(file, ".csv") || continue
@@ -504,7 +507,7 @@ function _parse_components_csv!(
         elseif endswith(entry, ".csv")
             push!(files_to_load, normpath(entry))
         elseif endswith(entry, ".xlsx")
-            @critical "Excel files are not supported for component definitions" file = entry
+            @critical "[parse] Excel files are not supported for component definitions" file = entry
         else
             # Example:
             # Match all files in the `thermals/install` directory, except `biomass.csv`.
@@ -525,10 +528,10 @@ function _parse_components_csv!(
         # todo: this is probably super inefficient
         for row in eachrow(df)
             name = row.name
-            _is_valid_component_name(name) || @error "Invalid name for component (check documentation)" name
+            _is_valid_component_name(name) || @error "[parse] Invalid name for component (check documentation)" name
 
             if haskey(description, name)
-                @critical "Duplicate component entry detected" file component = name
+                @critical "[parse] Duplicate component entry detected" file component = name
             end
             props = row[DataFrames.Not(:name)]
 
@@ -546,7 +549,7 @@ function _parse_components_csv!(
                     # Is this a global parameter that we should fill in automatically?
                     if !isnothing(internal(model).input.parameters) && haskey(internal(model).input.parameters, k)
                         if warnlogcount == 0
-                            @warn "You left a field empty in a CSV component definition file that corresponds to a global parameter. Automatic replacement is happening. Did you really intend this?" component =
+                            @warn "[parse] You left a field empty in a CSV component definition file that corresponds to a global parameter. Automatic replacement is happening. Did you really intend this?" component =
                                 name property = k
                             warnlogcount += 1
                         end

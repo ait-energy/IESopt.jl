@@ -69,6 +69,7 @@ function _get_solver_module(solver::Any)
     @critical "No solver extension prepared" solver
 end
 
+include("globals.jl")
 include("general.jl")
 include("logging.jl")
 include("packing.jl")

@@ -3,7 +3,7 @@ function _get_git()
         repo = LibGit2.GitRepo("./")
 
         if LibGit2.isdirty(repo)
-            @warn "The git repository is dirty (you should always commit changes before a run)"
+            @warn "[optimize > results] The git repository is dirty (you should always commit changes before a run)"
         end
 
         git_snapshot = LibGit2.snapshot(repo)
@@ -16,14 +16,14 @@ function _get_git()
             "remotes" => OrderedDict(r => LibGit2.url(LibGit2.lookup_remote(repo, r)) for r in LibGit2.remotes(repo)),
         )
     catch error
-        @warn "Could not find a valid git repository; consider using git for every model development"
+        @warn "[optimize > results] Could not find a valid git repository; consider using git for every model development"
     end
 
     return OrderedDict{String, Any}()
 end
 
 function _get_hash(model::JuMP.Model)
-    @error "Hashing is disabled until we decide on which files to include"
+    @error "[optimize > results] Hashing is disabled until we decide on which files to include"
     return ""
 
     # @info "Hashing model description"
@@ -62,10 +62,9 @@ include("duckdb/ResultsDuckDB.jl")
 
 function _handle_result_extraction(model::JuMP.Model)
     if @config(model, results.enabled, Bool)
-        @info "Begin extracting results"
         # TODO: include content of result config section
         if !JuMP.is_solved_and_feasible(model)
-            @error "Extracting results is only possible for a solved and feasible model"
+            @error "[optimize > results] Extracting results is only possible for a solved and feasible model"
         else
             if @config(model, results.backend) == :jld2
                 ResultsJLD2._extract_results(model)
@@ -75,6 +74,10 @@ function _handle_result_extraction(model::JuMP.Model)
                 # TODO:
                 ResultsDuckDB.close(db)
             end
+
+            @info "[optimize > results] Finished result handling"
         end
+    else
+        @info "[optimize > results] Skipping result extraction"
     end
 end

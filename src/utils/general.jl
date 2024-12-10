@@ -182,7 +182,7 @@ function _mapexpr_addon(expr::Expr, reload::Bool)
 
     if reload
         if (module_name in names(@__MODULE__; all=true)) || (module_name in names(Main; all=true))
-            @info "Replacing existing addon" addon = module_name
+            @debug "Replacing existing addon" addon = module_name
         end
 
         return nothing
@@ -190,13 +190,13 @@ function _mapexpr_addon(expr::Expr, reload::Bool)
 
     if module_name in names(@__MODULE__; all=true)
         # Addon already loaded in IESopt.
-        @info "Addon already loaded" addon = module_name
+        @debug "Addon already loaded" addon = module_name
         return Meta.parse(string(module_name))
     end
 
     if module_name in names(Main; all=true)
         # Addon already loaded in Main.
-        @info "Addon already loaded in global Main" addon = module_name
+        @debug "Addon already loaded in global Main" addon = module_name
         return Meta.parse("Main.$(module_name)")
     end
 
@@ -244,7 +244,7 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
         # This requires you to pass the EXACT name of the module as addon name!
         module_name = Symbol(basename(filename)[1:(end - 3)])
         if (module_name in names(Main; all=true))
-            @info "Addon already loaded in global Main" addon = module_name
+            @debug "Addon already loaded in global Main" addon = module_name
             if @config(model, general.performance.force_addon_reload, Bool)
                 @warn "Cannot force reload an addon that is already loaded in Main, outside IESopt; ignoring reload, and re-using the existing module" module_name
             end
@@ -252,13 +252,13 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
         end
 
         if isfile(filepath_local)
-            @info "Trying to load addon from file (local)" filename source = filepath_local
+            @debug "Trying to load addon from file (local)" filename source = filepath_local
             return _load_or_retrieve_addon_file(
                 filepath_local;
                 reload=@config(model, general.performance.force_addon_reload, Bool)
             )
         elseif isfile(filepath_core)
-            @info "Trying to load addon from file (core)" filename source = filepath_core
+            @debug "Trying to load addon from file (core)" filename source = filepath_core
             return _load_or_retrieve_addon_file(
                 filepath_core;
                 reload=@config(model, general.performance.force_addon_reload, Bool)
@@ -299,7 +299,7 @@ function _getcsv(
     sink=DataFrames.DataFrame,
     slice::Bool,
 )
-    @info "Trying to load CSV" filename
+    @debug "Trying to load CSV" filename
 
     # NOTES:
     # - Read the entire file. CSV.jl's `skipto` only makes it worse.

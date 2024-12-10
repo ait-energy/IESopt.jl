@@ -28,7 +28,7 @@ function _convert_to_result(@nospecialize(component::_CoreComponent))
 end
 
 function _extract_results(model::JuMP.Model)
-    @info "Begin extracting results"
+    @info "[optimize > results > JLD2] Begin extracting results"
     # TODO: support multiple results (from MOA)
 
     result_components = internal(model).results.components

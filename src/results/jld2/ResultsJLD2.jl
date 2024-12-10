@@ -26,13 +26,14 @@ include("extract.jl")
 function _save_results(model::JuMP.Model)
     @config(model, results.memory_only) && return nothing
 
-    @info "Begin saving results"
     # TODO: support multiple results (from MOA)
 
     # Make sure the path is valid.
     scenario_name = @config(model, general.name.scenario)
     filepath = normpath(@config(model, paths.results), "$(scenario_name).iesopt.result.jld2")
     mkpath(dirname(filepath))
+
+    @info "[optimize > results > JLD2] Begin saving results" file = abspath(filepath)
 
     # Write results.
     JLD2.jldopen(filepath, "w"; compress=@config(model, results.compress)) do file
@@ -72,8 +73,6 @@ function _save_results(model::JuMP.Model)
 
         return nothing
     end
-
-    @info "Results saved to JLD2" file = abspath(filepath)
 end
 
 """
