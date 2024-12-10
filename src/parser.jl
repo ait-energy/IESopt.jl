@@ -337,6 +337,9 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             cost = _convert_to_expression(model, pop!(prop, "cost", nothing))
             loss = _convert_to_expression(model, pop!(prop, "loss", nothing))
 
+            # Convert to Symbol
+            loss_mode = Symbol(pop!(prop, "loss_mode", :to))
+
             # Initialize.
             components[name] = Connection(;
                 model=model,
@@ -349,6 +352,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
                 capacity=capacity,
                 cost=cost,
                 loss=loss,
+                loss_mode=loss_mode,
                 Dict(Symbol(k) => v for (k, v) in prop)...,
             )
         elseif type == "Profile"
