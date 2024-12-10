@@ -16,6 +16,24 @@
     @test JuMP.termination_status(model) == JuMP.MOI.INFEASIBLE
 end
 
+@testset "Versioning" begin
+    v_curr = VersionNumber(string(pkgversion(IESopt))::String)
+    v_good = [v_curr, VersionNumber(v_curr.major)]
+    v_bad = [@v_str("1"), VersionNumber(v_curr.major + 1), VersionNumber(v_curr.major, v_curr.minor, v_curr.patch + 1)]
+
+    err_msg = "Error: The required `version.core`"
+
+    fn = String(Assets.get_path("examples", "01_basic_single_node.iesopt.yaml"))
+
+    for v in v_good
+        @test !occursin(err_msg, @capture_err generate!(fn; config=Dict("general.version.core" => string(v))))
+    end
+
+    for v in v_bad
+        @test occursin(err_msg, @capture_err generate!(fn; config=Dict("general.version.core" => string(v))))
+    end
+end
+
 @testset "Filesystem paths" verbose = true begin
     for fn in (
         "include_components.iesopt.yaml",
