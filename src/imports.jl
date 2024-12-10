@@ -7,7 +7,7 @@ using PrecompileTools: @setup_workload, @compile_workload, @recompile_invalidati
 using TestItems
 
 # Load the assets module.
-include("assets/Assets.jl")
+include("utils/modules/Assets.jl")
 
 # Setup `HiGHS.jl`, since this is the default solver that users may want to use.
 import HiGHS

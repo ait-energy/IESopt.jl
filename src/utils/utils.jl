@@ -76,7 +76,7 @@ include("overview.jl") # makes use of unpacking (therefore included after packin
 include("docs.jl")
 include("objectives.jl")
 
-include("utilities/Utilities.jl")
+include("modules/Utilities.jl")
 const IESU = Utilities
 
 include("testing.jl")
