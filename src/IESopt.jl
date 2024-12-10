@@ -18,6 +18,8 @@ include("templates/templates.jl")
 # include("texify/texify.jl")
 
 function _build_model!(model::JuMP.Model)
+    @info "[build] Begin creating JuMP formulation from components"
+
     if @config(model, general.performance.string_names, Bool) != model.set_string_names_on_creation
         new_val = @config(model, general.performance.string_names, Bool)
         @debug "Overwriting `string_names_on_creation` to `$(new_val)` based on config"
@@ -39,16 +41,12 @@ function _build_model!(model::JuMP.Model)
 
     # TODO: care about components/global addons returning false somewhere
 
-    @info "Preparing components"
-
     # Sort components by their build priority.
     # For instance, Decisions with a default build priority of 1000 are built before all other components
     # with a default build priority of 0.
     # Components with a negative build priority are not built at all.
     corder =
         sort(collect(values(internal(model).model.components)); by=_build_priority, rev=true)::Vector{<:_CoreComponent}
-
-    @info "Start creating JuMP model"
 
     progress_enabled = @config(model, general.verbosity.progress, String) == "on"
     for f in build_order
@@ -70,22 +68,22 @@ function _build_model!(model::JuMP.Model)
             for (name, prop) in internal(model).input.addons
                 # Only execute a function if it exists.
                 if addon_fi in names(prop.addon; all=true)
-                    @info "Invoking addon" addon = name step = addon_fi
+                    @info "[build] Invoking addon" addon = name step = addon_fi
                     ret = Base.invokelatest(getfield(prop.addon, addon_fi), model, prop.config)
                     if isnothing(ret)
-                        @warn "Please make sure your addon returns `true` or `false` in every step to indicate success/failure" addon =
+                        @warn "[build] Please make sure your addon returns `true` or `false` in every step to indicate success/failure" addon =
                             name step = addon_fi
                     elseif ret === false
-                        @critical "Addon returned error" addon = name step = addon_fi
+                        @critical "[build] Addon returned error" addon = name step = addon_fi
                     elseif ret !== true
-                        @warn "Addon returned unexpected value: `$(ret)`" addon = name step = addon_fi
+                        @warn "[build] Addon returned unexpected value: `$(ret)`" addon = name step = addon_fi
                     end
                 end
             end
         end
     end
 
-    @debug "Finalizing Virtuals"
+    @debug "[build] Finalizing Virtuals"
     for component in corder
         component isa Virtual || continue
         finalizers = component._finalizers::Vector{Function}
@@ -108,7 +106,7 @@ function _build_model!(model::JuMP.Model)
 
     # Building the objective(s).
     for (name, obj) in internal(model).model.objectives
-        @info "Preparing objective" name
+        @info "[build] Construct and build objective expression `$(name)`"
 
         # Add all terms that were added from within a component definition to the correct objective's terms.
         for term in internal(model).aux._obj_terms[name]
@@ -126,7 +124,6 @@ function _build_model!(model::JuMP.Model)
         end
 
         # todo: is there a faster way to sum up a set of expressions?
-        @info "Building objective" name
         for term in obj.terms
             JuMP.add_to_expression!(obj.expr, term)
         end
@@ -137,7 +134,7 @@ function _build_model!(model::JuMP.Model)
 
     if !_is_multiobjective(model)
         current_objective = @config(model, optimization.objective.current)
-        isnothing(current_objective) && @critical "Missing an active objective"
+        isnothing(current_objective) && @critical "[build] Missing an active objective"
         @objective(model, Min, internal(model).model.objectives[current_objective].expr)
     else
         @objective(
@@ -149,13 +146,16 @@ function _build_model!(model::JuMP.Model)
 end
 
 function _prepare_model!(model::JuMP.Model)
+    @info "[build > prepare] Run pre-processing checks & initializations"
+
     # Potentially remove components that are tagged `conditional`, and violate some of their conditions.
     failed_components = []
     for (cname, component) in internal(model).model.components
         !_check(component) && push!(failed_components, cname)
     end
     if length(failed_components) > 0
-        @warn "Some components are removed based on the `conditional` setting" n_components = length(failed_components)
+        @warn "[build > prepare] Some components are removed based on the `conditional` setting" n_components =
+            length(failed_components)
         for cname in failed_components
             delete!(internal(model).model.components, cname)
         end
@@ -165,7 +165,7 @@ function _prepare_model!(model::JuMP.Model)
     if _has_addons(model)
         for (name, prop) in internal(model).input.addons
             if !Base.invokelatest(prop.addon.initialize!, model, prop.config)
-                @critical "Addon failed to set up" name
+                @critical "[build > prepare] Addon failed to set up" name
             end
         end
     end
@@ -280,9 +280,7 @@ function generate!(
                 _attach_optimizer(model)
             end
 
-            build!(model)
-
-            @info "Finished model generation"
+            return build!(model)
         end
 
         model.ext[:_iesopt_failed_generate] = false
@@ -525,6 +523,8 @@ function build!(model::JuMP.Model)
     # Build the model.
     _build_model!(model)
 
+    @info "[build] Model successfully built"
+
     # @info "Profiling results after `build` [time, top 5]" _profiling_format_top(model, 5)...
     return nothing
 end
@@ -565,7 +565,7 @@ end
 
 function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
     if !isempty(internal(model).aux.soft_constraints_penalties)
-        @info "Relaxing constraints based on soft_constraints"
+        @warn "[optimize] Relaxing constraints based on soft_constraints"
         internal(model).aux.soft_constraints_expressions = JuMP.relax_with_penalty!(
             model,
             Dict(k => v.penalty for (k, v) in internal(model).aux.soft_constraints_penalties),
@@ -590,55 +590,59 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
             try
                 rm(log_file; force=true)
             catch
-                @warn "Failed to cleanup solver log file; maybe it appends, maybe it overwrites, maybe it fails - we do not know" log_file
+                @warn "[optimize] Failed to cleanup solver log file; maybe it appends, maybe it overwrites, maybe it fails - we do not know" log_file
             end
 
             if JuMP.solver_name(model) == "Gurobi"
-                @info "Logging solver output" log_file
+                @info "[optimize] Passing model to solver" solver_log_file = log_file
                 JuMP.set_attribute(model, "LogFile", log_file)
             elseif JuMP.solver_name(model) == "HiGHS"
-                @info "Logging solver output" log_file
+                @info "[optimize] Passing model to solver" solver_log_file = log_file
                 JuMP.set_attribute(model, "log_file", log_file)
             else
                 # todo: support MOA here
-                @error "Logging solver output is currently only supported for Gurobi and HiGHS"
+                @error "[optimize] Logging solver output is currently only supported for Gurobi and HiGHS"
+                @info "[optimize] Passing model to solver"
             end
         catch
-            @error "Failed to setup solver log file"
+            @error "[optimize] Failed to setup solver log file"
+            @info "[optimize] Passing model to solver"
         end
+    else
+        @info "[optimize] Passing model to solver"
     end
 
-    @info "Starting optimize ..."
     JuMP.optimize!(model; kwargs...)
 
     # todo: make use of `is_solved_and_feasible`? if, make sure the version requirement of JuMP is correct
 
     if JuMP.result_count(model) == 1
         if JuMP.termination_status(model) == JuMP.MOI.OPTIMAL
-            @info "Finished optimizing, solution optimal"
+            @info "[optimize] Finished optimizing, solution optimal"
         elseif JuMP.is_solved_and_feasible(model; allow_local=true)
-            @warn "Finished optimizing, but only a local optimum was found" solver_status = JuMP.raw_status(model)
+            @warn "[optimize] Finished optimizing, but only a local optimum was found" solver_status =
+                JuMP.raw_status(model)
         else
-            @error "Finished optimizing, a solution is available, but it seems to be non-optimal/infeasible" status_code =
+            @error "[optimize] Finished optimizing, a solution is available, but it seems to be non-optimal/infeasible" status_code =
                 JuMP.termination_status(model) solver_status = JuMP.raw_status(model)
         end
     elseif JuMP.result_count(model) == 0
-        @error "No results returned after call to `optimize!`. This most likely indicates an infeasible or unbounded model. You can check with `IESopt.compute_IIS(model)` which constraints make your model infeasible. Note: this requires a solver that supports this (e.g. Gurobi)"
+        @error "[optimize] No results returned after call to `optimize!`. This most likely indicates an infeasible or unbounded model. You can check with `IESopt.compute_IIS(model)` which constraints make your model infeasible. Note: this requires a solver that supports this (e.g. Gurobi)"
         return nothing
     else
         if !isnothing(@config(model, optimization.multiobjective))
             if JuMP.termination_status(model) == JuMP.MOI.OPTIMAL
-                @info "Finished optimizing, solution(s) optimal" result_count = JuMP.result_count(model)
+                @info "[optimize] Finished optimizing, solution(s) optimal" result_count = JuMP.result_count(model)
             elseif JuMP.is_solved_and_feasible(model; allow_local=true)
-                @warn "Finished optimizing, but only local optima were found" result_count = JuMP.result_count(model) solver_status =
-                    JuMP.raw_status(model)
+                @warn "[optimize] Finished optimizing, but only local optima were found" result_count =
+                    JuMP.result_count(model) solver_status = JuMP.raw_status(model)
             else
-                @error "Finished optimizing, solution(s) are available, but seem to be non-optimal/infeasible" result_count =
+                @error "[optimize] Finished optimizing, solution(s) are available, but seem to be non-optimal/infeasible" result_count =
                     JuMP.result_count(model) status_code = JuMP.termination_status(model) solver_status =
                     JuMP.raw_status(model)
             end
         else
-            @warn "Unexpected result count after call to `optimize!`" result_count = JuMP.result_count(model) status_code =
+            @warn "[optimize] Unexpected result count after call to `optimize!`" result_count = JuMP.result_count(model) status_code =
                 JuMP.termination_status(model) solver_status = JuMP.raw_status(model)
         end
     end
@@ -656,8 +660,8 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
         end
 
         if !isempty(relaxed_components)
-            @warn "The safety constraint feature triggered" n_components = length(relaxed_components) components = "[$(relaxed_components[1]), ...]"
-            @info "You can further analyse the relaxed components by looking at the `soft_constraints_penalties` and `soft_constraints_expressions` entries in `model.ext`."
+            @warn "[optimize] The safety constraint feature triggered; you can further analyse the relaxed components by looking at the `soft_constraints_penalties` and `soft_constraints_expressions` entries in `model.ext`." n_components =
+                length(relaxed_components) components = "[$(relaxed_components[1]), ...]"
         end
     end
 
