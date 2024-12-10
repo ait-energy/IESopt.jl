@@ -1,0 +1,14 @@
+parameters:
+  cost: ~
+  node_to: ~
+
+components:
+  supply:
+    type: Profile
+    carrier: electricity
+    mode: ranged
+    ub: 1.0*<self>.size:value + 3.0 + 62.5 * (1.6e-4/0.01 * <self>.size:value)
+    node_to: <node_to>
+  size:
+    type: Decision
+    cost: <cost>
