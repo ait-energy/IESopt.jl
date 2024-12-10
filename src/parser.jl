@@ -20,6 +20,12 @@ function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global
             @debug "Global parameters loaded" Dict(Symbol(k) => v for (k, v) in internal(model).input.parameters)...
         end
 
+        v_curr = VersionNumber(string(pkgversion(@__MODULE__))::String)
+        v_core = VersionNumber(@config(model, general.version.core)::String)
+        if v_curr != v_core
+            @warn "The configured `version.core` (v$(v_core)) in the configuration file is not identical with the current version of `IESopt.jl` (v$(v_curr)); be aware that even bug fixes might change the results and therefore should be considered BREAKING for your project"
+        end
+
         # Pre-load all registered files.
         merge!(internal(model).input.files, _parse_inputfiles(model, @config(model, files)))
         if !isempty(internal(model).input.files)
