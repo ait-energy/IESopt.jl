@@ -69,6 +69,9 @@
         # generate!(normpath(__dir, "37_certificates.iesopt.yaml"))
         safe_close_filelogger(generate!(normpath(__dir, "44_lossy_connections.iesopt.yaml")))
         safe_close_filelogger(generate!(normpath(__dir, "47_disable_components.iesopt.yaml")))
+
+        get_global("config")
+        get_global("skip_validation")
     end
 
     # Reset global settings.
