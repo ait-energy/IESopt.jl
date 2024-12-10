@@ -48,10 +48,10 @@ function _prepare_config!(model::JuMP.Model)
         _prepare_config_results!(model)
         _prepare_config_paths!(model)
 
-        current_version_core = string(pkgversion(@__MODULE__))::String
-        version_core = @config(model, general.version.core)::String
-        if version_core != current_version_core
-            @error "The `version.core` (v$(version_core)) entry in the configuration file is different from the current version of `IESopt.jl` (v$(current_version_core)), which might lead to unexpected behavior or errors"
+        v_curr = VersionNumber(string(pkgversion(@__MODULE__))::String)
+        v_core = VersionNumber(@config(model, general.version.core)::String)
+        if (v_core.major != v_curr.major) || (v_curr < v_core)
+            @error "The required `version.core` (v$(v_core)) in the configuration file is not compatible with the current version of `IESopt.jl` (v$(v_curr)), which might lead to unexpected behavior or errors"
         end
 
         unknown_sections = [
