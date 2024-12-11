@@ -76,6 +76,15 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     """
     loss_mode::Symbol = :to
 
+    raw"""```{"mandatory": "no", "values": "``\\in [0, \\infty]``", "unit": "hours", "default": "0"}```
+    Delay between withdrawing energy from `node_from` and injecting it into `node_to`. This can be used to model, e.g.,
+    river flows, where the water takes some time to travel from one point to another (e.g., in a cascade of reservoirs).
+    Note that this delay is always "cyclic" meaning if it extends over the modeling period, it will be "wrapped around",
+    starting again at the beginning of the period. Further, the flow is always withdrawn at Snapshot `t` and injected at
+    `t + delay`.
+    """
+    delay::Expression = @_default_expression(nothing)
+
     # Energy Transfer Distribution Factors
     etdf::Union{Dict{<:Union{_ID, _String}, <:Any}, _String, Nothing} = nothing
 
@@ -223,6 +232,32 @@ function _isvalid(connection::Connection)
 
     if !(connection.loss_mode in (:to, :from, :split))
         @critical "Unknown <loss_mode> for Connection" connection = connection.name
+    end
+
+    if !_isempty(connection.delay)
+        for t in get_T(connection.model)
+            delay = access(connection.delay, t, Float64)
+            if delay < 0
+                @critical "Setting <delay> for Connection requires nonnegative values" connection = connection.name
+            end
+        end
+
+        # Check if all Snapshots have the same duration.
+        # TODO: This is a temporary solution, implement and remove this.
+        sw = [s.weight for s in values(internal(connection.model).model.snapshots)]
+        if !all(elem -> elem == sw[1], sw)
+            @critical "Setting <delay> for Connection currently requires equal Snapshot weights" connection =
+                connection.name
+        end
+
+        for t in get_T(connection.model)
+            delay = access(connection.delay, t, Float64)
+            if !isinteger(delay / sw[1])
+                # TODO: This is a temporary solution, implement and remove this.
+                @critical "Setting <delay> for Connection currently requires integer delays (thought in Snapshots)" connection =
+                    connection.name
+            end
+        end
     end
 
     return true

@@ -5,5 +5,6 @@ The construction of a Connection's in/out expressions is directly done in `_conn
 that constructs the variable `flow`.
 """
 function _connection_exp_out!(connection::Connection)
+    connection.exp.out = collect(JuMP.AffExpr(0.0) for _ in get_T(connection.model))
     return nothing
 end

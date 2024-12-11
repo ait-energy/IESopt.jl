@@ -69,22 +69,27 @@ function _connection_var_flow!(connection::Connection)
         ntei = components[connection.node_to].exp.injection::Vector{JuMP.AffExpr}
         loss = _prepare(connection.loss; default=0.0)
 
-        if connection.loss_mode == :to
-            connection.exp.in = collect(JuMP.AffExpr(0.0, cvf[t] => 1.0) for t in get_T(model))
-            connection.exp.out =
-                collect(JuMP.AffExpr(0.0, cvf[t] => (1.0 - access(loss, t, Float64))::Float64) for t in get_T(model))
-        elseif connection.loss_mode == :from
-            connection.exp.in = collect(
-                JuMP.AffExpr(0.0, cvf[t] => 1.0 / (1.0 - access(loss, t, Float64))::Float64) for t in get_T(model)
-            )
-            connection.exp.out = collect(JuMP.AffExpr(0.0, cvf[t] => 1.0) for t in get_T(model))
-        elseif connection.loss_mode == :split
-            connection.exp.in = collect(
-                JuMP.AffExpr(0.0, cvf[t] => 1.0 / sqrt(1.0 - access(loss, t, Float64))::Float64) for t in get_T(model)
-            )
-            connection.exp.out = collect(
-                JuMP.AffExpr(0.0, cvf[t] => sqrt(1.0 - access(loss, t, Float64))::Float64) for t in get_T(model)
-            )
+        Δ = internal(connection.model).model.snapshots[1].weight
+        has_delay = !_isempty(connection.delay)
+
+        @inbounds @simd for t in get_T(model)
+            t0 = t
+            if !has_delay
+                t1 = t
+            else
+                t1 = (Int64(t + access(connection.delay, t)::Float64 / Δ) - 1) % get_T(model)[end] + 1
+            end
+
+            if connection.loss_mode == :to
+                JuMP.add_to_expression!(connection.exp.in[t0], cvf[t0], 1.0)
+                JuMP.add_to_expression!(connection.exp.out[t1], cvf[t0], (1.0 - access(loss, t0)::Float64))
+            elseif connection.loss_mode == :from
+                JuMP.add_to_expression!(connection.exp.in[t0], cvf[t0], 1.0 / (1.0 - access(loss, t0)::Float64))
+                JuMP.add_to_expression!(connection.exp.out[t1], cvf[t0], 1.0)
+            elseif connection.loss_mode == :split
+                JuMP.add_to_expression!(connection.exp.in[t0], cvf[t0], 1.0 / sqrt(1.0 - access(loss, t0)::Float64))
+                JuMP.add_to_expression!(connection.exp.out[t1], cvf[t0], sqrt(1.0 - access(loss, t0)::Float64))
+            end
         end
 
         @inbounds @simd for t in get_T(model)
