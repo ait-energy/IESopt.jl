@@ -10,6 +10,10 @@ import ..IESopt: @critical
 import ArgCheck: @argcheck
 import JuMP
 
+public annuity
+public timespan
+public yearspan
+
 """
     annuity(total::Real; lifetime::Real, rate::Float64, fraction::Float64)
 
