@@ -7,6 +7,8 @@ module Assets
 
 using RelocatableFolders
 
+public get_path
+
 """
     get_path(asset_type::String)
 
