@@ -59,13 +59,31 @@ A `Connection` is used to model arbitrary flows of energy between `Node`s. It al
     cost::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "0"}```
-    Fractional loss when transferring energy. This loss occurs "at the destination", which means that for a loss of 5%,
-    set as `loss: 0.05`, and considering a `Snapshot` where the `Connection` has a flow value of `100`, it will
-    "extract" `100` from `node_from` and "inject" `95` into `node_to`. Since the flow variable is given as power, this
-    would, e.g., translate to consuming 200 units of energy at `node_from` and injecting 190 units at `node_to`, if the
-    `Snapshot` duration is 2 hours.
+    Fractional loss when transferring energy. Per default, this loss occurs "at the destination", which means that for a
+    loss of 5%, set as `loss: 0.05`, and considering a `Snapshot` where the `Connection` has a flow value of `100`, it
+    will "extract" `100` from `node_from` and "inject" `95` into `node_to`. Since the flow variable is given as power,
+    this would, e.g., translate to consuming 200 units of energy at `node_from` and injecting 190 units at `node_to`, if
+    the `Snapshot` duration is 2 hours. Refer to `loss_mode` for more information on how to modify this behaviour.
     """
     loss::Expression = @_default_expression(0.0)
+
+    raw"""```{"mandatory": "no", "values": "to, from, split", "unit": "-", "default": "to"}```
+    Configures where the fractional loss (set by `loss`) occurs. `to` means that the loss occurs at the destination,
+    `from` means that the loss occurs at the source, and `split` means that the loss is split between source and
+    destination. Not that for most cases `to` is the correct choice, as it is the most common behaviour - the other
+    options, e.g., lead to the possibility of drawing at a higher power from the `node_from` than the `capacity` of the
+    Connection "allows".
+    """
+    loss_mode::Symbol = :to
+
+    raw"""```{"mandatory": "no", "values": "``\\in [0, \\infty]``", "unit": "hours", "default": "0"}```
+    Delay between withdrawing energy from `node_from` and injecting it into `node_to`. This can be used to model, e.g.,
+    river flows, where the water takes some time to travel from one point to another (e.g., in a cascade of reservoirs).
+    Note that this delay is always "cyclic" meaning if it extends over the modeling period, it will be "wrapped around",
+    starting again at the beginning of the period. Further, the flow is always withdrawn at Snapshot `t` and injected at
+    `t + delay`.
+    """
+    delay::Expression = @_default_expression(nothing)
 
     # Energy Transfer Distribution Factors
     etdf::Union{Dict{<:Union{_ID, _String}, <:Any}, _String, Nothing} = nothing
@@ -212,6 +230,36 @@ function _isvalid(connection::Connection)
         @critical "Setting <loss> for Connection requires nonnegative <lb>" connection = connection.name
     end
 
+    if !(connection.loss_mode in (:to, :from, :split))
+        @critical "Unknown <loss_mode> for Connection" connection = connection.name
+    end
+
+    if !_isempty(connection.delay)
+        for t in get_T(connection.model)
+            delay = access(connection.delay, t, Float64)
+            if delay < 0
+                @critical "Setting <delay> for Connection requires nonnegative values" connection = connection.name
+            end
+        end
+
+        # Check if all Snapshots have the same duration.
+        # TODO: This is a temporary solution, implement and remove this.
+        sw = [s.weight for s in values(internal(connection.model).model.snapshots)]
+        if !all(elem -> elem == sw[1], sw)
+            @critical "Setting <delay> for Connection currently requires equal Snapshot weights" connection =
+                connection.name
+        end
+
+        for t in get_T(connection.model)
+            delay = access(connection.delay, t, Float64)
+            if !isinteger(delay / sw[1])
+                # TODO: This is a temporary solution, implement and remove this.
+                @critical "Setting <delay> for Connection currently requires integer delays (thought in Snapshots)" connection =
+                    connection.name
+            end
+        end
+    end
+
     return true
 end
 
@@ -277,12 +325,16 @@ function _result(connection::Connection, mode::String, field::String; result::In
 end
 
 include("connection/exp_pf_flow.jl")
+include("connection/exp_in.jl")
+include("connection/exp_out.jl")
 include("connection/var_flow.jl")
 include("connection/con_flow_bounds.jl")
 include("connection/obj_cost.jl")
 
 function _construct_expressions!(connection::Connection)
     _connection_exp_pf_flow!(connection)
+    _connection_exp_in!(connection)
+    _connection_exp_out!(connection)
     return nothing
 end
 
