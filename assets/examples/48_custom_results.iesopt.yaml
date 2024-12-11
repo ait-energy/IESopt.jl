@@ -7,7 +7,7 @@ config:
       model: CustomResults
       scenario: SomeScenario_$TIME$
     version:
-      core: 2.1.0
+      core: 2.2.0
   # ------------------------------------------------------------------------------------------------------------------ #
   optimization:
     problem_type: LP
