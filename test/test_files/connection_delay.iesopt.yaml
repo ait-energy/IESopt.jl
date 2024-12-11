@@ -1,0 +1,75 @@
+config:
+  general:
+    version:
+      core: 2.1.0
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 4
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  electricity: {}
+
+components:
+  node1:
+    type: Node
+    carrier: electricity
+  
+  node2:
+    type: Node
+    carrier: electricity
+
+  supply:
+    type: Profile
+    carrier: electricity
+    mode: create
+    node_to: node1
+    cost: 1.0
+  
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: node2
+    value: [1, 2, 3, 3.84868]
+
+  conn1:
+    type: Connection
+    node_from: node1
+    node_to: node2
+    lb: 0
+    ub: 1
+    delay: 3
+  
+  conn2:
+    type: Connection
+    node_from: node1
+    node_to: node2
+    lb: 0
+    ub: 1
+    loss: 0.10
+    delay: 2.0
+
+  conn3:
+    type: Connection
+    node_from: node1
+    node_to: node2
+    lb: 0
+    ub: 1
+    loss: 0.10
+    loss_mode: from
+    delay: 1
+
+  conn4:
+    type: Connection
+    node_from: node1
+    node_to: node2
+    lb: 0.0
+    ub: 1.0
+    loss: 0.10
+    loss_mode: split
+    delay: 3.0/3.0 - 1
