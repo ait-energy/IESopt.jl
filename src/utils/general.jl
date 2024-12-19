@@ -243,7 +243,7 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
         # Before checking the file, let's see if it refers to an already loaded module instead.
         # This requires you to pass the EXACT name of the module as addon name!
         module_name = Symbol(basename(filename)[1:(end - 3)])
-        if (module_name in names(Main; all=true))
+        if isdefined(Main, module_name)
             @debug "Addon already loaded in global Main" addon = module_name
             if @config(model, general.performance.force_addon_reload, Bool)
                 @warn "Cannot force reload an addon that is already loaded in Main, outside IESopt; ignoring reload, and re-using the existing module" module_name
