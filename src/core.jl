@@ -243,6 +243,10 @@ _build_priority(priority, ::Any) = @error "Unsupported build priority" priority
         return keys(getfield(ccocd, :dict))
     end
 
+    function Base.haskey(ccocd::_CoreComponentOptContainerDict, k::Symbol)
+        return haskey(getfield(ccocd, :dict), k)
+    end
+
     # function Base.getproperty(ccoc::_CoreComponentOptContainer, field::Symbol)
     #     (field == :var) && (return getfield(ccoc, :variables))
     #     (field == :con) && (return getfield(ccoc, :constraints))
