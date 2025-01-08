@@ -53,6 +53,7 @@ import JSON
 import CSV
 import DataFrames
 import ZipFile
+import SHA
 
 # Used in Benders/Stochastic.
 import Printf
