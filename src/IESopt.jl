@@ -530,6 +530,122 @@ function build!(model::JuMP.Model)
 end
 
 """
+    write_to_file(model::JuMP.Model, filename::String; format::JuMP.MOI.FileFormats.FileFormat = JuMP.MOI.FileFormats.FORMAT_AUTOMATIC, kwargs...)
+
+Write the given IESopt model to a file with the specified filename and format.
+
+Be aware, that this function will overwrite any existing file with the same name!
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model to be written to a file.
+- `filename::String`: The name of the file to which the model should be written. Note that if the format is set to
+  `FORMAT_AUTOMATIC`, the the file extension will be forced to lower case to allow detection.
+- `format::JuMP.MOI.FileFormats.FileFormat` (optional): The format in which the model should be written. The default is
+  `JuMP.MOI.FileFormats.FORMAT_AUTOMATIC`; if left as that, it will try to automatically determine the format based on
+  the file extension.
+
+All additional keyword arguments are passed to the `JuMP.write_to_file` function.
+
+# Returns
+- `String`: The absolute path to the file to which the model was written.
+
+# Example
+```julia
+import IESopt
+
+model = IESopt.generate!("config.iesopt.yaml")
+IESopt.write_to_file(model, "model.lp")
+```
+"""
+function write_to_file(
+    model::JuMP.Model,
+    filename::String;
+    format::JuMP.MOI.FileFormats.FileFormat=JuMP.MOI.FileFormats.FORMAT_AUTOMATIC,
+    kwargs...,
+)
+    if format == JuMP.MOI.FileFormats.FORMAT_AUTOMATIC
+        fn, ext = splitext(filename)
+        filename = "$(fn)$(lowercase(ext))"
+    end
+
+    JuMP.write_to_file(model, filename; format, kwargs...)
+
+    @debug "[write_to_file] Model written to file" filename
+    return abspath(filename)
+end
+
+"""
+    write_to_file(model::JuMP.Model)
+
+Write the given IESopt model to a file for later use. The filename and location is based on the model's scenario name,
+and will be written to the general "results" path that is configured.
+
+# Arguments
+- `model::JuMP.Model`: The IESopt model to be written to a file.
+
+# Returns
+- `String`: The absolute path to the file to which the model was written.
+
+# Example
+```julia
+import IESopt
+
+model = IESopt.generate!("config.iesopt.yaml")
+IESopt.write_to_file(model)
+```
+"""
+function write_to_file(model::JuMP.Model)
+    folder = @config(model, paths.results)
+    scenario = @config(model, general.name.scenario)
+
+    filename = normpath(folder, "$(scenario).iesopt.mps")
+    mkpath(dirname(filename))
+
+    return write_to_file(model, filename)
+end
+
+@testitem "write_to_file" tags = [:unittest] begin
+    using SHA: sha1
+
+    check_hash(f, h) =
+        open(f, "r") do io
+            return bytes2hex(sha1(read(io, String))) == h
+        end
+
+    model = generate!(String(Assets.get_path("examples", "01_basic_single_node.iesopt.yaml")))
+
+    comparisons = [
+        (fn="test_write_to_file.iesopt.lp", hash="15f3782fa4f38d814d0b247853d4a166c1d7e486"),
+        (fn="test_write_to_file.iesopt.LP", hash="15f3782fa4f38d814d0b247853d4a166c1d7e486"),
+        (fn="test_write_to_file.lp", hash="15f3782fa4f38d814d0b247853d4a166c1d7e486"),
+        (fn="test_write_to_file.iesopt.MPS", hash="2214cbf5df222484d0842043b89f4e5581882f7d"),
+    ]
+
+    # Test various file names.
+    for c in comparisons
+        target = normpath(tempdir(), c.fn)
+        file = write_to_file(model, target)
+        @test isfile(file)
+        @test check_hash(file, c.hash)
+        rm(file)
+    end
+
+    # Test writing to custom file format (including keeping case).
+    file =
+        write_to_file(model, normpath(tempdir(), "test_write_to_file.IESOPT"); format=JuMP.MOI.FileFormats.FORMAT_MOF)
+    @test isfile(file)
+    @test endswith(file, ".IESOPT")
+    @test check_hash(file, "789a1df6f7a2fc587f80e590dff4e3a88a4e0e8f")
+    rm(file)
+
+    # Test automatically determining the filename.
+    file = write_to_file(model)
+    @test isfile(file)
+    @test check_hash(file, "2214cbf5df222484d0842043b89f4e5581882f7d")
+    rm(file)
+end
+
+"""
     optimize!(model::JuMP.Model; kwargs...)
 
 Optimize the given IESopt model with optional keyword arguments.
