@@ -34,3 +34,9 @@ include("src/examples.jl")
 
     @run_package_tests verbose = true filter = ti -> (:examples in ti.tags)
 end
+
+try
+    # Clean up output files after testing is done.
+    rm(normpath(IESopt.Assets.get_path("examples"), "out"); force=true, recursive=true)
+catch
+end
