@@ -72,10 +72,37 @@ function annuity(total::Real, lifetime::Real, rate::Real, fraction::Real)
     @critical msg reason example
 end
 
+"""
+    timespan(model::JuMP.Model)::Float64
+
+Calculate the total timespan (duration, time period, ...) of a model in hours.
+
+# Arguments
+
+- `model::JuMP.Model`: The model for which the timespan is to be calculated.
+
+# Returns
+
+`Float64`: The total timespan of the model in hours.
+"""
 function timespan(model::JuMP.Model)::Float64
     return sum(s.weight for s in values(IESopt._iesopt_model(model).snapshots))
 end
 
+"""
+    yearspan(model::JuMP.Model)::Float64
+
+Calculate the total timespan (duration, time period, ...) of a model in years. This assumes that a full year has a total
+of 8760 hours.
+
+# Arguments
+
+- `model::JuMP.Model`: The model for which the timespan is to be calculated.
+
+# Returns
+
+`Float64`: The total timespan of the model in years.
+"""
 function yearspan(model::JuMP.Model)::Float64
     return timespan(model) / 8760.0
 end
