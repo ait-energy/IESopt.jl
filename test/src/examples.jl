@@ -214,9 +214,3 @@ end
     @test minimum(setpoint) ≈ -4.65 atol = 0.01
     @test maximum(setpoint) ≈ 3.58 atol = 0.01
 end
-
-try
-    # Clean up output files after testing is done.
-    rm(normpath(IESopt.Assets.get_path("examples"), "out"); force=true, recursive=true)
-catch
-end
