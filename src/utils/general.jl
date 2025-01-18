@@ -291,14 +291,7 @@ Load a CSV file and optionally slice it based on the model's snapshot configurat
 - Snapshot aggregation and non-zero offsets are not supported together.
 - The function checks if the range of rows to be returned is within bounds and logs a critical message if it is not.
 """
-function _getcsv(
-    model::JuMP.Model,
-    filename::String;
-    sep::Char=',',
-    dec::Char='.',
-    sink=DataFrames.DataFrame,
-    slice::Bool,
-)
+function _getcsv(model::JuMP.Model, filename::String; sink=DataFrames.DataFrame, slice::Bool)
     @debug "Trying to load CSV" filename
 
     # NOTES:
@@ -307,15 +300,32 @@ function _getcsv(
     # - The conversion to Float64 prevents Int64 columns being passed on.
     # - Using `identity` to "downcast" from `Union{Float64, Missing}` to `Float64`.
 
+    comment = @config(model, files._csv_config.comment, Union{String, Nothing})
+    delim = @config(model, files._csv_config.delim, Char)
+    decimal = @config(model, files._csv_config.decimal, Char)
+
+    local table
+    csv_stderr = @capture_err begin
+        table = CSV.read(filename, sink; comment, delim, decimal, stringtype=String)::DataFrames.DataFrame
+    end
+
+    if !isempty(csv_stderr)
+        path_results = @config(model, paths.results)
+        curr_ts = Dates.format(Dates.now(), "yyyy_mm_dd_HHMMSSs")
+        csv_log = normpath(path_results, "csv_stderr_$(curr_ts).log")
+        first_log = split(csv_stderr, "\n")[1]
+
+        @error "CSV file reading resulted in unexpected warnings/errors; full stderr will be written to `csv_log`" filename first_log csv_log
+        write(csv_log, csv_stderr)
+    end
+
     if !slice
         # If we are not slicing we return the whole table.
         return DataFrames.mapcols(
             v -> v isa AbstractVector{Int64} ? convert(Vector{Float64}, v) : v,
-            CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)::DataFrames.DataFrame,
+            table,
         )::DataFrames.DataFrame
     end
-
-    table = CSV.read(filename, sink; delim=sep, stringtype=String, decimal=dec)::DataFrames.DataFrame
 
     # Get some snapshot config parameters
     offset = @config(model, optimization.snapshots.offset, Int64)
