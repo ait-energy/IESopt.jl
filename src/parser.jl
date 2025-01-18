@@ -27,7 +27,7 @@ function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global
         end
 
         # Pre-load all registered files.
-        merge!(internal(model).input.files, _parse_inputfiles(model, @config(model, files)))
+        merge!(internal(model).input.files, _parse_inputfiles(model))
         if !isempty(internal(model).input.files)
             @debug "Successfully read $(length(internal(model).input.files)) input file(s)"
         end
@@ -178,10 +178,10 @@ function _parse_global_addons(model::JuMP.Model, @nospecialize(addons::Dict{Stri
     )
 end
 
-function _parse_inputfiles(model::JuMP.Model, files::Dict{String, Any})
-    isempty(files) || @debug "Detected input files: Start preloading"
+function _parse_inputfiles(model::JuMP.Model)
+    @debug "Start preloading input input files"
     return Dict{String, Union{DataFrames.DataFrame, Module}}(
-        name => _getfile(model, filename) for (name, filename) in files
+        name => _getfile(model, filename) for (name, filename) in @config(model, files) if !startswith(name, "_")
     )
 end
 
