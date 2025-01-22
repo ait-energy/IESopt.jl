@@ -214,3 +214,24 @@ end
     @test minimum(setpoint) ≈ -4.65 atol = 0.01
     @test maximum(setpoint) ≈ 3.58 atol = 0.01
 end
+
+@testitem "49_csv_format" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    cfg = String(Assets.get_path("examples", "49_csv_formats.iesopt.yaml"))
+
+    model = generate!(cfg)
+    @test size(internal(model).input.files["data"]) == (8760, 9)
+
+    optimize!(model)
+    true_obj_val =
+        JuMP.objective_value(IESopt.run(String(Assets.get_path("examples", "07_csv_filestorage.iesopt.yaml"))))
+    @test JuMP.objective_value(model) ≈ true_obj_val
+
+    @test size(
+        internal(
+            @test_logs (:error, "Error(s) during model generation") match_mode = :any generate!(
+                cfg;
+                config=Dict("files._csv_config" => Dict()),
+            )
+        ).input.files["data"],
+    ) == (8760, 8)
+end
