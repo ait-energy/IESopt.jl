@@ -1,0 +1,44 @@
+config:
+  general:
+    version:
+      core: 2.4.0
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 4
+      weights: 0.25
+  results:
+    enabled: true
+    memory_only: true
+
+carriers:
+  water: {}
+
+components:
+  upper:
+    type: Node
+    carrier: water
+  lower:
+    type: Node
+    carrier: water
+  river:
+    type: Connection
+    node_from: upper
+    node_to: lower
+    delay: 0.33
+  inflow:
+    type: Profile
+    carrier: water
+    node_to: upper
+    mode: create
+  outflow:
+    type: Profile
+    carrier: water
+    node_from: lower
+    value:
+      - 1.0
+      - 2.0
+      - 1.5
+      - 0.5

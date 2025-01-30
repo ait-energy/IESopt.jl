@@ -235,3 +235,7 @@ end
         ).input.files["data"],
     ) == (8760, 8)
 end
+
+@testitem "50_delayed_connections" tags = [:examples] setup = [TestExampleModule] begin
+    TestExampleModule.check(; obj=0.0)
+end
