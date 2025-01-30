@@ -249,15 +249,6 @@ function _isvalid(connection::Connection)
             @critical "Setting <delay> for Connection currently requires equal Snapshot weights" connection =
                 connection.name
         end
-
-        for t in get_T(connection.model)
-            delay = access(connection.delay, t, Float64)
-            if !isinteger(delay / sw[1])
-                # TODO: This is a temporary solution, implement and remove this.
-                @critical "Setting <delay> for Connection currently requires integer delays (thought in Snapshots)" connection =
-                    connection.name
-            end
-        end
     end
 
     return true

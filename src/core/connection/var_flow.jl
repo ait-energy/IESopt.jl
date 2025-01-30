@@ -73,22 +73,35 @@ function _connection_var_flow!(connection::Connection)
         has_delay = !_isempty(connection.delay)
 
         @inbounds @simd for t in get_T(model)
-            t0 = t
-            if !has_delay
-                t1 = t
+            delayed_snapshots, delayed_weights = if !has_delay
+                (t,), (1.0,)
             else
-                t1 = (Int64(t + access(connection.delay, t)::Float64 / Δ) - 1) % get_T(model)[end] + 1
+                Δi, r = divrem(access(connection.delay, t), Δ)
+                mod1.(t .+ Int(Δi) .+ (0, 1), last(get_T(model))), (1 - r / Δ, r / Δ)
             end
-
-            if connection.loss_mode == :to
-                JuMP.add_to_expression!(connection.exp.in[t0], cvf[t0], 1.0)
-                JuMP.add_to_expression!(connection.exp.out[t1], cvf[t0], (1.0 - access(loss, t0)::Float64))
-            elseif connection.loss_mode == :from
-                JuMP.add_to_expression!(connection.exp.in[t0], cvf[t0], 1.0 / (1.0 - access(loss, t0)::Float64))
-                JuMP.add_to_expression!(connection.exp.out[t1], cvf[t0], 1.0)
-            elseif connection.loss_mode == :split
-                JuMP.add_to_expression!(connection.exp.in[t0], cvf[t0], 1.0 / sqrt(1.0 - access(loss, t0)::Float64))
-                JuMP.add_to_expression!(connection.exp.out[t1], cvf[t0], sqrt(1.0 - access(loss, t0)::Float64))
+            if connection.loss_mode === :to
+                JuMP.add_to_expression!(connection.exp.in[t], cvf[t], 1.0)
+                for (i, td) in enumerate(delayed_snapshots)
+                    JuMP.add_to_expression!(
+                        connection.exp.out[td],
+                        cvf[t],
+                        delayed_weights[i] * (1.0 - access(loss, t)::Float64),
+                    )
+                end
+            elseif connection.loss_mode === :from
+                JuMP.add_to_expression!(connection.exp.in[t], cvf[t], 1.0 / (1.0 - access(loss, t)::Float64))
+                for (i, td) in enumerate(delayed_snapshots)
+                    JuMP.add_to_expression!(connection.exp.out[td], cvf[t], delayed_weights[i])
+                end
+            elseif connection.loss_mode === :split
+                JuMP.add_to_expression!(connection.exp.in[t], cvf[t], 1.0 / sqrt(1.0 - access(loss, t)::Float64))
+                for (i, td) in enumerate(delayed_snapshots)
+                    JuMP.add_to_expression!(
+                        connection.exp.out[td],
+                        cvf[t],
+                        delayed_weights[i] * sqrt(1.0 - access(loss, t)::Float64),
+                    )
+                end
             end
         end
 
