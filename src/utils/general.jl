@@ -246,7 +246,7 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
         if isdefined(Main, module_name)
             @debug "Addon already loaded in global Main" addon = module_name
             if @config(model, general.performance.force_addon_reload, Bool)
-                @warn "Cannot force reload an addon that is already loaded in Main, outside IESopt; ignoring reload, and re-using the existing module" module_name
+                @warn "Cannot force reload an addon that is already loaded in Main, outside IESopt; ignoring reload, and reusing the existing module" module_name
             end
             return getfield(Main, module_name)
         end
