@@ -237,5 +237,15 @@ end
 end
 
 @testitem "50_delayed_connections" tags = [:examples] setup = [TestExampleModule] begin
-    TestExampleModule.check(; obj=0.0)
+    model = TestExampleModule.check(; obj=0.0)
+
+    river = internal(model).results.components["river"]
+    weight = 0.25
+    delay = 1 // 3
+    d, r = divrem(delay, weight)
+    for i in get_T(model)
+        first_inflow = r / weight * river.exp.in[mod1(i - Int(d) - 1, end)]
+        second_inflow = (1 - r / weight) * river.exp.in[mod1(i - Int(d), end)]
+        @test river.exp.out[i] == first_inflow + second_inflow
+    end
 end

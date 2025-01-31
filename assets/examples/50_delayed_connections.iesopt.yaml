@@ -27,7 +27,7 @@ components:
     type: Connection
     node_from: upper
     node_to: lower
-    delay: 0.33
+    delay: 1 // 3
   inflow:
     type: Profile
     carrier: water
