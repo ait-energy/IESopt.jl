@@ -72,6 +72,8 @@ function _parse_snapshots!(model::JuMP.Model)
             weights = _getfromcsv(model, file, column)
         elseif config["weights"] isa Number
             weights = ones(length(internal(model).model.T)) .* config["weights"]
+        elseif config["weights"] isa Vector{<:Number}
+            weights = config["weights"]
         end
     else
         weights = ones(length(internal(model).model.T))
