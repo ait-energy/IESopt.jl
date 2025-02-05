@@ -1,0 +1,15 @@
+@media screen and (min-width: 1056px) {
+    .docs-main {
+        max-width: 65rem !important;
+    }
+
+    .content {
+        text-align: justify;
+    }
+}
+
+img.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
