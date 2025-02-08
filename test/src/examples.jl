@@ -228,7 +228,7 @@ end
 
     @test size(
         internal(
-            @test_logs (:error, "Error(s) during model generation") match_mode = :any generate!(
+            @test_logs (:error, "[generate] Error(s) during model generation") match_mode = :any generate!(
                 cfg;
                 config=Dict("files._csv_config" => Dict()),
             )
