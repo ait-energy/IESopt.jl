@@ -15,7 +15,7 @@ include("parser.jl")
 include("results/results.jl")
 include("validation/validation.jl")
 include("templates/templates.jl")
-# include("texify/texify.jl")
+include("docify/docify.jl")
 
 function _build_model!(model::JuMP.Model)
     @info "[build] Begin creating JuMP formulation from components"
