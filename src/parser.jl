@@ -232,6 +232,8 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
         model_tags[type] = Vector{String}()
     end
 
+    has_invalid_component_name = false
+
     for (desc, prop) in description
         if _parse_bool(model, pop!(prop, "disabled", false)) || !_parse_bool(model, pop!(prop, "enabled", true))
             @critical "[parse] Disabled components should not end up in parse"
@@ -239,6 +241,12 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
 
         type = pop!(prop, "type")
         name = desc
+
+        if !has_invalid_component_name && !_is_valid_component_name(name)
+            has_invalid_component_name = true
+            @warn "[parse] At least one component seems to not align with the recommended naming convention (similar to `snake_case`, check the documentation for more information)" component =
+                name
+        end
 
         # Each component is tagged at least with its type.
         push!(model_tags[type], name)
@@ -541,7 +549,6 @@ function _parse_components_csv!(
         # todo: this is probably super inefficient
         for row in eachrow(df)
             name = row.name
-            _is_valid_component_name(name) || @error "[parse] Invalid name for component (check documentation)" name
 
             if haskey(description, name)
                 @critical "[parse] Duplicate component entry detected" file component = name
