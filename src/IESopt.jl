@@ -466,9 +466,6 @@ function parse!(
         @critical "Model entry config files need to respect the `.iesopt.yaml` file extension" filename
     end
 
-    # Get all parameters that were passed directly from the caller.
-    global_parameters = something(parameters, Dict{String, Any}())
-
     # Handle passed "modification" keyword arguments.
     model.ext[:_iesopt_kwargs] = Dict(
         :parameters => deepcopy(parameters),
@@ -486,7 +483,7 @@ function parse!(
     isempty(load_components) || @error "The `load_components` keyword argument is not yet supported"
 
     # Load the model specified by `filename`.
-    _parse_model!(model, filename, global_parameters) || (@critical "Error while parsing model" filename)
+    _parse_model!(model, filename) || (@critical "Error while parsing model" filename)
 
     return true
 end

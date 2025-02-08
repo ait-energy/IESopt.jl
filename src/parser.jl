@@ -1,11 +1,11 @@
-function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global_parameters::Dict))
+function _parse_model!(model::JuMP.Model, filename::String)
     filename = normpath(filename)
     model.ext[:_iesopt_wd] = dirname(filename)
     model.ext[:_iesopt] = InternalData(YAML.load_file(filename; dicttype=Dict{String, Any}))
     model.ext[:iesopt] = _IESoptDataDeprecator(model)
 
     # Parse the overall global configuration (e.g., replacing parameters).
-    _parse_global_specification!(model, global_parameters) || return false
+    _parse_global_specification!(model) || return false
 
     # Construct the final (internal) configuration structure.
     _prepare_config!(model)
@@ -82,8 +82,9 @@ function _parse_model!(model::JuMP.Model, filename::String, @nospecialize(global
     return true
 end
 
-function _parse_global_specification!(model::JuMP.Model, @nospecialize(global_parameters::Dict))
+function _parse_global_specification!(model::JuMP.Model)
     data = (internal(model).input._tl_yaml)::Dict{String, Any}
+    global_parameters = model.ext[:_iesopt_kwargs][:parameters]
 
     # Check for stochastic configurations.
     if haskey(data, "stochastic")
