@@ -274,7 +274,8 @@ function generate!(
         # Parse & build the model.
         parse!(model, filename; kwargs...) || return model
         with_logger(_iesopt_logger(model)) do
-            skip_validation || (@info "YAML file validation was done; pass `skip_validation = true` to save some time")
+            skip_validation ||
+                (@info "[generate] YAML file validation was done; pass `skip_validation = true` to save some time")
 
             if JuMP.mode(model) != JuMP.DIRECT && JuMP.MOIU.state(JuMP.backend(model)) == JuMP.MOIU.NO_OPTIMIZER
                 _attach_optimizer(model)
@@ -315,7 +316,7 @@ function generate!(
             trace = stacktrace(backtrace)
 
             # Debug log the full backtrace.
-            @debug "Details on error #$(length(_exceptions) + 1)" error = (exception, trace)
+            @debug "[generate] Details on error #$(length(_exceptions) + 1)" error = (exception, trace)
 
             # Error log the backtrace, but remove modules that only clutter the trace.
             trace = [e for e in trace if !isnothing(parentmodule(e)) && !(nameof(parentmodule(e)) in remove_modules)]
@@ -326,7 +327,7 @@ function generate!(
             )
         end
 
-        @error "Error(s) during model generation" debug number_of_errors = length(curr_ex) _exceptions...
+        @error "[generate] Error(s) during model generation" debug number_of_errors = length(curr_ex) _exceptions...
         model.ext[:_iesopt_failed_generate] = true
     else
         # with_logger(_iesopt_logger(model)) do
@@ -343,7 +344,7 @@ _setoptnow(model::JuMP.Model, ::Val{:none}, moa::Bool) = @critical "This code sh
 function _attach_optimizer(model::JuMP.Model)
     solver_name = @config(model, optimization.solver.name)
 
-    @info "Attaching solver `$(solver_name)` to model"
+    @info "[generate > attach] Attaching solver `$(solver_name)` to model"
 
     solver = get(
         Dict{String, Symbol}(
@@ -360,11 +361,11 @@ function _attach_optimizer(model::JuMP.Model)
     )::Symbol
 
     if solver == :unknown
-        @critical "Can't determine proper solver" solver_name
+        @critical "[generate > attach] Can't determine proper solver" solver_name
     end
 
     if @config(model, optimization.solver.mode) == "direct"
-        @critical "Automatic direct mode is currently not supported"
+        @critical "[generate > attach] Automatic direct mode is currently not supported"
     end
 
     if solver == :HiGHS
@@ -375,7 +376,7 @@ function _attach_optimizer(model::JuMP.Model)
         end
     else
         try
-            @debug "Trying to import solver interface" solver
+            @debug "[generate > attach] Trying to import solver interface" solver
             # Main.eval(Meta.parse("import $(solver)"))
             Base.require(Main, solver)
         catch
@@ -399,16 +400,16 @@ function _attach_optimizer(model::JuMP.Model)
 
     if _is_multiobjective(model)
         moa_mode = @config(model, optimization.multiobjective.mode)
-        @debug "Setting MOA mode" mode = moa_mode
+        @debug "[generate > attach] Setting MOA mode" mode = moa_mode
         JuMP.set_attribute(model, MOA.Algorithm(), eval(Meta.parse("MOA.$moa_mode()")))
     end
 
     for (attr, value) in @config(model, optimization.solver.attributes)
         try
             @suppress JuMP.set_attribute(model, attr, value)
-            @debug "Setting attribute" attr value
+            @debug "[generate > attach] Setting attribute" attr value
         catch
-            @error "Failed to set attribute" attr value
+            @error "[generate > attach] Failed to set attribute" attr value
         end
     end
 
@@ -422,9 +423,9 @@ function _attach_optimizer(model::JuMP.Model)
                 else
                     JuMP.set_attribute(model, eval(Meta.parse("$attr()")), value)
                 end
-                @debug "Setting attribute" attr value
+                @debug "[generate > attach] Setting attribute" attr value
             catch
-                @error "Failed to set attribute" attr value
+                @error "[generate > attach] Failed to set attribute" attr value
             end
         end
     end
