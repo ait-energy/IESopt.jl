@@ -471,14 +471,15 @@ function parse!(
 
     # Handle passed "modification" keyword arguments.
     model.ext[:_iesopt_kwargs] = Dict(
-        :parameters => parameters,
-        :config => config,
-        :addons => addons,
-        :carriers => carriers,
+        :parameters => deepcopy(parameters),
+        :config => deepcopy(config),
+        :addons => deepcopy(addons),
+        :carriers => deepcopy(carriers),
         :components => components,
         :load_components => load_components,
     )
-    # TODO
+
+    # TODO: properly check necessity of deepcopy (especially when adding "components" and "load_components")
     isempty(addons) || @error "The `addons` keyword argument is not yet supported"
     isempty(carriers) || @error "The `carriers` keyword argument is not yet supported"
     isempty(components) || @error "The `components` keyword argument is not yet supported"
