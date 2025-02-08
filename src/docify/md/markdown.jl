@@ -195,7 +195,7 @@ function _describe_constraint(c)
         push!(std_con, (lhs=std_terms, sign=sign, rhs=rhs))
     end
 
-    # TODO: constraints could be "alike" in the RHS and "identical" in the LHS, which shoould be better tracked
+    # TODO: constraints could be "alike" in the RHS and "identical" in the LHS, which should be better tracked
     #       Example: RES availability
 
     # Find out how to group the constraints (:identical, :alike, :distinct).
