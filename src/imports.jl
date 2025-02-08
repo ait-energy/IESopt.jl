@@ -1,3 +1,9 @@
+using Preferences: @load_preference
+
+@static if !@load_preference("precompile", true)
+    __precompile__(false)
+end
+
 using PrecompileTools: @setup_workload, @compile_workload, @recompile_invalidations
 
 # See: https://discourse.julialang.org/t/base-docs-doc-failing-with-1-11-0/121187
