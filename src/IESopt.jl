@@ -466,26 +466,24 @@ function parse!(
         @critical "Model entry config files need to respect the `.iesopt.yaml` file extension" filename
     end
 
-    # Get all parameters that were passed directly from the caller.
-    global_parameters = something(parameters, Dict{String, Any}())
-
     # Handle passed "modification" keyword arguments.
     model.ext[:_iesopt_kwargs] = Dict(
-        :parameters => parameters,
-        :config => config,
-        :addons => addons,
-        :carriers => carriers,
+        :parameters => deepcopy(parameters),
+        :config => deepcopy(config),
+        :addons => deepcopy(addons),
+        :carriers => deepcopy(carriers),
         :components => components,
         :load_components => load_components,
     )
-    # TODO
+
+    # TODO: properly check necessity of deepcopy (especially when adding "components" and "load_components")
     isempty(addons) || @error "The `addons` keyword argument is not yet supported"
     isempty(carriers) || @error "The `carriers` keyword argument is not yet supported"
     isempty(components) || @error "The `components` keyword argument is not yet supported"
     isempty(load_components) || @error "The `load_components` keyword argument is not yet supported"
 
     # Load the model specified by `filename`.
-    _parse_model!(model, filename, global_parameters) || (@critical "Error while parsing model" filename)
+    _parse_model!(model, filename) || (@critical "Error while parsing model" filename)
 
     return true
 end
@@ -943,7 +941,12 @@ end
 
 RuntimeGeneratedFunctions.init(@__MODULE__)
 
-include("precompile/precompile_traced.jl")
-include("precompile/precompile_tools.jl")
+@static if @load_preference("precompile_traced", @load_preference("precompile", true))
+    include("precompile/precompile_traced.jl")
+end
+
+@static if @load_preference("precompile_tools", @load_preference("precompile", true))
+    include("precompile/precompile_tools.jl")
+end
 
 end
