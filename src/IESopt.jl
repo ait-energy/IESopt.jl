@@ -460,6 +460,7 @@ function parse!(
     carriers::Dict=_global_settings.carriers,
     components::Dict=_global_settings.components,
     load_components::Dict=_global_settings.load_components,
+    virtual_files::Dict{String, DataFrames.DataFrame}=Dict{String, DataFrames.DataFrame}(),
 )
     @nospecialize
 
@@ -485,6 +486,14 @@ function parse!(
 
     # Load the model specified by `filename`.
     _parse_model!(model, filename) || (@critical "Error while parsing model" filename)
+
+    # Merge virtual files into the model.
+    if !isempty(virtual_files)
+        with_logger(internal(model).logger) do
+            merge!(internal(model).input.files, virtual_files)
+            @debug "Successfully merged $(length(virtual_files)) virtual file(s)"
+        end
+    end
 
     return true
 end
