@@ -489,8 +489,10 @@ function parse!(
 
     # Merge virtual files into the model.
     if !isempty(virtual_files)
-        merge!(internal(model).input.files, virtual_files)
-        @debug "Successfully merged $(length(virtual_files)) virtual file(s)"
+        with_logger(internal(model).logger) do
+            merge!(internal(model).input.files, virtual_files)
+            @debug "Successfully merged $(length(virtual_files)) virtual file(s)"
+        end
     end
 
     return true
