@@ -180,7 +180,7 @@ function _parse_global_addons(model::JuMP.Model, @nospecialize(addons::Dict{Stri
 end
 
 function _parse_inputfiles(model::JuMP.Model)
-    @debug "Start preloading input input files"
+    @debug "Start preloading input files"
     return Dict{String, Union{DataFrames.DataFrame, Module}}(
         name => _getfile(model, filename) for (name, filename) in @config(model, files) if !startswith(name, "_")
     )
