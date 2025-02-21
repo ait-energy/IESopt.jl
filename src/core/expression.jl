@@ -225,8 +225,9 @@ If the value of `my_exp` is a vector of `Float64`, the first call will succeed, 
     dirty::Bool = false
     temporal::Bool = false
     empty::Bool = false
+    parametric::Bool = false
 
-    value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Vector{JuMP.AffExpr}, Float64, Vector{Float64}} = nothing
+    value::Union{Nothing, JuMP.VariableRef, Vector{JuMP.VariableRef}, JuMP.AffExpr, Vector{JuMP.AffExpr}, Float64, Vector{Float64}} = nothing
     internal::Union{Nothing, NamedTuple} = nothing
 end
 
@@ -263,6 +264,34 @@ _isfixed(e::Expression) = (
     (!any(occursin(':', el) for el in e.internal.elements))
 )::Bool
 _isempty(e::Expression) = e.empty::Bool
+_isparametric(e::Expression) = e.parametric::Bool
+
+function set_unknown(e::Expression, value::Real)
+    if !e.parametric
+        @critical "Only parametric expressions support `set_unknown`"
+    end
+
+    if e.temporal
+        JuMP.set_parameter_value.(e.value, convert.(Float64, value))
+    else
+        JuMP.set_parameter_value(e.value, convert(Float64, value))
+    end
+
+    return nothing
+end
+
+function set_unknown(e::Expression, value::Vector{<: Real})
+    if !e.parametric
+        @critical "Only parametric expressions support `set_unknown`"
+    end
+
+    if !e.temporal
+        @critical "Only temporal expressions support `set_unknown` with a vector-valued argument, use `\$(t)` instead of `\$()`"
+    end
+
+    JuMP.set_parameter_value.(e.value, convert.(Float64, value))
+    return nothing
+end
 
 @recompile_invalidations begin
     function Base.show(io::IO, e::Expression)
@@ -293,6 +322,20 @@ macro _default_expression(value)
 end
 
 function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractString))
+    if startswith(data, "\$")
+        # TODO: base_name = make_base_name(profile, "aux_value")
+
+        if data == "\$()"
+            value = @variable(model, set = JuMP.Parameter(0.0)) 
+            return Expression(; model, value, parametric=true)
+        elseif data == "\$(t)"
+            value = @variable(model, [t = get_T(model)], set = JuMP.Parameter(0.0), container = Array) 
+            return Expression(; model, value, parametric=true, temporal=true)
+        else
+            @critical "Invalid expression string trying to create an unknown, either use `\$()` or `\$(t)`" data
+        end
+    end
+
     parsed = _parse_expression(model, data, _GeneralExpressionType())
 
     if hasproperty(parsed, :val)
@@ -372,6 +415,8 @@ function access(e::Expression, t::_ID)
         return (e.value::Vector{JuMP.AffExpr})[t]::JuMP.AffExpr
     elseif e.value isa Vector{Float64}
         return (e.value::Vector{Float64})[t]::Float64
+    elseif e.value isa Vector{JuMP.VariableRef}
+        (e.value::Vector{JuMP.VariableRef})[t]::JuMP.VariableRef
     else
         return e.value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Float64}
     end
