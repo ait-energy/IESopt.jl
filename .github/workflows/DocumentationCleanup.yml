@@ -3,9 +3,9 @@
 
 name: DocumenationCleanup
 
-on:
-  pull_request:
-    types: [closed]
+on: {}
+#   pull_request:
+#     types: [closed]
 
 concurrency:
   group: doc-preview-cleanup
