@@ -266,7 +266,7 @@ _isfixed(e::Expression) = (
 _isempty(e::Expression) = e.empty::Bool
 _isparametric(e::Expression) = e.parametric::Bool
 
-function set_unknown(e::Expression, value::Real)
+function set_unknown!(e::Expression, value::Real)
     if !e.parametric
         @critical "Only parametric expressions support `set_unknown`"
     end
@@ -280,7 +280,7 @@ function set_unknown(e::Expression, value::Real)
     return nothing
 end
 
-function set_unknown(e::Expression, value::Vector{<: Real})
+function set_unknown!(e::Expression, value::Vector{<: Real})
     if !e.parametric
         @critical "Only parametric expressions support `set_unknown`"
     end
