@@ -230,13 +230,13 @@ function _after_construct_variables!(profile::Profile)
         for t in get_T(model)
             _repr_t =
                 internal(model).model.snapshots[t].is_representative ? t :
-                internal(model).model.snapshots[t].representative
-            val = access(profile.value, _repr_t, Float64)
+                internal(model).model.snapshots[t].representative           
 
-            if (profile.mode === :fixed) && false  # TODO _iesopt_config(model).parametric
-                JuMP.fix(profile.var.aux_value[t], val; force=true)
-                JuMP.add_to_expression!(profile.exp.value[t], profile.var.aux_value[t])
+            if _isparametric(profile.value)
+                val = access(profile.value, _repr_t)::JuMP.VariableRef
+                JuMP.add_to_expression!(profile.exp.value[t], val)
             else
+                val = access(profile.value, _repr_t)::Float64
                 JuMP.add_to_expression!(profile.exp.value[t], val)
             end
         end
