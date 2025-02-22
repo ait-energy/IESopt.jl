@@ -550,7 +550,7 @@ function _unit_capacity_limits(unit::Unit)
 
         if _isparametric(unit.availability) || _isparametric(unit.capacity)
             @critical "Parametric <availability> and <capacity> are currently not supported" unit = unit.name
-        end 
+        end
 
         max_conversion =
             min.(
