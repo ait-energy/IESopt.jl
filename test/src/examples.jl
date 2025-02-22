@@ -250,7 +250,7 @@ end
     end
 end
 
-@testitem "51_parametric_expressions" tags = [:examples] setup = [TestExampleModule] begin
+@testitem "51_parametric_expressions" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     fn_non_parametric = String(Assets.get_path("examples", "07_csv_filestorage.iesopt.yaml"))
     fn_parametric = String(Assets.get_path("examples", "51_parametric_expressions.iesopt.yaml"))
 
