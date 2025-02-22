@@ -145,8 +145,8 @@ function _isvalid(profile::Profile)
     end
 
     if (profile.mode === :create) || (profile.mode === :destroy)
-        !_isempty(profile.lb) && (@warn "Setting <lb> is ignored" profile = profile.name mode = profile.mode)
-        !_isempty(profile.ub) && (@warn "Setting <ub> is ignored" profile = profile.name mode = profile.mode)
+        !_isempty(profile.lb) && (@error "Setting <lb> is ignored" profile = profile.name mode = profile.mode)
+        !_isempty(profile.ub) && (@error "Setting <ub> is ignored" profile = profile.name mode = profile.mode)
     end
 
     if !(profile.mode in [:fixed, :create, :destroy, :ranged])
