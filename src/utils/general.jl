@@ -8,7 +8,7 @@ end
     expressions = _CoreComponentOptContainerDict{Union{JuMP.AffExpr, Vector{JuMP.AffExpr}}}()
     variables = _CoreComponentOptContainerDict{Union{JuMP.VariableRef, Vector{JuMP.VariableRef}}}()
     constraints = _CoreComponentOptContainerDict{Union{JuMP.ConstraintRef, Vector{<:JuMP.ConstraintRef}}}()       # TODO: this clashes with a more specific definition of `ConstraintRef` in JuMP
-    objectives = _CoreComponentOptContainerDict{JuMP.AffExpr}()
+    objectives = _CoreComponentOptContainerDict{Union{JuMP.AffExpr, JuMP.QuadExpr}}()
 end
 
 """

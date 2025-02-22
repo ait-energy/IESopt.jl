@@ -13,7 +13,7 @@ function _decision_obj_value!(decision::Decision)
     end
 
     model = decision.model
-    decision.obj.value = decision.var.value * decision.cost
+    decision.obj.value = decision.var.value * access(decision.cost)
     push!(internal(model).model.objectives["total_cost"].terms, decision.obj.value)
 
     return nothing

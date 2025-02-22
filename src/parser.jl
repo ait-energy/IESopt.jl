@@ -58,8 +58,8 @@ function _parse_model!(model::JuMP.Model, filename::String)
         # Construct the objectives container & add all registered objectives.
         for (name, terms) in @config(model, optimization.objective.functions)
             internal(model).model.objectives[name] = (
-                terms=Set{Union{JuMP.AffExpr, JuMP.VariableRef}}(),
-                expr=JuMP.AffExpr(0.0),
+                terms=Set{Union{JuMP.VariableRef, JuMP.AffExpr, JuMP.QuadExpr}}(),
+                expr=_is_parametric(model) ? zero(JuMP.QuadExpr) : zero(JuMP.AffExpr),
                 constants=Vector{Float64}(),
             )
             internal(model).aux._obj_terms[name] = terms
@@ -461,13 +461,9 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             # Convert to Symbol
             mode = Symbol(pop!(prop, "mode", :linear))
 
-            lb = pop!(prop, "lb", 0)
-            ub = pop!(prop, "ub", nothing)
-            cost = pop!(prop, "cost", nothing)
-
-            (lb isa AbstractString) && (lb = eval(Meta.parse(lb)))
-            (ub isa AbstractString) && (ub = eval(Meta.parse(ub)))
-            (cost isa AbstractString) && (cost = eval(Meta.parse(cost)))
+            lb = _convert_to_expression(model, pop!(prop, "lb", 0))
+            ub = _convert_to_expression(model, pop!(prop, "ub", nothing))
+            cost = _convert_to_expression(model, pop!(prop, "cost", nothing))
 
             # Initialize.
             components[name] = Decision(;

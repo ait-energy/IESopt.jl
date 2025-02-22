@@ -227,7 +227,15 @@ If the value of `my_exp` is a vector of `Float64`, the first call will succeed, 
     empty::Bool = false
     parametric::Bool = false
 
-    value::Union{Nothing, JuMP.VariableRef, Vector{JuMP.VariableRef}, JuMP.AffExpr, Vector{JuMP.AffExpr}, Float64, Vector{Float64}} = nothing
+    value::Union{
+        Nothing,
+        JuMP.VariableRef,
+        Vector{JuMP.VariableRef},
+        JuMP.AffExpr,
+        Vector{JuMP.AffExpr},
+        Float64,
+        Vector{Float64},
+    } = nothing
     internal::Union{Nothing, NamedTuple} = nothing
 end
 
@@ -280,7 +288,7 @@ function set_unknown!(e::Expression, value::Real)
     return nothing
 end
 
-function set_unknown!(e::Expression, value::Vector{<: Real})
+function set_unknown!(e::Expression, value::Vector{<:Real})
     if !e.parametric
         @critical "Only parametric expressions support `set_unknown`"
     end
@@ -323,16 +331,38 @@ end
 
 function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractString))
     if startswith(data, "\$")
-        # TODO: base_name = make_base_name(profile, "aux_value")
+        # NOTE (possible options are):
+        # - `$()`: A scalar unknown, defaulting to `0.0`.
+        # - `$(12.34)`: A scalar unknown, defaulting to `12.34`.
+        # - `$(t)`: A temporal unknown, defaulting to `0.0`.
+        # - `$(col@file)`: A temporal unknown, defaulting to the values in the column `col` of the file `file`.
 
-        if data == "\$()"
-            value = @variable(model, set = JuMP.Parameter(0.0)) 
-            return Expression(; model, value, parametric=true)
-        elseif data == "\$(t)"
-            value = @variable(model, [t = get_T(model)], set = JuMP.Parameter(0.0), container = Array) 
+        if occursin("@", data)
+            # NOTE: Using `identity` here to "downcast" from `Union{Float64, Missing}` to `Float64`.
+            col, file = string.(split(data[3:(end - 1)], "@"))
+            default = identity.(_getfromcsv(model, file, col))::Vector{Float64}
+            value = @variable(
+                model,
+                [t = get_T(model)],
+                set = JuMP.Parameter(default[t]),
+                base_name = "p",
+                container = Array
+            )  # TODO: make_base_name(component, "some_field")
             return Expression(; model, value, parametric=true, temporal=true)
+        elseif data == "\$(t)"
+            value = @variable(model, [t = get_T(model)], set = JuMP.Parameter(0.0), base_name = "p", container = Array)  # TODO: make_base_name(component, "some_field")
+            return Expression(; model, value, parametric=true, temporal=true)
+        elseif data == "\$()"
+            value = @variable(model, set = JuMP.Parameter(0.0), base_name = "p")  # TODO: make_base_name(component, "some_field")
+            return Expression(; model, value, parametric=true)
         else
-            @critical "Invalid expression string trying to create an unknown, either use `\$()` or `\$(t)`" data
+            # The assumption is that this looks like `$(17.4)`, being a scalar unknown, so we try to parse it.
+            try
+                value = @variable(model, set = JuMP.Parameter(parse(Float64, data[3:(end - 1)])), base_name = "p")  # TODO: make_base_name(component, "some_field")
+                return Expression(; model, value, parametric=true)
+            catch
+                @critical "Invalid expression string trying to create an unknown, expected `\$(12.34)` or similar" data
+            end
         end
     end
 

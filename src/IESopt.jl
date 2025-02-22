@@ -133,9 +133,17 @@ function _build_model!(model::JuMP.Model)
     end
 
     if !_is_multiobjective(model)
-        current_objective = @config(model, optimization.objective.current)
-        isnothing(current_objective) && @critical "[build] Missing an active objective"
-        @objective(model, Min, internal(model).model.objectives[current_objective].expr)
+        if !_is_parametric(model)
+            current_objective = @config(model, optimization.objective.current)
+            isnothing(current_objective) && @critical "[build] Missing an active objective"
+            @objective(model, Min, internal(model).model.objectives[current_objective].expr)
+        else
+            current_objective = @config(model, optimization.objective.current)
+            isnothing(current_objective) && @critical "[build] Missing an active objective"
+
+            # Set an optimizer hook that helps resolving quadratic objectives for parametric models.
+            JuMP.set_optimize_hook(model, _optimize_hook_parametric)
+        end
     else
         @objective(
             model,
@@ -143,6 +151,34 @@ function _build_model!(model::JuMP.Model)
             [internal(model).model.objectives[obj].expr for obj in @config(model, optimization.multiobjective.terms)]
         )
     end
+
+    return nothing
+end
+
+function _optimize_hook_parametric(model::JuMP.Model)
+    obj = internal(model).model.objectives[@config(model, optimization.objective.current)].expr
+
+    if obj isa JuMP.QuadExpr
+        @debug "[optimize > hook] Resolving quadratic objective"
+        obj_aff_aux = zero(JuMP.AffExpr)
+
+        # Add the affine part of the objective.
+        JuMP.add_to_expression!(obj_aff_aux, obj.aff)
+
+        # Add the quadratic part of the objective.
+        for (term, coeff) in obj.terms
+            if JuMP.is_parameter(term.a)
+                JuMP.add_to_expression!(obj_aff_aux, term.b, JuMP.parameter_value(term.a) * coeff)
+            else
+                JuMP.add_to_expression!(obj_aff_aux, term.a, JuMP.parameter_value(term.b) * coeff)
+            end
+        end
+
+        # Overwrite the objective.
+        @objective(model, Min, obj_aff_aux)
+    end
+
+    return JuMP.optimize!(model; ignore_optimize_hook=true)
 end
 
 function _prepare_model!(model::JuMP.Model)
@@ -738,6 +774,8 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
     else
         @info "[optimize] Passing model to solver"
     end
+
+    # TODO: if the objective expression is still "Quad" due to a parametric model, we could substitute it with a affine expression (maybe in the hook?)
 
     JuMP.optimize!(model; kwargs...)
 

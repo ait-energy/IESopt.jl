@@ -20,17 +20,17 @@ component's settings, as well as have associated costs.
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`0`"}```
     Minimum size of the decision value (considered for each "unit" if count allows multiple "units").
     """
-    lb::_OptionalScalarInput = 0
+    lb::Expression = @_default_expression(0.0)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "``+\\infty``"}```
     Maximum size of the decision value (considered for each "unit" if count allows multiple "units").
     """
-    ub::_OptionalScalarInput = nothing
+    ub::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary (per value)", "default": "`0`"}```
     Cost that the decision value induces, given as ``cost \cdot value``.
     """
-    cost::_OptionalScalarInput = nothing
+    cost::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "-"}```
     If `mode: fixed`, this value is used as the fixed value of the decision. This can be useful if this `Decision` was
@@ -165,6 +165,7 @@ include("decision/con_fixed.jl")
 include("decision/con_sos_value.jl")
 include("decision/con_sos1.jl")
 include("decision/con_sos2.jl")
+include("decision/con_value_bounds.jl")
 include("decision/obj_fixed.jl")
 include("decision/obj_sos.jl")
 include("decision/obj_value.jl")
@@ -183,7 +184,9 @@ function _construct_constraints!(decision::Decision)
     _decision_con_fixed!(decision)
     _decision_con_sos_value!(decision)
     _decision_con_sos1!(decision)
-    return _decision_con_sos2!(decision)
+    _decision_con_sos2!(decision)
+    _decision_con_value_bounds!(decision)
+    return nothing
 end
 
 function _construct_objective!(decision::Decision)

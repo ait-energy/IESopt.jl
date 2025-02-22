@@ -24,13 +24,9 @@ function _profile_obj_cost!(profile::Profile)
 
     # todo: this is inefficient: we are building up an AffExpr to add it to the objective; instead: add each term
     # todo: furthermore, this always calls VariableRef * Float, which is inefficient, and could be done in add_to_expression
-    profile.obj.cost = JuMP.AffExpr(0.0)
+    profile.obj.cost = _isparametric(profile.cost) ? zero(JuMP.QuadExpr) : zero(JuMP.AffExpr)
     for t in get_T(model)
-        JuMP.add_to_expression!(
-            profile.obj.cost,
-            profile.exp.value[t],
-            _weight(model, t) * access(profile.cost, t, Float64),
-        )
+        JuMP.add_to_expression!(profile.obj.cost, profile.exp.value[t], _weight(model, t) * access(profile.cost, t))
     end
 
     push!(internal(model).model.objectives["total_cost"].terms, profile.obj.cost)

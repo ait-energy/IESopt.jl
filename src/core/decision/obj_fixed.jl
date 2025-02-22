@@ -11,7 +11,7 @@ function _decision_obj_fixed!(decision::Decision)
 
     model = decision.model
 
-    decision.obj.fixed = JuMP.AffExpr(0.0)
+    decision.obj.fixed = _isparametric(profile.cost) ? zero(JuMP.QuadExpr) : zero(JuMP.AffExpr)
     if decision.mode === :sos1
         for i in eachindex(decision.sos)
             if haskey(decision.sos[i], "fixed_cost")
