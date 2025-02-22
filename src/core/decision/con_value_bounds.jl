@@ -4,7 +4,7 @@
 to be added
 """
 function _decision_con_value_bounds!(decision::Decision)
-    if !isnothing(decision.lb)
+    if !_isempty(decision.lb)
         decision.con.value_lb = @constraint(
             decision.model,
             decision.var.value >= access(decision.lb),
@@ -12,7 +12,7 @@ function _decision_con_value_bounds!(decision::Decision)
         )
     end
 
-    if !isnothing(decision.ub)
+    if !_isempty(decision.ub)
         decision.con.value_ub = @constraint(
             decision.model,
             decision.var.value <= access(decision.ub),
