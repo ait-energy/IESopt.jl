@@ -249,3 +249,32 @@ end
         @test river.exp.out[i] == first_inflow + second_inflow
     end
 end
+
+@testitem "51_parametric_expressions" tags = [:examples] setup = [TestExampleModule] begin
+    fn_non_parametric = String(Assets.get_path("examples", "07_csv_filestorage.iesopt.yaml"))
+    fn_parametric = String(Assets.get_path("examples", "51_parametric_expressions.iesopt.yaml"))
+
+    model = generate!(fn_non_parametric; config=Dict("optimization.snapshots.count" => 168))
+    optimize!(model)
+    obj_val = JuMP.objective_value(model)
+
+    model = generate!(fn_parametric)
+    optimize!(model)
+    @test JuMP.objective_value(model) ≈ obj_val atol = 1e-3
+
+    modify!(get_component(model, "build").cost, 100)
+    optimize!(model)
+    @test JuMP.objective_value(model) ≈ (obj_val + 166.5) atol = 1e-3
+
+    af = query(get_component(model, "plant_wind").availability_factor)
+    @test maximum(af) ≈ 0.99 atol = 1e-3
+    @test minimum(af) ≈ 0.00 atol = 1e-3
+
+    modify!(get_component(model, "plant_wind").availability_factor, af .* 0.95)
+    optimize!(model)
+    @test JuMP.objective_value(model) > (obj_val + 166.5)
+
+    modify!(get_component(model, "plant_wind").availability_factor, af)
+    optimize!(model)
+    @test JuMP.objective_value(model) ≈ (obj_val + 166.5) atol = 1e-3
+end
