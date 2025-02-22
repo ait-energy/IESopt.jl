@@ -274,9 +274,14 @@ _isfixed(e::Expression) = (
 _isempty(e::Expression) = e.empty::Bool
 _isparametric(e::Expression) = e.parametric::Bool
 
-function set_unknown!(e::Expression, value::Real)
+"""
+    modify!(e::Expression, value::Real)
+
+Set the value of a parametric `Expression` object to a scalar value `value`.
+"""
+function modify!(e::Expression, value::Real)
     if !e.parametric
-        @critical "Only parametric expressions support `set_unknown`"
+        @critical "Only parametric expressions support `modify`"
     end
 
     if e.temporal
@@ -288,17 +293,39 @@ function set_unknown!(e::Expression, value::Real)
     return nothing
 end
 
-function set_unknown!(e::Expression, value::Vector{<:Real})
+"""
+    modify!(e::Expression, value::Vector{<:Real})
+
+Set the value of a parametric `Expression` object to a vector value `value`.
+"""
+function modify!(e::Expression, value::Vector{<:Real})
     if !e.parametric
-        @critical "Only parametric expressions support `set_unknown`"
+        @critical "Only parametric expressions support `modify`"
     end
 
     if !e.temporal
-        @critical "Only temporal expressions support `set_unknown` with a vector-valued argument, use `\$(t)` instead of `\$()`"
+        @critical "Only temporal expressions support `modify` with a vector-valued argument, use `\$(t)` instead of `\$()`"
     end
 
     JuMP.set_parameter_value.(e.value, convert.(Float64, value))
     return nothing
+end
+
+"""
+    query(e::Expression)
+
+Query the value of a parametric `Expression` object.
+"""
+function query(e::Expression)
+    if !e.parametric
+        @critical "Only parametric expressions support `query`"
+    end
+
+    if e.temporal
+        return JuMP.parameter_value.(e.value)
+    else
+        return JuMP.parameter_value(e.value)
+    end
 end
 
 @recompile_invalidations begin
