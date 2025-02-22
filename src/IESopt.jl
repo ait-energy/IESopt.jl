@@ -20,12 +20,6 @@ include("docify/docify.jl")
 function _build_model!(model::JuMP.Model)
     @info "[build] Begin creating JuMP formulation from components"
 
-    if @config(model, general.performance.string_names, Bool) != model.set_string_names_on_creation
-        new_val = @config(model, general.performance.string_names, Bool)
-        @debug "Overwriting `string_names_on_creation` to `$(new_val)` based on config"
-        JuMP.set_string_names_on_creation(model, new_val)
-    end
-
     # This specifies the order in which components are built. This ensures that model parts that are used later on, are
     # already initialized (e.g. constructing a constraint may use expressions and variables).
     build_order = [

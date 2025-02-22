@@ -347,16 +347,16 @@ end
     end
 end
 
-_convert_to_expression(model::JuMP.Model, ::Nothing) = Expression(; model, empty=true)
-_convert_to_expression(model::JuMP.Model, data::Real) = Expression(; model, value=convert(Float64, data))
-_convert_to_expression(model::JuMP.Model, data::Vector{<:Real}) =
+_convert_to_expression(model::JuMP.Model, ::Nothing, ::String) = Expression(; model, empty=true)
+_convert_to_expression(model::JuMP.Model, data::Real, ::String) = Expression(; model, value=convert(Float64, data))
+_convert_to_expression(model::JuMP.Model, data::Vector{<:Real}, ::String) =
     Expression(; model, value=convert.(Float64, data), temporal=true)
 
 macro _default_expression(value)
-    return esc(:(_convert_to_expression(model, $value)))
+    return esc(:(_convert_to_expression(model, $value, "")))
 end
 
-function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractString))
+function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractString), base_name::String)
     if startswith(data, "\$")
         # NOTE (possible options are):
         # - `$()`: A scalar unknown, defaulting to `0.0`.
@@ -372,20 +372,26 @@ function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractS
                 model,
                 [t = get_T(model)],
                 set = JuMP.Parameter(default[t]),
-                base_name = "p",
+                base_name = base_name,
                 container = Array
-            )  # TODO: make_base_name(component, "some_field")
+            )
             return Expression(; model, value, parametric=true, temporal=true)
         elseif data == "\$(t)"
-            value = @variable(model, [t = get_T(model)], set = JuMP.Parameter(0.0), base_name = "p", container = Array)  # TODO: make_base_name(component, "some_field")
+            value = @variable(
+                model,
+                [t = get_T(model)],
+                set = JuMP.Parameter(0.0),
+                base_name = base_name,
+                container = Array
+            )
             return Expression(; model, value, parametric=true, temporal=true)
         elseif data == "\$()"
-            value = @variable(model, set = JuMP.Parameter(0.0), base_name = "p")  # TODO: make_base_name(component, "some_field")
+            value = @variable(model, set = JuMP.Parameter(0.0), base_name = base_name)
             return Expression(; model, value, parametric=true)
         else
             # The assumption is that this looks like `$(17.4)`, being a scalar unknown, so we try to parse it.
             try
-                value = @variable(model, set = JuMP.Parameter(parse(Float64, data[3:(end - 1)])), base_name = "p")  # TODO: make_base_name(component, "some_field")
+                value = @variable(model, set = JuMP.Parameter(parse(Float64, data[3:(end - 1)])), base_name = base_name)
                 return Expression(; model, value, parametric=true)
             catch
                 @critical "Invalid expression string trying to create an unknown, expected `\$(12.34)` or similar" data
@@ -449,7 +455,7 @@ end
 
 function _prepare(e::Expression; default::Float64)
     if e.empty
-        return _convert_to_expression(e.model, default)::Expression
+        return _convert_to_expression(e.model, default, "")::Expression
     else
         return e::Expression
     end
