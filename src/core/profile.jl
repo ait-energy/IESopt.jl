@@ -230,7 +230,7 @@ function _after_construct_variables!(profile::Profile)
         for t in get_T(model)
             _repr_t =
                 internal(model).model.snapshots[t].is_representative ? t :
-                internal(model).model.snapshots[t].representative           
+                internal(model).model.snapshots[t].representative
 
             if _isparametric(profile.value)
                 val = access(profile.value, _repr_t)::JuMP.VariableRef
