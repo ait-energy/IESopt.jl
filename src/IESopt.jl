@@ -767,9 +767,6 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
         end
     else
         @info "[optimize] Passing model to solver"
-    end
-
-    # TODO: if the objective expression is still "Quad" due to a parametric model, we could substitute it with a affine expression (maybe in the hook?)
 
     JuMP.optimize!(model; kwargs...)
 
