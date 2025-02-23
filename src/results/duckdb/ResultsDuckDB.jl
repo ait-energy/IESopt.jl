@@ -201,20 +201,7 @@ function db_create_table(db::DuckDB.DB, model::JuMP.Model, ::AttrExtractResults)
         for (rtid, result_type) in enumerate([:expressions, :variables, :constraints, :objectives])
             ccoc = getfield(component, :_ccoc)::IESopt._CoreComponentOptContainer
             ccocd = getfield(ccoc, result_type)::IESopt._CoreComponentOptContainerDict
-            d = getfield(
-                ccocd,
-                :dict,
-            )::Dict{
-                Symbol,
-                <:Union{
-                    JuMP.AffExpr,
-                    Vector{JuMP.AffExpr},
-                    JuMP.VariableRef,
-                    Vector{JuMP.VariableRef},
-                    JuMP.ConstraintRef,
-                    Vector{<:JuMP.ConstraintRef},
-                },
-            }
+            d = getfield(ccocd,:dict)::Dict{Symbol, Any}
 
             for (result, entry) in d
                 rid = get!(rids, result, length(rids) + 1)
