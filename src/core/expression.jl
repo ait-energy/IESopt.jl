@@ -391,7 +391,11 @@ function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractS
         else
             # The assumption is that this looks like `$(17.4)`, being a scalar unknown, so we try to parse it.
             try
-                value = @variable(model, set = JuMP.Parameter(parse(Float64, data[3:(end - 1)])), base_name = base_name)
+                value = @variable(
+                    model,
+                    set = JuMP.Parameter(convert(Float64, eval(JuliaSyntax.parsestmt(Expr, data[3:(end - 1)])))),
+                    base_name = base_name
+                )
                 return Expression(; model, value, parametric=true)
             catch
                 @critical "Invalid expression string trying to create an unknown, expected `\$(12.34)` or similar" data
