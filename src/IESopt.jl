@@ -767,6 +767,7 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
         end
     else
         @info "[optimize] Passing model to solver"
+    end
 
     JuMP.optimize!(model; kwargs...)
 
