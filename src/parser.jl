@@ -26,6 +26,13 @@ function _parse_model!(model::JuMP.Model, filename::String)
             @warn "The configured `version.core` (v$(v_core)) in the configuration file is not identical with the current version of `IESopt.jl` (v$(v_curr)); be aware that even bug fixes might change the results and therefore should be considered BREAKING for your project"
         end
 
+        # Already set `string_names_on_creation`, since we rely on it during component parsing (for parameter names).
+        if @config(model, general.performance.string_names, Bool) != model.set_string_names_on_creation
+            new_val = @config(model, general.performance.string_names, Bool)
+            @debug "Overwriting `string_names_on_creation` to `$(new_val)` based on config"
+            JuMP.set_string_names_on_creation(model, new_val)
+        end
+
         # Pre-load all registered files.
         merge!(internal(model).input.files, _parse_inputfiles(model))
         if !isempty(internal(model).input.files)
@@ -58,8 +65,8 @@ function _parse_model!(model::JuMP.Model, filename::String)
         # Construct the objectives container & add all registered objectives.
         for (name, terms) in @config(model, optimization.objective.functions)
             internal(model).model.objectives[name] = (
-                terms=Set{Union{JuMP.AffExpr, JuMP.VariableRef}}(),
-                expr=JuMP.AffExpr(0.0),
+                terms=Set{Union{JuMP.VariableRef, JuMP.AffExpr, JuMP.QuadExpr}}(),
+                expr=_is_parametric(model) ? zero(JuMP.QuadExpr) : zero(JuMP.AffExpr),
                 constants=Vector{Float64}(),
             )
             internal(model).aux._obj_terms[name] = terms
@@ -234,6 +241,9 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
 
     has_invalid_component_name = false
 
+    # Dynamic helper function for base names, before we have actual components (=> can't use `make_base_name`).
+    mkbn(n::String, sfx::String) = JuMP.set_string_names_on_creation(model) ? "$(n).par.$(sfx)" : ""
+
     for (desc, prop) in description
         if _parse_bool(model, pop!(prop, "disabled", false)) || !_parse_bool(model, pop!(prop, "enabled", true))
             @critical "[parse] Disabled components should not end up in parse"
@@ -290,8 +300,8 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             carrier = internal(model).model.carriers[pop!(prop, "carrier")]
 
             # Convert to _Expression.
-            state_lb = _convert_to_expression(model, pop!(prop, "state_lb", nothing))
-            state_ub = _convert_to_expression(model, pop!(prop, "state_ub", nothing))
+            state_lb = _convert_to_expression(model, pop!(prop, "state_lb", nothing), mkbn(name, "state_lb"))
+            state_ub = _convert_to_expression(model, pop!(prop, "state_ub", nothing), mkbn(name, "state_ub"))
 
             # Convert to Symbol
             state_cyclic = Symbol(pop!(prop, "state_cyclic", :eq))
@@ -340,12 +350,12 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             end
 
             # Convert to _Expression.
-            lb = _convert_to_expression(model, pop!(prop, "lb", nothing))
-            ub = _convert_to_expression(model, pop!(prop, "ub", nothing))
-            capacity = _convert_to_expression(model, pop!(prop, "capacity", nothing))
-            cost = _convert_to_expression(model, pop!(prop, "cost", nothing))
-            loss = _convert_to_expression(model, pop!(prop, "loss", nothing))
-            delay = _convert_to_expression(model, pop!(prop, "delay", nothing))
+            lb = _convert_to_expression(model, pop!(prop, "lb", nothing), mkbn(name, "lb"))
+            ub = _convert_to_expression(model, pop!(prop, "ub", nothing), mkbn(name, "ub"))
+            capacity = _convert_to_expression(model, pop!(prop, "capacity", nothing), mkbn(name, "capacity"))
+            cost = _convert_to_expression(model, pop!(prop, "cost", nothing), mkbn(name, "cost"))
+            loss = _convert_to_expression(model, pop!(prop, "loss", nothing), mkbn(name, "loss"))
+            delay = _convert_to_expression(model, pop!(prop, "delay", nothing), mkbn(name, "delay"))
 
             # Convert to Symbol
             loss_mode = Symbol(pop!(prop, "loss_mode", :to))
@@ -371,10 +381,10 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             carrier = internal(model).model.carriers[pop!(prop, "carrier")]
 
             # Convert to _Expression.
-            value = _convert_to_expression(model, pop!(prop, "value", nothing))
-            lb = _convert_to_expression(model, pop!(prop, "lb", nothing))
-            ub = _convert_to_expression(model, pop!(prop, "ub", nothing))
-            cost = _convert_to_expression(model, pop!(prop, "cost", nothing))
+            value = _convert_to_expression(model, pop!(prop, "value", nothing), mkbn(name, "value"))
+            lb = _convert_to_expression(model, pop!(prop, "lb", nothing), mkbn(name, "lb"))
+            ub = _convert_to_expression(model, pop!(prop, "ub", nothing), mkbn(name, "ub"))
+            cost = _convert_to_expression(model, pop!(prop, "cost", nothing), mkbn(name, "cost"))
 
             # Convert to Symbol
             mode = Symbol(pop!(prop, "mode", :fixed))
@@ -425,11 +435,16 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             end
 
             # Convert to _Expression.
-            availability = _convert_to_expression(model, pop!(prop, "availability", nothing))
-            availability_factor = _convert_to_expression(model, pop!(prop, "availability_factor", nothing))
-            unit_count = _convert_to_expression(model, pop!(prop, "unit_count", 1))
-            capacity = _convert_to_expression(model, _capacity)
-            marginal_cost = _convert_to_expression(model, _marginal_cost)
+            availability =
+                _convert_to_expression(model, pop!(prop, "availability", nothing), mkbn(name, "availability"))
+            availability_factor = _convert_to_expression(
+                model,
+                pop!(prop, "availability_factor", nothing),
+                mkbn(name, "availability_factor"),
+            )
+            unit_count = _convert_to_expression(model, pop!(prop, "unit_count", 1), mkbn(name, "unit_count"))
+            capacity = _convert_to_expression(model, _capacity, mkbn(name, "capacity"))
+            marginal_cost = _convert_to_expression(model, _marginal_cost, mkbn(name, "marginal_cost"))
 
             # Convert to Symbol
             unit_commitment = Symbol(pop!(prop, "unit_commitment", :off))
@@ -461,13 +476,9 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             # Convert to Symbol
             mode = Symbol(pop!(prop, "mode", :linear))
 
-            lb = pop!(prop, "lb", 0)
-            ub = pop!(prop, "ub", nothing)
-            cost = pop!(prop, "cost", nothing)
-
-            (lb isa AbstractString) && (lb = eval(Meta.parse(lb)))
-            (ub isa AbstractString) && (ub = eval(Meta.parse(ub)))
-            (cost isa AbstractString) && (cost = eval(Meta.parse(cost)))
+            lb = _convert_to_expression(model, pop!(prop, "lb", 0), mkbn(name, "lb"))
+            ub = _convert_to_expression(model, pop!(prop, "ub", nothing), mkbn(name, "ub"))
+            cost = _convert_to_expression(model, pop!(prop, "cost", nothing), mkbn(name, "cost"))
 
             # Initialize.
             components[name] = Decision(;

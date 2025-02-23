@@ -17,17 +17,6 @@ function _decision_var_value!(decision::Decision)
 
     if decision.mode === :fixed
         JuMP.fix(decision.var.value, decision.fixed_value)
-    else
-        if !isnothing(decision.ub) && (decision.lb == decision.ub)
-            JuMP.fix(decision.var.value, decision.lb)
-        else
-            if !isnothing(decision.lb)
-                JuMP.set_lower_bound(decision.var.value, decision.lb)
-            end
-            if !isnothing(decision.ub)
-                JuMP.set_upper_bound(decision.var.value, decision.ub)
-            end
-        end
     end
 
     return nothing

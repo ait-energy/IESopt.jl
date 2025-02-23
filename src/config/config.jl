@@ -80,3 +80,5 @@ _has_representative_snapshots(model::JuMP.Model) = false  # TODO
 _is_multiobjective(model::JuMP.Model) = (:mo in @config(model, optimization.problem_type))::Bool
 _is_lp(model::JuMP.Model) = (:lp in @config(model, optimization.problem_type))::Bool
 _is_milp(model::JuMP.Model) = (:milp in @config(model, optimization.problem_type))::Bool
+_is_qp(model::JuMP.Model) = (:qp in @config(model, optimization.problem_type))::Bool
+_is_parametric(model::JuMP.Model) = (:parametric in @config(model, optimization.problem_type))::Bool

@@ -145,8 +145,8 @@ function _isvalid(profile::Profile)
     end
 
     if (profile.mode === :create) || (profile.mode === :destroy)
-        !_isempty(profile.lb) && (@warn "Setting <lb> is ignored" profile = profile.name mode = profile.mode)
-        !_isempty(profile.ub) && (@warn "Setting <ub> is ignored" profile = profile.name mode = profile.mode)
+        !_isempty(profile.lb) && (@error "Setting <lb> is ignored" profile = profile.name mode = profile.mode)
+        !_isempty(profile.ub) && (@error "Setting <ub> is ignored" profile = profile.name mode = profile.mode)
     end
 
     if !(profile.mode in [:fixed, :create, :destroy, :ranged])
@@ -231,12 +231,12 @@ function _after_construct_variables!(profile::Profile)
             _repr_t =
                 internal(model).model.snapshots[t].is_representative ? t :
                 internal(model).model.snapshots[t].representative
-            val = access(profile.value, _repr_t, Float64)
 
-            if (profile.mode === :fixed) && false  # TODO _iesopt_config(model).parametric
-                JuMP.fix(profile.var.aux_value[t], val; force=true)
-                JuMP.add_to_expression!(profile.exp.value[t], profile.var.aux_value[t])
+            if _isparametric(profile.value)
+                val = access(profile.value, _repr_t)::JuMP.VariableRef
+                JuMP.add_to_expression!(profile.exp.value[t], val)
             else
+                val = access(profile.value, _repr_t)::Float64
                 JuMP.add_to_expression!(profile.exp.value[t], val)
             end
         end
