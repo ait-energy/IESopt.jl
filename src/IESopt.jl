@@ -127,7 +127,7 @@ function _build_model!(model::JuMP.Model)
     end
 
     if !_is_multiobjective(model)
-        if !_is_parametric(model)
+        if !_is_parametric(model) || _is_qp(model)
             current_objective = @config(model, optimization.objective.current)
             isnothing(current_objective) && @critical "[build] Missing an active objective"
             @objective(model, Min, internal(model).model.objectives[current_objective].expr)
