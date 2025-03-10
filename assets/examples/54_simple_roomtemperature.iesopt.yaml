@@ -1,0 +1,54 @@
+parameters:
+  degc_per_kWh: 0.168
+
+config:
+  general:
+    version:
+      core: 2.6.2
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 24
+    solver:
+      name: highs
+  files:
+    data: 54/data.csv
+
+carriers:
+  electricity: {}
+  heat_degree_celsius: {}
+
+components:
+  energy_supplier:
+    type: Profile
+    carrier: electricity
+    node_to: grid
+    mode: create
+    cost: price@data
+
+  grid:
+    type: Node
+    carrier: electricity
+  
+  # NOTE: Constructing a simple "degree celsius" storage, ranging from 20 to 23 degrees.
+  house:
+    type: Node
+    carrier: heat_degree_celsius
+    has_state: true
+    state_lb: 20
+    state_ub: 23
+
+  heatpump:
+    type: Unit
+    inputs: {electricity: grid}
+    outputs: {heat_degree_celsius: house}
+    conversion: 1 electricity -> cop@data * <degc_per_kWh> heat_degree_celsius
+    capacity: 5 in:electricity
+  
+  # NOTE: Modeling this using `node_from` means it models the passive cooling of the house; negative values in
+  #       `demand@data` therefore relate to passive heating (e.g., during summer times).
+  passive_change:
+    type: Profile
+    carrier: heat_degree_celsius
+    node_from: house
+    value: demand@data

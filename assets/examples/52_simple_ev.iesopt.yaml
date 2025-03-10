@@ -1,0 +1,50 @@
+config:
+  general:
+    version:
+      core: 2.6.2
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 24
+    solver:
+      name: highs
+  files:
+    data: 52/data.csv
+
+carriers:
+  electricity: {}
+
+components:
+  energy_supplier:
+    type: Profile
+    carrier: electricity
+    node_to: grid
+    mode: create
+    cost: price@data
+
+  grid:
+    type: Node
+    carrier: electricity
+  
+  # NOTE: This could be a `Unit` instead, to allow more complex behaviours.
+  # This assumes a rated power of "40 kW" and only allows charging while the EV is actually connected.
+  charger:
+    type: Connection
+    node_from: grid
+    node_to: ev
+    loss: 0.05
+    lb: 0
+    ub: 40.0 * connected@data
+
+  ev:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 100
+
+  ev_demand:
+    type: Profile
+    carrier: electricity
+    node_from: ev
+    value: demand@data

@@ -278,3 +278,30 @@ end
     optimize!(model)
     @test JuMP.objective_value(model) ≈ (obj_val + 166.5) atol = 1e-3
 end
+
+@testitem "52_simple_ev" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    model = TestExampleModule.check(; obj=5.7895)
+
+    @test sum(JuMP.value.(get_component(model, "ev").var.state)) ≈ 762 atol = 1e-2
+    @test all(JuMP.value.(get_component(model, "ev").var.state) .<= 55.0)
+end
+
+@testitem "53_grid_tariffs" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    model = TestExampleModule.check(; obj=15.3680)
+
+    @test JuMP.value.(get_component(model, "tariff_power_consumption").var.value) ≈ 4.5738 atol = 1e-2
+    @test sum(JuMP.value.(get_component(model, "ev").var.state)) ≈ 713.5135 atol = 1e-2
+end
+
+@testitem "54_simple_roomtemperature" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    model = TestExampleModule.check(; obj=2.4501)
+
+    @test sum(JuMP.value.(get_component(model, "house").var.state)) ≈ 510.996 atol = 1e-2
+end
+
+@testitem "55_annuity" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    model = TestExampleModule.check(; obj=2_532_909.2063)
+
+    @test JuMP.value.(get_component(model, "pipeline.invest").var.value) ≈ 42.0 atol = 1e-2
+    @test get_component(model, "pipeline.invest").cost ≈ 60067.3621 atol = 1e-2
+end
