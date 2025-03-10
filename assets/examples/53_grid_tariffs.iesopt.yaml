@@ -1,0 +1,79 @@
+config:
+  general:
+    version:
+      core: 2.2.0
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 24
+    solver:
+      name: highs
+  files:
+    data: 53/data.csv
+
+carriers:
+  electricity: {}
+
+components:
+  market:
+    type: Profile
+    carrier: electricity
+    node_to: grid_market
+    mode: ranged
+    cost: price@data
+
+  grid_market:
+    type: Node
+    carrier: electricity
+
+  grid_internal:
+    type: Node
+    carrier: electricity
+  
+  # NOTE: `0.05` (here ct/kWh) is the energy related tariff for consumption.
+  grid_connection_buy:
+    type: Connection
+    node_from: grid_market
+    node_to: grid_internal
+    lb: 0
+    ub: tariff_power_consumption:value
+    cost: 0.05
+  
+  # NOTE: No power peak related cost for feeding electricity back to the grid.
+  grid_connection_sell:
+    type: Connection
+    node_from: grid_internal
+    node_to: grid_market
+    lb: 0
+    ub: 1000
+    cost: 0.07
+
+  # NOTE: This assumes `1000` (here kW) as maximum grid connection. `1.15` is the power peak related tariff.
+  tariff_power_consumption:
+    type: Decision
+    lb: 0
+    ub: 1000
+    cost: 1.15
+
+  # Using a simple EV (with basic bidirectional charging) as demand, compare example "52_simple_ev".
+
+  charger:
+    type: Connection
+    node_from: grid_internal
+    node_to: ev
+    lb: -40.0 * connected@data
+    ub: 40.0 * connected@data
+
+  ev:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_lb: 0
+    state_ub: 100
+
+  # NOTE: Upscaling the demand, assuming 92.5% efficiency "charge-to-tire".
+  ev_demand:
+    type: Profile
+    carrier: electricity
+    node_from: ev
+    value: demand@data / 0.925

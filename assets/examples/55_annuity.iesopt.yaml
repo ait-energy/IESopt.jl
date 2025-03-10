@@ -1,0 +1,48 @@
+parameters:
+  wacc: 0.07
+
+config:
+  general:
+    version:
+      core: 2.2.0
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 24
+    solver:
+      name: highs
+  paths:
+    templates: files/55
+
+carriers:
+  electricity: {}
+
+components:
+  energy_supplier:
+    type: Profile
+    carrier: electricity
+    node_to: grid_a
+    mode: create
+    cost: 10
+
+  grid_a:
+    type: Node
+    carrier: electricity
+  
+  grid_b:
+    type: Node
+    carrier: electricity
+
+  pipeline:
+    type: Asset
+    from: grid_a
+    to: grid_b
+    invest:
+      capex: 700000
+      lifetime: 25
+    
+  demand:
+    type: Profile
+    carrier: electricity
+    node_from: grid_b
+    value: 42

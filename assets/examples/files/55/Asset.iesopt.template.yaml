@@ -1,0 +1,41 @@
+parameters:
+  from: null
+  to: null
+  invest: null
+  _annuity: null
+
+components:
+  asset:
+    type: Connection
+    node_from: <from>
+    node_to: <to>
+    capacity: <self>.invest:value
+  
+  invest:
+    type: Decision
+    lb: 0
+    ub: 100
+    cost: <_annuity>
+
+# NOTE:
+#   - The `|` at the start indicates in the YAML that what follows will be a multi-line string.
+#   - You can use `this.get("...")` to access any parameter known in this template.
+#   - Accessing `wacc` is possible since it is NOT a parameter of this template AND is a known template in the global
+#     parameters defined in the top-level config file (these are "passed down").
+#   - You can set the value of a parameter using `this.set("...", value)`.
+#   - Using `_annuity` indicates that this parameter is "private": It cannot be set from the outside like normal
+#     parameters (IESopt will error if a user tries to) and can only be used by functions like below.
+#   - The `prepare` function is called before any components are constructed from this template; this allows accessing
+#     the total `capex` and `lifetime`, using them together with the `annuity(...)` function in `IESU` (which is just
+#     a quality-of-life renaming of `IESopt.Utilities`) to calculate the annuity, and finally setting the value of
+#     the parameter `_annuity` - which is then used in the `invest` (Decision) component.
+#   - `IESU.annuity(...)` will per default already factor in the total time span of the model, properly scaling the
+#     annuity for models that do not span a 1hourly-1year model exactly. Refer to its documentation for more info.
+#   - We are using a dict-valued parameter (`invest`) here - simply to showcase that this is a possibility. Not using
+#     that and relying on simple parameters (like almost everywhere else) is perfectly possible as well!
+functions:
+  prepare: |
+    capex = this.get("invest")["capex"]
+    lifetime = this.get("invest")["lifetime"]
+    annuity = IESU.annuity(capex; lifetime=lifetime, rate=this.get("wacc"))
+    this.set("_annuity", annuity)
