@@ -23,12 +23,12 @@ function _connection_obj_cost!(connection::Connection)
 
     model = connection.model
 
-    connection.obj.cost = JuMP.AffExpr(0.0)
+    connection.obj.cost = _isparametric(connection.cost) ? zero(JuMP.QuadExpr) : zero(JuMP.AffExpr)
     for t in get_T(connection.model)
         JuMP.add_to_expression!(
             connection.obj.cost,
             connection.var.flow[t],
-            _weight(model, t) * access(connection.cost, t, Float64),
+            _weight(model, t) * access(connection.cost, t),
         )
     end
 

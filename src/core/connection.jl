@@ -201,7 +201,7 @@ function _prepare!(connection::Connection)
 
         if _isempty(connection.capacity)
             # Only calculate capacity if it is not given by the user
-            connection.capacity = _convert_to_expression(model, connection.pf_V * connection.pf_I)
+            connection.capacity = _convert_to_expression(model, connection.pf_V * connection.pf_I, "")
         end
         # todo: convert B1
     end
