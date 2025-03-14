@@ -55,6 +55,9 @@ function annuity(total::Real; lifetime::Real, rate::Float64, fraction::Float64=1
     @argcheck 0 < lifetime < 1e3
     @argcheck 0.0 < rate < 1.0
     @argcheck fraction > 0
+    if fraction > 1
+        @warn "The fraction is greater than 1, which may not be intended."
+    end
     return total * rate / (1 - (1 + rate)^(-lifetime)) * fraction
 end
 
