@@ -55,18 +55,21 @@ function annuity(total::Real; lifetime::Real, rate::Float64, fraction::Float64=1
     @argcheck 0 < lifetime < 1e3
     @argcheck 0.0 < rate < 1.0
     @argcheck fraction > 0
+    if fraction > 1
+        @warn "[annuity] The fraction is greater than 1, which may not be intended."
+    end
     return total * rate / (1 - (1 + rate)^(-lifetime)) * fraction
 end
 
 function annuity(total::Real, lifetime::Real, rate::Real)
-    msg = "Error trying to call `annuity($(total), $(lifetime), $(rate))`"
+    msg = "[annuity] Error trying to call `annuity($(total), $(lifetime), $(rate))`"
     reason = "`lifetime` and `rate` must be passed as keyword arguments to `annuity(...)`"
     example = "`annuity(1000.0; lifetime=10, rate=0.05)`"
     @critical msg reason example
 end
 
 function annuity(total::Real, lifetime::Real, rate::Real, fraction::Real)
-    msg = "Error trying to call `annuity($(total), $(lifetime), $(rate), $(fraction))`"
+    msg = "[annuity] Error trying to call `annuity($(total), $(lifetime), $(rate), $(fraction))`"
     reason = "`lifetime`, `rate`, and `fraction` must be passed as keyword arguments to `annuity(...)`"
     example = "`annuity($(total); lifetime=$(lifetime), rate=$(rate), fraction=$(fraction))`"
     @critical msg reason example
