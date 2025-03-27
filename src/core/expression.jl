@@ -225,8 +225,17 @@ If the value of `my_exp` is a vector of `Float64`, the first call will succeed, 
     dirty::Bool = false
     temporal::Bool = false
     empty::Bool = false
+    parametric::Bool = false
 
-    value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Vector{JuMP.AffExpr}, Float64, Vector{Float64}} = nothing
+    value::Union{
+        Nothing,
+        JuMP.VariableRef,
+        Vector{JuMP.VariableRef},
+        JuMP.AffExpr,
+        Vector{JuMP.AffExpr},
+        Float64,
+        Vector{Float64},
+    } = nothing
     internal::Union{Nothing, NamedTuple} = nothing
 end
 
@@ -263,6 +272,61 @@ _isfixed(e::Expression) = (
     (!any(occursin(':', el) for el in e.internal.elements))
 )::Bool
 _isempty(e::Expression) = e.empty::Bool
+_isparametric(e::Expression) = e.parametric::Bool
+
+"""
+    modify!(e::Expression, value::Real)
+
+Set the value of a parametric `Expression` object to a scalar value `value`.
+"""
+function modify!(e::Expression, value::Real)
+    if !e.parametric
+        @critical "Only parametric expressions support `modify`"
+    end
+
+    if e.temporal
+        JuMP.set_parameter_value.(e.value, convert.(Float64, value))
+    else
+        JuMP.set_parameter_value(e.value, convert(Float64, value))
+    end
+
+    return nothing
+end
+
+"""
+    modify!(e::Expression, value::Vector{<:Real})
+
+Set the value of a parametric `Expression` object to a vector value `value`.
+"""
+function modify!(e::Expression, value::Vector{<:Real})
+    if !e.parametric
+        @critical "Only parametric expressions support `modify`"
+    end
+
+    if !e.temporal
+        @critical "Only temporal expressions support `modify` with a vector-valued argument, use `\$(t)` instead of `\$()`"
+    end
+
+    JuMP.set_parameter_value.(e.value, convert.(Float64, value))
+    return nothing
+end
+
+"""
+    query(e::Expression)
+
+Query the value of a parametric `Expression` object.
+"""
+function query(e::Expression)
+    if !e.parametric
+        @critical "Only parametric expressions support `query`"
+    end
+
+    if e.temporal
+        return JuMP.parameter_value.(e.value)
+    else
+        return JuMP.parameter_value(e.value)
+    end
+end
 
 @recompile_invalidations begin
     function Base.show(io::IO, e::Expression)
@@ -283,16 +347,62 @@ _isempty(e::Expression) = e.empty::Bool
     end
 end
 
-_convert_to_expression(model::JuMP.Model, ::Nothing) = Expression(; model, empty=true)
-_convert_to_expression(model::JuMP.Model, data::Real) = Expression(; model, value=convert(Float64, data))
-_convert_to_expression(model::JuMP.Model, data::Vector{<:Real}) =
+_convert_to_expression(model::JuMP.Model, ::Nothing, ::String) = Expression(; model, empty=true)
+_convert_to_expression(model::JuMP.Model, data::Real, ::String) = Expression(; model, value=convert(Float64, data))
+_convert_to_expression(model::JuMP.Model, data::Vector{<:Real}, ::String) =
     Expression(; model, value=convert.(Float64, data), temporal=true)
 
 macro _default_expression(value)
-    return esc(:(_convert_to_expression(model, $value)))
+    return esc(:(_convert_to_expression(model, $value, "")))
 end
 
-function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractString))
+function _convert_to_expression(model::JuMP.Model, @nospecialize(data::AbstractString), base_name::String)
+    if startswith(data, "\$")
+        # NOTE (possible options are):
+        # - `$()`: A scalar unknown, defaulting to `0.0`.
+        # - `$(12.34)`: A scalar unknown, defaulting to `12.34`.
+        # - `$(t)`: A temporal unknown, defaulting to `0.0`.
+        # - `$(col@file)`: A temporal unknown, defaulting to the values in the column `col` of the file `file`.
+
+        if occursin("@", data)
+            # NOTE: Using `identity` here to "downcast" from `Union{Float64, Missing}` to `Float64`.
+            col, file = string.(split(data[3:(end - 1)], "@"))
+            default = identity.(_getfromcsv(model, file, col))::Vector{Float64}
+            value = @variable(
+                model,
+                [t = get_T(model)],
+                set = JuMP.Parameter(default[t]),
+                base_name = base_name,
+                container = Array
+            )
+            return Expression(; model, value, parametric=true, temporal=true)
+        elseif data == "\$(t)"
+            value = @variable(
+                model,
+                [t = get_T(model)],
+                set = JuMP.Parameter(0.0),
+                base_name = base_name,
+                container = Array
+            )
+            return Expression(; model, value, parametric=true, temporal=true)
+        elseif data == "\$()"
+            value = @variable(model, set = JuMP.Parameter(0.0), base_name = base_name)
+            return Expression(; model, value, parametric=true)
+        else
+            # The assumption is that this looks like `$(17.4)`, being a scalar unknown, so we try to parse it.
+            try
+                value = @variable(
+                    model,
+                    set = JuMP.Parameter(convert(Float64, eval(JuliaSyntax.parsestmt(Expr, data[3:(end - 1)])))),
+                    base_name = base_name
+                )
+                return Expression(; model, value, parametric=true)
+            catch
+                @critical "Invalid expression string trying to create an unknown, expected `\$(12.34)` or similar" data
+            end
+        end
+    end
+
     parsed = _parse_expression(model, data, _GeneralExpressionType())
 
     if hasproperty(parsed, :val)
@@ -349,7 +459,7 @@ end
 
 function _prepare(e::Expression; default::Float64)
     if e.empty
-        return _convert_to_expression(e.model, default)::Expression
+        return _convert_to_expression(e.model, default, "")::Expression
     else
         return e::Expression
     end
@@ -372,6 +482,8 @@ function access(e::Expression, t::_ID)
         return (e.value::Vector{JuMP.AffExpr})[t]::JuMP.AffExpr
     elseif e.value isa Vector{Float64}
         return (e.value::Vector{Float64})[t]::Float64
+    elseif e.value isa Vector{JuMP.VariableRef}
+        (e.value::Vector{JuMP.VariableRef})[t]::JuMP.VariableRef
     else
         return e.value::Union{Nothing, JuMP.VariableRef, JuMP.AffExpr, Float64}
     end

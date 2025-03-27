@@ -27,6 +27,8 @@ function _profile_var_aux_value!(profile::Profile)
 
     if profile.mode === :fixed
         # This Profile's value is already added to the value expression. Nothing to do here.
+    elseif _isparametric(profile.value)
+        # The variable is the Parameter, nothing to do here.
     else
         # Create the variable.
         if !_has_representative_snapshots(model)

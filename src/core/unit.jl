@@ -533,11 +533,25 @@ function _unit_capacity_limits(unit::Unit)
 
     # Get correct maximum.
     if !_isempty(unit.availability_factor)
-        max_conversion = min.(1.0, access(unit.availability_factor, NonEmptyNumericalExpressionValue))
+        max_conversion = access(unit.availability_factor)
+        if !_isparametric(unit.availability_factor)
+            if any((>).(max_conversion, 1.0))
+                @critical "Availability factor can not be greater than 1.0" unit = unit.name
+            end
+        else
+            if _isparametric(unit.capacity)
+                @critical "Parametric <availability_factor> and <capacity> are currently not supported" unit = unit.name
+            end
+        end
     elseif !_isempty(unit.availability)
         if !_isfixed(unit.capacity)
             @critical "Endogenuous <capacity> and <availability> are currently not supported" unit = unit.name
         end
+
+        if _isparametric(unit.availability) || _isparametric(unit.capacity)
+            @critical "Parametric <availability> and <capacity> are currently not supported" unit = unit.name
+        end
+
         max_conversion =
             min.(
                 1.0,

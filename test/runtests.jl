@@ -15,7 +15,7 @@ include("src/examples.jl")
         end
 
         @testset "JET.jl" begin
-            # JET.test_package(IESopt; target_modules=(IESopt,))
+            JET.test_package(IESopt; target_modules=(IESopt,))
         end
     end
 
