@@ -277,8 +277,9 @@ end
     @test get_component(model, "pipeline.invest").cost ≈ 60067.3621 atol = 1e-2
 end
 
-@testitem "56_initial_state_decision" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+@testitem "56_final_state_decision_cyclic" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     model = TestExampleModule.check(; obj=-1.7867962768e+03)
 
     @test JuMP.value(get_component(model, "storage").var.state[1]) == 100
+    @test sum(JuMP.value, get_component(model, "storage").exp.injection) == 0
 end
