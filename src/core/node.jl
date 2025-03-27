@@ -233,7 +233,7 @@ function _after_construct_variables!(node::Node)
     if node.state_final isa Vector
         @critical "[build] The final value of a Node must be scalar." component = node.name
     end
-    if node.state_cyclic !== :disabled && !isnothing(node.state_initial.value) && !isnothing(node.state_initial.value)
+    if node.state_cyclic !== :disabled && !_isempty(node.state_initial) && !_isempty(node.state_initial)
         @critical(
             "[build] `state_cyclic` has to be disabled if both `state_initial` and `state_final` are set.",
             component = node.name

@@ -6,7 +6,7 @@ Add the constraint the `node`'s state at the first Snapshot to the `model`, if
 """
 function _node_con_first_state!(node::Node)
     node.has_state || return nothing
-    isnothing(node.state_initial.value) && return nothing
+    _isempty(node.state_initial) && return nothing
     model = node.model
     node.con.first_state = @constraint(
         model,
