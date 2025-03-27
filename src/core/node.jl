@@ -128,10 +128,6 @@ end
 function _isvalid(node::Node)
     (node.state_cyclic in [:eq, :geq, :disabled]) || (@critical "<state_cyclic> invalid" node = node.name)
 
-    if !isnothing(node.state_final.value) && node.state_cyclic != :disabled
-        @critical "Nodes with a fixed final state need to set `state_cyclic` to `disabled`" node = node.name node.state_cyclic
-    end
-
     if !isnothing(node.etdf_group) && node.has_state
         @critical "Activating ETDF is not supported for stateful nodes" node = node.name
     end
