@@ -65,13 +65,13 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
     """
     state_cyclic::Symbol = :eq
 
-    raw"""```{"mandatory": "no", "values": "numeric", "unit": "energy", "default": "-"}```
-    Sets the initial state. Must be used in combination with `state_cyclic = disabled`.
+    raw"""```{"mandatory": "no", "values": "numeric, `decision:value`", "unit": "energy", "default": "-"}```
+    Sets the initial state. If both `state_initial` and `state_final` are set, `state_cyclic = disabled` is required.
     """
     state_initial::Expression = @_default_expression(nothing)
 
-    raw"""```{"mandatory": "no", "values": "numeric", "unit": "energy", "default": "-"}```
-    Sets the final state. Must be used in combination with `state_cyclic = disabled`.
+    raw"""```{"mandatory": "no", "values": "numeric, `decision:value`", "unit": "energy", "default": "-"}```
+    Sets the final state. If both `state_initial` and `state_final` are set, `state_cyclic = disabled` is required.
     """
     state_final::Expression = @_default_expression(nothing)
 
@@ -232,6 +232,12 @@ function _after_construct_variables!(node::Node)
     end
     if node.state_final isa Vector
         @critical "[build] The final value of a Node must be scalar." component = node.name
+    end
+    if node.state_cyclic !== :disabled && !isnothing(node.state_initial.value) && !isnothing(node.state_initial.value)
+        @critical(
+            "[build] `state_cyclic` has to be disabled if both `state_initial` and `state_final` are set.",
+            component = node.name
+        )
     end
 
     return nothing
