@@ -45,7 +45,7 @@ function _node_con_last_state!(node::Node)
     lb = access(node.state_lb, t, OptionalScalarExpressionValue)
     ub = access(node.state_ub, t, OptionalScalarExpressionValue)
 
-    if !isnothing(node.state_final)
+    if !_isempty(node.state_final)
         # TODO: since lb/ub are potentially decision-containing expressions, we cannot check this here ...
         #       re-work this somehow (and consider that a user might want to force a final state that is out of "bounds", when using a decision)
         # if (!isnothing(lb) && (node.state_final < lb)) || (!isnothing(ub) && (node.state_final > ub))
@@ -53,8 +53,8 @@ function _node_con_last_state!(node::Node)
         #         node.state_final lb ub
         # end
 
-        lb = node.state_final
-        ub = node.state_final
+        lb = access(node.state_final)
+        ub = access(node.state_final)
     end
 
     if !isnothing(lb) && node.nodal_balance != :create

@@ -65,15 +65,15 @@ balance equation. This allows using `Node`s for various storage tasks (like batt
     """
     state_cyclic::Symbol = :eq
 
-    raw"""```{"mandatory": "no", "values": "numeric", "unit": "energy", "default": "-"}```
-    Sets the initial state. Must be used in combination with `state_cyclic = disabled`.
+    raw"""```{"mandatory": "no", "values": "numeric, `decision:value`", "unit": "energy", "default": "-"}```
+    Sets the initial state. If both `state_initial` and `state_final` are set, `state_cyclic = disabled` is required.
     """
-    state_initial::_OptionalScalarInput = nothing
+    state_initial::Expression = @_default_expression(nothing)
 
-    raw"""```{"mandatory": "no", "values": "numeric", "unit": "energy", "default": "-"}```
-    Sets the final state. Must be used in combination with `state_cyclic = disabled`.
+    raw"""```{"mandatory": "no", "values": "numeric, `decision:value`", "unit": "energy", "default": "-"}```
+    Sets the final state. If both `state_initial` and `state_final` are set, `state_cyclic = disabled` is required.
     """
-    state_final::_OptionalScalarInput = nothing
+    state_final::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "``\\in [0, 1]``", "unit": "-", "default": "0"}```
     Per hour percentage loss of state (losing 1% should be set as `0.01`), will be scaled automatically for
@@ -127,10 +127,6 @@ end
 
 function _isvalid(node::Node)
     (node.state_cyclic in [:eq, :geq, :disabled]) || (@critical "<state_cyclic> invalid" node = node.name)
-
-    if !isnothing(node.state_final) && node.state_cyclic != :disabled
-        @critical "Nodes with a fixed final state need to set `state_cyclic` to `disabled`" node = node.name node.state_cyclic
-    end
 
     if !isnothing(node.etdf_group) && node.has_state
         @critical "Activating ETDF is not supported for stateful nodes" node = node.name
@@ -210,6 +206,7 @@ include("node/var_state.jl")
 include("node/var_pf_theta.jl")
 include("node/con_state_bounds.jl")
 include("node/con_nodalbalance.jl")
+include("node/con_first_state.jl")
 include("node/con_last_state.jl")
 
 function _construct_expressions!(node::Node)
@@ -227,6 +224,21 @@ function _after_construct_variables!(node::Node)
     # We can now properly finalize the `state_lb`, and `state_ub`.
     _finalize(node.state_lb)
     _finalize(node.state_ub)
+    _finalize(node.state_initial)
+    _finalize(node.state_final)
+    # Check expressions
+    if node.state_initial.value isa Vector
+        @critical "[build] The initial value of a Node must be scalar." component = node.name
+    end
+    if node.state_final isa Vector
+        @critical "[build] The final value of a Node must be scalar." component = node.name
+    end
+    if node.state_cyclic !== :disabled && !_isempty(node.state_initial) && !_isempty(node.state_initial)
+        @critical(
+            "[build] `state_cyclic` has to be disabled if both `state_initial` and `state_final` are set.",
+            component = node.name
+        )
+    end
 
     return nothing
 end
@@ -234,6 +246,7 @@ end
 function _construct_constraints!(node::Node)
     _node_con_state_bounds!(node)
     _node_con_nodalbalance!(node) # 25% here
+    _node_con_first_state!(node)
     _node_con_last_state!(node)
     return nothing
 end

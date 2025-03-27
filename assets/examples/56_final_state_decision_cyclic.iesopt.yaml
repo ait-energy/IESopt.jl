@@ -1,0 +1,73 @@
+parameters:
+    p_nom: 70
+    hours: 2.0
+    efficiency: 0.975
+    capex: 1000
+    opex_fom: 500
+    opex_vom: 1.8
+    T: 24
+  
+config:
+  general:
+    version:
+      core: 2.6.2
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: <T>
+    solver:
+      name: highs
+
+carriers:
+  electricity: {}
+
+components:
+  # --------------------------
+
+  storage:
+    type: Node
+    carrier: electricity
+    state_final: 0.5 * (<p_nom> + invest:value) * <hours>
+    state_cyclic: eq
+    has_state: true
+    state_lb: 0
+    state_ub: (<p_nom> + invest:value) * <hours>
+  
+  node_electricity:
+    type: Node
+    carrier: electricity
+
+  # --------------------------
+  
+  market_electricity:
+    type: Profile
+    carrier: electricity
+    mode: ranged
+    node_from: node_electricity
+    cost: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]
+
+  # --------------------------
+
+  invest:
+    type: Decision
+    ub: 30
+    cost: ((<capex> + <opex_fom>) / 8760.0 * <T>)
+  
+  # --------------------------
+
+  charge:
+    type: Unit
+    inputs: {electricity: node_electricity}
+    outputs: {electricity: storage}
+    conversion: 1 electricity -> <efficiency> electricity
+    capacity: (<p_nom> + invest:value) in:electricity
+    marginal_cost: <opex_vom> per out:electricity
+    objectives: {total_cost: 0.0 + (<p_nom> * <opex_fom>) / 8760.0 *<T>}
+
+  discharge:
+    type: Unit
+    inputs: {electricity: storage}
+    outputs: {electricity: node_electricity}
+    conversion: 1 electricity -> <efficiency> electricity
+    capacity: (<p_nom> + invest:value) out:electricity
+    marginal_cost: <opex_vom> per out:electricity

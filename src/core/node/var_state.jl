@@ -18,7 +18,5 @@ function _node_var_state!(node::Node)
 
     node.var.state = @variable(model, [t = get_T(model)], base_name = make_base_name(node, "state"), container = Array)
 
-    if !isnothing(node.state_initial)
-        JuMP.fix(node.var.state[1], node.state_initial; force=false)
-    end
+    return nothing
 end

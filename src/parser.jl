@@ -292,6 +292,8 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             # Convert to _Expression.
             state_lb = _convert_to_expression(model, pop!(prop, "state_lb", nothing))
             state_ub = _convert_to_expression(model, pop!(prop, "state_ub", nothing))
+            state_initial = _convert_to_expression(model, pop!(prop, "state_initial", nothing))
+            state_final = _convert_to_expression(model, pop!(prop, "state_final", nothing))
 
             # Convert to Symbol
             state_cyclic = Symbol(pop!(prop, "state_cyclic", :eq))
@@ -305,6 +307,8 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
                 soft_constraints_penalty,
                 state_lb,
                 state_ub,
+                state_initial,
+                state_final,
                 state_cyclic,
                 nodal_balance,
                 Dict(Symbol(k) => v for (k, v) in prop)...,
