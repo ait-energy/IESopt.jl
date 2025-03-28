@@ -1,7 +1,7 @@
 @doc raw"""
-    _unit_var_ramp!(model::JuMP.Model, unit::Unit)
+    _unit_var_ramp!(unit::Unit)
 
-Add the variable describing the per-snapshot ramping to the `model`.
+Add the variable describing the per-snapshot ramping to `unit.model`.
 
 This adds two variables per snapshot to the model (if the respective setting `unit.enable_ramp_up` or
 `unit.enable_ramp_down` is activated). Both are preconstructed with a fixed lower bound of `0`. This describes the

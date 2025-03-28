@@ -1,7 +1,7 @@
 @doc raw"""
-    _unit_var_ison!(model::JuMP.Model, unit::Unit)
+    _unit_var_ison!(unit::Unit)
 
-Add the variable describing the current "online" state of the `unit` to the `model`.
+Add the variable describing the current "online" state of the `unit` to `unit.model`.
 
 The variable can be further parameterized using the `unit.unit_commitment` setting ("linear", "binary", "integer"). It
 will automatically enforce the constraints ``0 \leq \text{ison} \leq \text{unitcount}``, with ``\text{unitcount}``

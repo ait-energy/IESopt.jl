@@ -1,7 +1,7 @@
 @doc raw"""
-    _unit_con_min_onoff_time!(model::JuMP.Model, unit::Unit)
+    _unit_con_min_onoff_time!(unit::Unit)
 
-Add the constraints modeling min on- or off-time of a `Unit` to the `model`.
+Add the constraints modeling min on- or off-time of a `Unit` to `unit.model`.
 
 This constructs the constraints
 ```math

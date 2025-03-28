@@ -1,7 +1,7 @@
 @doc raw"""
-    _unit_con_conversion_bounds!(model::JuMP.Model, unit::Unit)
+    _unit_con_conversion_bounds!(unit::Unit)
 
-Add the constraint defining the `unit`'s conversion bounds to the `model`.
+Add the constraint defining the `unit`'s conversion bounds to `unit.model`.
 
 This makes use of the current `min_capacity` (describing the lower limit of conversion; either 0 if no minimum load
 applies or the respective value of the minimum load) as well as the `online_capacity` (that can either be the full

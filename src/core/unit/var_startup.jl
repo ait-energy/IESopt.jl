@@ -1,7 +1,7 @@
 @doc raw"""
-    _unit_var_startup!(model::JuMP.Model, unit::Unit)
+    _unit_var_startup!(unit::Unit)
 
-Add the variable describing the per-snapshot startup to the `model`.
+Add the variable describing the per-snapshot startup to `unit.model`.
 
 This adds a variable per snapshot to the model (if the respective setting `unit.unit_commitment` is activated).
 The variable can be further parameterized using the `unit.unit_commitment` setting ("linear", "binary", "integer"). It

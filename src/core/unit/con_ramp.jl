@@ -1,7 +1,7 @@
 @doc raw"""
-    _unit_con_ramp!(model::JuMP.Model, unit::Unit)
+    _unit_con_ramp!(unit::Unit)
 
-Add the auxiliary constraint that enables calculation of per snapshot ramping to the `model`.
+Add the auxiliary constraint that enables calculation of per snapshot ramping to `unit.model`.
 
 Depending on whether ramps are enabled, none, one, or both of the following constraints are constructed:
 
