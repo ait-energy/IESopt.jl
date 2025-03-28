@@ -1,14 +1,15 @@
 @doc raw"""
-    _profile_var_aux_value!(model::JuMP.Model, profile::Profile)
+    _profile_var_aux_value!(profile::Profile)
 
-Add the variable that is used in this `Profile`s value to the `model`.
+Add the variable that is used in this `Profile`s value to `profile.model`.
 
 The variable `var_value[t]` is constructed and is linked to the correct `Node`s. There are different ways, IESopt
 interprets this, based on the setting of `profile.mode`:
 
 1. **fixed**: The value is already handled by the constant term of `profile.exp.value` and NO variable is constructed.
-2. **create**, **destroy**, or **ranged**: This models the creation or destruction of energy - used mainly to represent model
-   boundaries, and energy that comes into the model or leaves the model's scope. It is however important that `create` should mostly be used feeding into a `Node` (`profile.node_from = nothing`) and
+2. **create**, **destroy**, or **ranged**: This models the creation or destruction of energy - used mainly to represent
+   model boundaries, and energy that comes into the model or leaves the model's scope. It is however important that
+   `create` should mostly be used feeding into a `Node` (`profile.node_from = nothing`) and
    `destroy` withdrawing from a `Node` (`profile.node_to = nothing`). If `lb` and `ub` are defined, `ranged` can be used
    that allows a more detailed control over the `Profile`, specifying upper and lower bounds for every `Snapshot`. See
    `_profile_con_value_bounds!(profile::Profile)` for details on the specific bounds for each case.

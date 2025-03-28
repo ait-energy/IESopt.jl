@@ -1,5 +1,5 @@
 @doc raw"""
-    _profile_obj_cost!(model::JuMP.Model, profile::Profile)
+    _profile_obj_cost!(profile::Profile)
 
 Add the (potential) cost of this `Profile` to the global objective function.
 

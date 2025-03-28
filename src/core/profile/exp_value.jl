@@ -1,5 +1,5 @@
 @doc raw"""
-    _profile_exp_value!(model::JuMP.Model, profile::Profile)
+    _profile_exp_value!(profile::Profile)
 
 Construct the `JuMP.AffExpr` that keeps the total value of this `Profile` for each `Snapshot`.
 
