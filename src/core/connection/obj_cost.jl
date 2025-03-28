@@ -1,5 +1,5 @@
 @doc raw"""
-    _connection_obj_cost!(model::JuMP.Model, connection::Connection)
+    _connection_obj_cost!(connection::Connection)
 
 Add the (potential) cost of this `connection` to the global objective function.
 

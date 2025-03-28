@@ -1,7 +1,7 @@
 @doc raw"""
-    _connection_con_flow_bounds!(model::JuMP.Model, connection::Connection)
+    _connection_con_flow_bounds!(connection::Connection)
 
-Add the constraint defining the bounds of the flow (related to `connection`) to the `model`.
+Add the constraint defining the bounds of the flow (related to `connection`) to `connection.model`.
 
 Specifying `capacity` will lead to symmetric bounds (``\text{lb} := -capacity`` and ``\text{ub} := capacity``), while
 asymmetric bounds can be set by explicitly specifying `lb` and `ub`.
