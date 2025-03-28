@@ -1,7 +1,7 @@
 @doc raw"""
-    _node_con_last_state!(model::JuMP.Model, node::Node)
+    _node_con_last_state!(node::Node)
 
-Add the constraint defining the bounds of the `node`'s state during the last Snapshot to the `model`, if
+Add the constraint defining the bounds of the `node`'s state during the last Snapshot to `node.model`, if
 `node.has_state == true`.
 
 This is necessary since it could otherwise happen, that the state following the last Snapshot

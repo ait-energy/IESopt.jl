@@ -1,5 +1,5 @@
 @doc raw"""
-    _node_var_pf_theta!(model::JuMP.Model, node::Node)
+    _node_var_pf_theta!(node::Node)
 
 Construct the auxiliary phase angle variable for the `linear_angle` power flow algorithm.
 
