@@ -1,5 +1,5 @@
 @doc raw"""
-    _unit_obj_startup_cost!(model::JuMP.Model, unit::Unit)
+    _unit_obj_startup_cost!(unit::Unit)
 
 Add the (potential) cost of this `unit`'s startup behaviour (configured by `unit.startup_cost` if
 `unit.unit_commitment != :off`).

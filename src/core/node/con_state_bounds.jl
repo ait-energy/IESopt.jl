@@ -1,7 +1,7 @@
 @doc raw"""
-    _node_con_state_bounds!(model::JuMP.Model, node::Node)
+    _node_con_state_bounds!(node::Node)
 
-Add the constraint defining the bounds of the `node`'s state to the `model`, if `node.has_state == true`.
+Add the constraint defining the bounds of the `node`'s state to `node.model`, if `node.has_state == true`.
 
 ```math
 \begin{aligned}

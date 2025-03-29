@@ -1,9 +1,9 @@
 # Note: This uses `_unit_capacity_limits` from `constr_conversion_ub.jl`.
 
 @doc raw"""
-    _unit_con_ramp_limit!(model::JuMP.Model, unit::Unit)
+    _unit_con_ramp_limit!(unit::Unit)
 
-Add the constraint describing the ramping limits of this `unit` to the `model`.
+Add the constraint describing the ramping limits of this `unit` to `unit.model`.
 
 This makes use of the maximum capacity of the `unit`, which is just the total installed capacity. Both, up- and
 downwards ramps can be enabled separately (via `unit.ramp_up_limit` and `unit.ramp_down_limit`), resulting in either or

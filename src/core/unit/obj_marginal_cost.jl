@@ -1,5 +1,5 @@
 @doc raw"""
-    _unit_obj_marginal_cost!(model::JuMP.Model, unit::Unit)
+    _unit_obj_marginal_cost!(unit::Unit)
 
 Add the (potential) cost of this `unit`'s conversion (`unit.marginal_cost`) to the global objective function.
 

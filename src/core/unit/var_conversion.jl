@@ -1,9 +1,9 @@
 # Note: This file relies on the successful creation of the `var_ison` => functions need to be called after that.
 
 @doc raw"""
-    _unit_var_conversion!(model::JuMP.Model, unit::Unit)
+    _unit_var_conversion!(unit::Unit)
 
-Add the variable describing the `unit`'s conversion to the `model`.
+Add the variable describing the `unit`'s conversion to `unit.model`.
 
 This can be accessed via `unit.var.conversion[t]`; this does not describe the full output of the `Unit` since that maybe
 also include fixed generation based on the `ison` variable.

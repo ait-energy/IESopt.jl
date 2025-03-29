@@ -4,7 +4,7 @@
 config:
   general:
     version:
-      core: 2.2.0
+      core: 2.6.3
     name:
       model: ExampleModel45
       scenario: SomeScenario_$TIME$

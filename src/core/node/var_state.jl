@@ -1,8 +1,8 @@
 @doc raw"""
-    _node_var_state!(model::JuMP.Model, node::Node)
+    _node_var_state!(node::Node)
 
-Add the variable representing the state of this `node` to the `model`, if `node.has_state == true`. This can be accessed
-via `node.var.state[t]`.
+Add the variable representing the state of this `node` to `node.model`, if `node.has_state == true`. This can be
+accessed via `node.var.state[t]`.
 
 Additionally, if the state's initial value is specified via `state_initial` the following gets added:
 ```math

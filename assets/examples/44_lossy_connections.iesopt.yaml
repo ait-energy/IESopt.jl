@@ -6,7 +6,7 @@
 config:
   general:
     version:
-      core: 2.2.0
+      core: 2.6.3
   optimization:
     problem_type: LP
     solver:

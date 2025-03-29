@@ -1,7 +1,7 @@
 @doc raw"""
-    _unit_con_startup!(model::JuMP.Model, unit::Unit)
+    _unit_con_startup!(unit::Unit)
 
-Add the auxiliary constraint that enables calculation of per snapshot startup to the `model`.
+Add the auxiliary constraint that enables calculation of per snapshot startup to `unit.model`.
 
 Depending on whether startup handling is enabled, the following constraint is constructed:
 
