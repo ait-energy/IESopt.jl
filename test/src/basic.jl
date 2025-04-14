@@ -111,8 +111,16 @@ end
 end
 
 # Clean up output files after testing is done.
+GC.gc()
 try
-    rm(joinpath(PATH_TESTFILES, "out"); force=true, recursive=true)
-    rm(joinpath(PATH_TESTFILES, "filesystem", "out"); force=true, recursive=true)
+    rm(normpath(PATH_TESTFILES, "out"); force=true, recursive=true)
 catch
+    @warn "Failed to cleanup output files after testing, left-overs might be present" path =
+        normpath(PATH_TESTFILES, "out")
+end
+try
+    rm(normpath(PATH_TESTFILES, "filesystem", "out"); force=true, recursive=true)
+catch
+    @warn "Failed to cleanup output files after testing, left-overs might be present" path =
+        normpath(PATH_TESTFILES, "filesystem", "out")
 end

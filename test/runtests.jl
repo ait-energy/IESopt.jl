@@ -36,7 +36,10 @@ include("src/examples.jl")
 end
 
 try
+    GC.gc()
     # Clean up output files after testing is done.
     rm(normpath(IESopt.Assets.get_path("examples"), "out"); force=true, recursive=true)
 catch
+    @warn "Failed to cleanup output files after testing, left-overs might be present" path =
+        normpath(IESopt.Assets.get_path("examples"), "out")
 end
