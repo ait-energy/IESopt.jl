@@ -79,6 +79,7 @@
     set_global!("skip_validation", false)
 
     try
+        GC.gc()
         # Clean up output files after testing is done.
         rm(normpath(__dir, "out"); force=true, recursive=true)
     catch
