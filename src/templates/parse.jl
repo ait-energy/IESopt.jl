@@ -152,7 +152,7 @@ function _parse_container!(
 
     # Report possibly wrongly accessed attributes.
     for (attr, _) in configuration
-        @error "Non exported component attribute accessed" name = name attribute = attr
+        @warn "Non exported component attribute accessed" name = name attribute = attr maxlog = 1
     end
 
     # Add "name" replacement parameter(s).
