@@ -454,7 +454,7 @@ To be documented.
 function parse!(
     model::JuMP.Model,
     filename::AbstractString;
-    parameters::Dict=_global_settings.parameters,
+    parameters::Union{Dict, Vector}=_global_settings.parameters,
     config::Dict=_global_settings.config,
     addons::Dict=_global_settings.addons,
     carriers::Dict=_global_settings.carriers,

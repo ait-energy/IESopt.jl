@@ -117,8 +117,37 @@ function _parse_global_specification!(model::JuMP.Model)
     # Check if there are global parameters that need replacement.
     if haskey(data, "parameters") ||
        (!isempty(internal(model).input.stochastic) && !isempty(internal(model).input.stochastic[:scenario]))
+
+        # Check the global parameters that were passed.
+        if !isempty(global_parameters)
+            if haskey(data, "parameters")
+                @warn "Global parameters passed to IESopt, while also defined in model config (these will be ignored)"
+            end
+            
+            parameters = global_parameters
+
+            # If the `global_parameters` was a list of files, we empty it to allow for standardized handling afterwards.
+            if parameters isa Vector{String}
+                global_parameters = Dict{String, Any}()
+            end
+        else
+            # Pop out parameters.
+            parameters = pop!(data, "parameters", Dict{String, Any}())
+        end
+
+        # Get mode and path for the parameters, based on top-level YAML config.
         pmode = get(get(get(get(data, "config", Dict{String, Any}()), "general", Dict{String, Any}()), "parameters", Dict{String, Any}()), "mode", "unique")
         ppath = get(get(get(data, "config", Dict{String, Any}()), "paths", Dict{String, Any}()), "parameters", "./")
+        
+        # Check if an overwrite of the `mode` or `path` was applied from the outside.
+        if haskey(model.ext[:_iesopt_kwargs][:config], "general.parameters.mode")
+            pmode = model.ext[:_iesopt_kwargs][:config]["general.parameters.mode"]
+        end
+        if haskey(model.ext[:_iesopt_kwargs][:config], "paths.parameters")
+            ppath = model.ext[:_iesopt_kwargs][:config]["paths.parameters"]
+        end
+
+        # Concat model root working directory with path to parameters.
         ppath = normpath(model.ext[:_iesopt_wd]::String, ppath)
 
         if parameters isa String
