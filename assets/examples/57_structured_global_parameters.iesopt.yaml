@@ -3,7 +3,7 @@ parameters:
   - demand        # Adding this will inject parameters in `demand` after those loaded from `default`
   # - high_demand
 
-# Note: Enableing `high_demand` would attempt to override the `demand` parameter, that is already contained in the
+# Note: Enabling `high_demand` would attempt to override the `demand` parameter, that is already contained in the
 # `demand` parameter file. This would result in an error. If you are sure you want to allow overrides, you can activate
 # that below in the general config section.
 
