@@ -1,0 +1,54 @@
+parameters:
+  - default       # You can leave out the extension, which will be automatically added
+  - demand        # Adding this will inject parameters in `demand` after those loaded from `default`
+  # - high_demand
+
+# Note: Enableing `high_demand` would attempt to override the `demand` parameter, that is already contained in the
+# `demand` parameter file. This would result in an error. If you are sure you want to allow overrides, you can activate
+# that below in the general config section.
+
+config:
+  general:
+    version:
+      core: 2.7.0
+    parameters:
+      mode: overwrite  # Set this to `overwrite` to allow parameters to override each other; default is `unique`
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+    snapshots:
+      count: 1
+  results:
+    enabled: true
+    memory_only: true
+  paths:
+    parameters: files/57/
+    components: files/25/
+
+carriers:
+  electricity: {}
+
+load_components:
+  - components.csv
+
+components:
+  node1:
+    type: Node
+    carrier: electricity
+  
+  node2:
+    type: Node
+    carrier: electricity
+  
+  supply:
+    type: Profile
+    carrier: electricity
+    node_to: node1
+    mode: create
+    cost: <cost>
+
+  conn:
+    type: Connection
+    node_from: node1
+    node_to: node2
