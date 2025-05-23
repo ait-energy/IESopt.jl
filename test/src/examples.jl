@@ -279,3 +279,25 @@ end
     @test JuMP.value(get_component(model, "storage").var.state[1]) == 100
     @test sum(JuMP.value, get_component(model, "storage").exp.injection) == 0
 end
+
+@testitem "57_structured_global_parameters" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    cfg = String(Assets.get_path("examples", "57_structured_global_parameters.iesopt.yaml"))
+
+    model = generate!(cfg)
+    @test access(get_component(model, "demand").value) ≈ 5.0
+    @test access(get_component(model, "supply").cost) ≈ 10.0
+
+    model = generate!(cfg; parameters=["default", "demand", "high_demand"], config=Dict("general.parameters.mode" => "overwrite"))
+    @test access(get_component(model, "demand").value) ≈ 10.0
+    @test access(get_component(model, "supply").cost) ≈ 10.0
+
+    @test_logs (:error, "Duplicate parameter name found in global parameters") match_mode = :any generate!(
+        cfg;
+        parameters=["default", "demand", "high_demand"],
+    )
+    @test_logs (:error, "Unrecognized mode for global parameters") match_mode = :any generate!(
+        cfg;
+        parameters=["default", "demand", "high_demand"],
+        config=Dict("general.parameters.mode" => "overwrote")
+    )
+end
