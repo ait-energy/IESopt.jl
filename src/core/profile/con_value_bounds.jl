@@ -1,7 +1,7 @@
 @doc raw"""
-    _profile_con_value_bounds!(model::JuMP.Model, profile::Profile)
+    _profile_con_value_bounds!(profile::Profile)
 
-Add the constraint defining the bounds of this `profile` to the `model`.
+Add the constraint defining the bounds of this `profile` to `profile.model`.
 
 This heavily depends on the `mode` setting, as
 it does nothing if the `mode` is set to `fixed`, or the `value` is actually controlled by an `Expression`.

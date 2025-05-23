@@ -1,7 +1,7 @@
 @doc raw"""
-    _node_con_nodalbalance!(model::JuMP.Model, node::Node)
+    _node_con_nodalbalance!(node::Node)
 
-Add the constraint describing the nodal balance to the `model`.
+Add the constraint describing the nodal balance to `node.model`.
 
 Depending on whether the `node` is stateful or not, this constructs different representations:
 

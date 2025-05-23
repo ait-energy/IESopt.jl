@@ -1,5 +1,5 @@
 @doc raw"""
-    _unit_obj_ramp_cost!(model::JuMP.Model, unit::Unit)
+    _unit_obj_ramp_cost!(unit::Unit)
 
 Add the (potential) cost of this `unit`'s ramping to the global objective function.
 

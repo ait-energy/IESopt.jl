@@ -1,7 +1,7 @@
 @doc raw"""
     _node_con_last_state!(node::Node)
 
-Add the constraint the `node`'s state at the first Snapshot to the `model`, if
+Add the constraint for the `node`'s state at the first Snapshot to `node.model`, if
 `node.has_state == true` and `node.initial_state` is set.
 """
 function _node_con_first_state!(node::Node)
