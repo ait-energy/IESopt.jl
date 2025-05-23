@@ -20,6 +20,7 @@ config:
 # We not only define units but also colors, that can be later picked up by the standardized visualization tools. Observe
 # the fact, that the hexcode is in "", since a `#` counts as starting an in-line comment. Also we use the "block" format
 # that YAML supports instead of the in-line format that we used up until now. These are exactly the same.
+# Currently there are no standardized visualization tools available so you cannot make use of the units and colors yet. 
 carriers:
   electricity:
     unit: MWh
