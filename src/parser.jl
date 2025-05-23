@@ -121,15 +121,14 @@ function _parse_global_specification!(model::JuMP.Model)
         parameters = pop!(data, "parameters", Dict{String, Any}())
 
         if parameters isa String
-            filename = normpath(model.ext[:_iesopt_wd]::String, parameters::String)
+            filename = normpath(ppath, parameters::String)
             
             # Check if the file exists.
             if !isfile(filename)
                 # Check if it is just missing the full extension.
-                if isfile("$filename.iesopt.param.yaml")
-                    filename = "$filename.iesopt.param.yaml"
-                else
-                    @critical "Global parameters file not found" path = model.ext[:_iesopt_wd] file = parameters
+                filename = normpath(ppath, "$(parameters).iesopt.param.yaml")
+                if !isfile(filename)
+                    @critical "Global parameters file not found" path = ppath file = parameters
                 end
             end
 
@@ -138,20 +137,19 @@ function _parse_global_specification!(model::JuMP.Model)
                 @critical "Unrecognized file ending for global parameters, expected `.iesopt.param.yaml`" filename
             end
 
-            parameters = YAML.load_file(
-                normpath(model.ext[:_iesopt_wd]::String, parameters::String);
-                dicttype=Dict{String, Any},
-            )::Dict{String, Any}
+            parameters = YAML.load_file(filename; dicttype=Dict{String, Any})::Dict{String, Any}
         elseif parameters isa Vector{String}
             parameters_merged = Dict{String, Any}()
-            for filename in parameters
+            for file in parameters
+                filename = normpath(ppath, file::String)
+
                 # Check if the file exists.
                 if !isfile(filename)
                     # Check if it is just missing the full extension.
-                    if isfile("$filename.iesopt.param.yaml")
-                        filename = "$filename.iesopt.param.yaml"
-                    else
-                        @critical "Global parameters file not found" path = model.ext[:_iesopt_wd] file = parameters
+                    filename = normpath(ppath, "$(file).iesopt.param.yaml")
+                    if !isfile(filename)
+                        @show filename
+                        @critical "Global parameters file not found" path = ppath file
                     end
                 end
 
@@ -160,19 +158,20 @@ function _parse_global_specification!(model::JuMP.Model)
                     @critical "Unrecognized file ending for global parameters, expected `.iesopt.param.yaml`" filename
                 end
 
-                p = YAML.load_file(
-                    normpath(model.ext[:_iesopt_wd]::String, filename::String);
-                    dicttype=Dict{String, Any},
-                )::Dict{String, Any}
+                p = YAML.load_file(filename; dicttype=Dict{String, Any})::Dict{String, Any}
 
                 # Based on the parameter mode we need to perform a safety check before merging.
-                if @config(model, general.parameters.mode) == "unique"
+                if pmode == "unique"
                     # Check for duplicates.
                     for (k, v) in p
                         if haskey(parameters_merged, k)
                             @critical "Duplicate parameter name found in global parameters" parameter = k
                         end
                     end
+                elseif pmode == "overwrite"
+                    # Do nothing, we just overwrite the existing parameters.
+                else
+                    @critical "Unrecognized mode for global parameters" mode = pmode
                 end
 
                 # Merge all parameters.
