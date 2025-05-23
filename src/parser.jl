@@ -121,6 +121,23 @@ function _parse_global_specification!(model::JuMP.Model)
         parameters = pop!(data, "parameters", Dict{String, Any}())
 
         if parameters isa String
+            filename = normpath(model.ext[:_iesopt_wd]::String, parameters::String)
+            
+            # Check if the file exists.
+            if !isfile(filename)
+                # Check if it is just missing the full extension.
+                if isfile("$filename.iesopt.param.yaml")
+                    filename = "$filename.iesopt.param.yaml"
+                else
+                    @critical "Global parameters file not found" path = model.ext[:_iesopt_wd] file = parameters
+                end
+            end
+
+            # Check if the file has the correct extension.
+            if !endswith(filename, ".iesopt.param.yaml")
+                @critical "Unrecognized file ending for global parameters, expected `.iesopt.param.yaml`" filename
+            end
+
             parameters = YAML.load_file(
                 normpath(model.ext[:_iesopt_wd]::String, parameters::String);
                 dicttype=Dict{String, Any},
@@ -128,6 +145,17 @@ function _parse_global_specification!(model::JuMP.Model)
         elseif parameters isa Vector{String}
             parameters_merged = Dict{String, Any}()
             for filename in parameters
+                # Check if the file exists.
+                if !isfile(filename)
+                    # Check if it is just missing the full extension.
+                    if isfile("$filename.iesopt.param.yaml")
+                        filename = "$filename.iesopt.param.yaml"
+                    else
+                        @critical "Global parameters file not found" path = model.ext[:_iesopt_wd] file = parameters
+                    end
+                end
+
+                # Check if the file has the correct extension.
                 if !endswith(filename, ".iesopt.param.yaml")
                     @critical "Unrecognized file ending for global parameters, expected `.iesopt.param.yaml`" filename
                 end
