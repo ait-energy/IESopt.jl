@@ -119,17 +119,14 @@ function _parse_global_specification!(model::JuMP.Model)
        (!isempty(internal(model).input.stochastic) && !isempty(internal(model).input.stochastic[:scenario]))
 
         # Check the global parameters that were passed.
-        if !isempty(global_parameters)
+        if global_parameters isa Vector{String}
             if haskey(data, "parameters")
                 @warn "Global parameters passed to IESopt, while also defined in model config (these will be ignored)"
             end
             
-            parameters = global_parameters
-
             # If the `global_parameters` was a list of files, we empty it to allow for standardized handling afterwards.
-            if parameters isa Vector{String}
-                global_parameters = Dict{String, Any}()
-            end
+            parameters = global_parameters
+            global_parameters = Dict{String, Any}()
         else
             # Pop out parameters.
             parameters = pop!(data, "parameters", Dict{String, Any}())
