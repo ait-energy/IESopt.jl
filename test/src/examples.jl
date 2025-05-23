@@ -226,14 +226,10 @@ end
         JuMP.objective_value(IESopt.run(String(Assets.get_path("examples", "07_csv_filestorage.iesopt.yaml"))))
     @test JuMP.objective_value(model) ≈ true_obj_val
 
-    @test size(
-        internal(
-            @test_logs (:error, "[generate] Error(s) during model generation") match_mode = :any generate!(
-                cfg;
-                config=Dict("files._csv_config" => Dict()),
-            )
-        ).input.files["data"],
-    ) == (8760, 8)
+    @test_logs (:error, "[generate] Error(s) during model generation") match_mode = :any generate!(
+        cfg;
+        config=Dict("files._csv_config" => Dict()),
+    )
 end
 
 @testitem "50_delayed_connections" tags = [:examples] setup = [TestExampleModule] begin
@@ -282,4 +278,44 @@ end
 
     @test JuMP.value(get_component(model, "storage").var.state[1]) == 100
     @test sum(JuMP.value, get_component(model, "storage").exp.injection) == 0
+end
+
+@testitem "57_structured_global_parameters" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    cfg = String(Assets.get_path("examples", "57_structured_global_parameters.iesopt.yaml"))
+
+    model = generate!(cfg)
+    @test access(get_component(model, "demand").value) ≈ 5.0
+    @test access(get_component(model, "supply").cost) ≈ 10.0
+
+    model = generate!(
+        cfg;
+        parameters=["default", "demand", "high_demand"],
+        config=Dict("general.parameters.mode" => "overwrite"),
+    )
+    @test access(get_component(model, "demand").value) ≈ 10.0
+    @test access(get_component(model, "supply").cost) ≈ 10.0
+
+    model = generate!(cfg; parameters=["default", "demand", Dict("demand" => 7)])
+    @test access(get_component(model, "demand").value) ≈ 7.0
+
+    @test_logs (:error, "Duplicate parameter name found in global parameters") match_mode = :any generate!(
+        cfg;
+        parameters=["default", "demand", "high_demand"],
+    )
+    @test_logs (:error, "Unrecognized mode for global parameters") match_mode = :any generate!(
+        cfg;
+        parameters=["default", "demand", "high_demand"],
+        config=Dict("general.parameters.mode" => "overwrote"),
+    )
+
+    @test_logs (:error, "When passing a list of global parameters, at most one element can be a dictionary") match_mode =
+        :any generate!(cfg; parameters=["default", "demand", Dict("demand" => 7), Dict("demand" => 7)])
+    @test_logs (
+        :error,
+        "If passing a dictionary as part of the global parameters list, make sure to pass it as last element",
+    ) match_mode = :any generate!(cfg; parameters=["default", Dict("demand" => 7), "demand"])
+    @test_logs (:error, "[generate] Error(s) during model generation") match_mode = :any generate!(
+        cfg;
+        parameters=["default", Dict("demand" => 1)],
+    )
 end

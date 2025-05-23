@@ -19,6 +19,12 @@ config:
             progress: on        # DEFAULT: `verbosity.core` == "error" => "off", else "on"
             python: info        # DEFAULT: `verbosity.core`
             solver: on          # DEFAULT: `verbosity.core` == "error" => "off", else "on"
+        performance:
+            string_names: true        # DEFAULT: true
+            logfile: true             # DEFAULT: true
+            force_addon_reload: true  # DEFAULT: true
+        parameters:
+            mode: unique              # DEFAULT: unique
 ```
 """
 function _prepare_config_general!(model::JuMP.Model)
@@ -63,6 +69,11 @@ function _prepare_config_general!(model::JuMP.Model)
         "logfile" => get(performance, "logfile", true)::Bool,
         "force_addon_reload" => get(performance, "force_addon_reload", true)::Bool,
     )
+
+    # Parameters.
+    # ATTENTION: When modifying this, ensure it matches the defaults, etc., used in `parser.jl`.
+    parameters = get(data, "parameters", Dict{String, String}())
+    @config(model, general.parameters) = Dict("mode" => get(parameters, "mode", "unique")::String)
 
     return nothing
 end

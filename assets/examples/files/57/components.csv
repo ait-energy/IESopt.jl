@@ -1,0 +1,2 @@
+name,type,carrier,node_from,value
+demand,Profile,electricity,node2,<demand>

@@ -14,5 +14,8 @@ function _prepare_config_paths!(model::JuMP.Model)
     @config(model, paths.components) = normpath(model_path, clean(get(data, "components", "components")))
     @config(model, paths.addons) = normpath(model_path, clean(get(data, "addons", "addons")))
 
+    # ATTENTION: When modifying this, ensure it matches the defaults, etc., used in `parser.jl`.
+    @config(model, paths.parameters) = normpath(model_path, clean(get(data, "parameters", "./")))
+
     return nothing
 end

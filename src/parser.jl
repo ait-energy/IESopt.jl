@@ -117,15 +117,118 @@ function _parse_global_specification!(model::JuMP.Model)
     # Check if there are global parameters that need replacement.
     if haskey(data, "parameters") ||
        (!isempty(internal(model).input.stochastic) && !isempty(internal(model).input.stochastic[:scenario]))
-        # Pop out parameters.
-        parameters = pop!(data, "parameters", Dict{String, Any}())
+
+        # Check the global parameters that were passed.
+        if global_parameters isa Vector
+            if haskey(data, "parameters")
+                @warn "Global parameters passed to IESopt, while also defined in model config (these will be ignored)"
+            end
+
+            # Keep all parameter files.
+            parameters = [el for el in global_parameters if el isa String]::Vector{String}
+
+            if length(parameters) == (length(global_parameters) - 1)
+                # Check if the last element is a dictionary.
+                if global_parameters[end] isa Dict
+                    global_parameters = global_parameters[end]
+                else
+                    @critical "If passing a dictionary as part of the global parameters list, make sure to pass it as last element"
+                end
+            elseif length(parameters) < (length(global_parameters) - 1)
+                @critical "When passing a list of global parameters, at most one element can be a dictionary"
+            else
+                global_parameters = Dict{String, Any}()
+            end
+        else
+            # Pop out parameters.
+            parameters = pop!(data, "parameters", Dict{String, Any}())
+        end
+
+        # Get mode and path for the parameters, based on top-level YAML config.
+        pmode = get(
+            get(
+                get(get(data, "config", Dict{String, Any}()), "general", Dict{String, Any}()),
+                "parameters",
+                Dict{String, Any}(),
+            ),
+            "mode",
+            "unique",
+        )
+        ppath = get(get(get(data, "config", Dict{String, Any}()), "paths", Dict{String, Any}()), "parameters", "./")
+
+        # Check if an overwrite of the `mode` or `path` was applied from the outside.
+        if haskey(model.ext[:_iesopt_kwargs][:config], "general.parameters.mode")
+            pmode = model.ext[:_iesopt_kwargs][:config]["general.parameters.mode"]
+        end
+        if haskey(model.ext[:_iesopt_kwargs][:config], "paths.parameters")
+            ppath = model.ext[:_iesopt_kwargs][:config]["paths.parameters"]
+        end
+
+        # Concat model root working directory with path to parameters.
+        ppath = normpath(model.ext[:_iesopt_wd]::String, ppath)
 
         if parameters isa String
-            parameters = YAML.load_file(
-                normpath(model.ext[:_iesopt_wd]::String, parameters::String);
-                dicttype=Dict{String, Any},
-            )::Dict{String, Any}
+            filename = normpath(ppath, parameters::String)
+
+            # Check if the file exists.
+            if !isfile(filename)
+                # Check if it is just missing the full extension.
+                filename = normpath(ppath, "$(parameters).iesopt.param.yaml")
+                if !isfile(filename)
+                    @critical "Global parameters file not found" path = ppath file = parameters
+                end
+            end
+
+            # Check if the file has the correct extension.
+            if !endswith(filename, ".iesopt.param.yaml")
+                @critical "Unrecognized file ending for global parameters, expected `.iesopt.param.yaml`" filename
+            end
+
+            parameters = YAML.load_file(filename; dicttype=Dict{String, Any})::Dict{String, Any}
+        elseif parameters isa Vector{String}
+            parameters_merged = Dict{String, Any}()
+            for file in parameters
+                filename = normpath(ppath, file::String)
+
+                # Check if the file exists.
+                if !isfile(filename)
+                    # Check if it is just missing the full extension.
+                    filename = normpath(ppath, "$(file).iesopt.param.yaml")
+                    if !isfile(filename)
+                        @show filename
+                        @critical "Global parameters file not found" path = ppath file
+                    end
+                end
+
+                # Check if the file has the correct extension.
+                if !endswith(filename, ".iesopt.param.yaml")
+                    @critical "Unrecognized file ending for global parameters, expected `.iesopt.param.yaml`" filename
+                end
+
+                p = YAML.load_file(filename; dicttype=Dict{String, Any})::Dict{String, Any}
+
+                # Based on the parameter mode we need to perform a safety check before merging.
+                if pmode == "unique"
+                    # Check for duplicates.
+                    for (k, v) in p
+                        if haskey(parameters_merged, k)
+                            @critical "Duplicate parameter name found in global parameters" parameter = k
+                        end
+                    end
+                elseif pmode == "overwrite"
+                    # Do nothing, we just overwrite the existing parameters.
+                else
+                    @critical "Unrecognized mode for global parameters" mode = pmode
+                end
+
+                # Merge all parameters.
+                merge!(parameters_merged, p)
+            end
+
+            # Update parameters.
+            parameters = parameters_merged
         elseif parameters isa Dict
+            # Nothing to do, parameters are already given as dictionary.
         else
             @critical "Unrecognized format for global parameters" type = typeof(parameters)
         end
