@@ -117,8 +117,9 @@ function _parse_global_specification!(model::JuMP.Model)
     # Check if there are global parameters that need replacement.
     if haskey(data, "parameters") ||
        (!isempty(internal(model).input.stochastic) && !isempty(internal(model).input.stochastic[:scenario]))
-        # Pop out parameters.
-        parameters = pop!(data, "parameters", Dict{String, Any}())
+        pmode = get(get(get(get(data, "config", Dict{String, Any}()), "general", Dict{String, Any}()), "parameters", Dict{String, Any}()), "mode", "unique")
+        ppath = get(get(get(data, "config", Dict{String, Any}()), "paths", Dict{String, Any}()), "parameters", "./")
+        ppath = normpath(model.ext[:_iesopt_wd]::String, ppath)
 
         if parameters isa String
             filename = normpath(ppath, parameters::String)
