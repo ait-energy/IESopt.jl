@@ -12,7 +12,7 @@ config:
     version:
       core: 2.7.0
     parameters:
-      mode: overwrite  # Set this to `overwrite` to allow parameters to override each other; default is `unique`
+      mode: unique  # Set this to `overwrite` to allow parameters to override each other; default is `unique`
   optimization:
     problem_type: LP
     solver:
