@@ -287,7 +287,11 @@ end
     @test access(get_component(model, "demand").value) ≈ 5.0
     @test access(get_component(model, "supply").cost) ≈ 10.0
 
-    model = generate!(cfg; parameters=["default", "demand", "high_demand"], config=Dict("general.parameters.mode" => "overwrite"))
+    model = generate!(
+        cfg;
+        parameters=["default", "demand", "high_demand"],
+        config=Dict("general.parameters.mode" => "overwrite"),
+    )
     @test access(get_component(model, "demand").value) ≈ 10.0
     @test access(get_component(model, "supply").cost) ≈ 10.0
 
@@ -301,19 +305,17 @@ end
     @test_logs (:error, "Unrecognized mode for global parameters") match_mode = :any generate!(
         cfg;
         parameters=["default", "demand", "high_demand"],
-        config=Dict("general.parameters.mode" => "overwrote")
+        config=Dict("general.parameters.mode" => "overwrote"),
     )
 
-    @test_logs (:error, "When passing a list of global parameters, at most one element can be a dictionary") match_mode = :any generate!(
-        cfg;
-        parameters=["default", "demand", Dict("demand" => 7), Dict("demand" => 7)]
-    )
-    @test_logs (:error, "If passing a dictionary as part of the global parameters list, make sure to pass it as last element") match_mode = :any generate!(
-        cfg;
-        parameters=["default", Dict("demand" => 7), "demand"]
-    )
+    @test_logs (:error, "When passing a list of global parameters, at most one element can be a dictionary") match_mode =
+        :any generate!(cfg; parameters=["default", "demand", Dict("demand" => 7), Dict("demand" => 7)])
+    @test_logs (
+        :error,
+        "If passing a dictionary as part of the global parameters list, make sure to pass it as last element",
+    ) match_mode = :any generate!(cfg; parameters=["default", Dict("demand" => 7), "demand"])
     @test_logs (:error, "[generate] Error(s) during model generation") match_mode = :any generate!(
         cfg;
-        parameters=["default", Dict("demand" => 1)]
+        parameters=["default", Dict("demand" => 1)],
     )
 end

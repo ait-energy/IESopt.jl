@@ -73,9 +73,7 @@ function _prepare_config_general!(model::JuMP.Model)
     # Parameters.
     # ATTENTION: When modifying this, ensure it matches the defaults, etc., used in `parser.jl`.
     parameters = get(data, "parameters", Dict{String, String}())
-    @config(model, general.parameters) = Dict(
-        "mode" => get(parameters, "mode", "unique")::String,
-    )
+    @config(model, general.parameters) = Dict("mode" => get(parameters, "mode", "unique")::String)
 
     return nothing
 end

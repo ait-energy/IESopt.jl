@@ -123,7 +123,7 @@ function _parse_global_specification!(model::JuMP.Model)
             if haskey(data, "parameters")
                 @warn "Global parameters passed to IESopt, while also defined in model config (these will be ignored)"
             end
-            
+
             # Keep all parameter files.
             parameters = [el for el in global_parameters if el isa String]::Vector{String}
 
@@ -145,9 +145,17 @@ function _parse_global_specification!(model::JuMP.Model)
         end
 
         # Get mode and path for the parameters, based on top-level YAML config.
-        pmode = get(get(get(get(data, "config", Dict{String, Any}()), "general", Dict{String, Any}()), "parameters", Dict{String, Any}()), "mode", "unique")
+        pmode = get(
+            get(
+                get(get(data, "config", Dict{String, Any}()), "general", Dict{String, Any}()),
+                "parameters",
+                Dict{String, Any}(),
+            ),
+            "mode",
+            "unique",
+        )
         ppath = get(get(get(data, "config", Dict{String, Any}()), "paths", Dict{String, Any}()), "parameters", "./")
-        
+
         # Check if an overwrite of the `mode` or `path` was applied from the outside.
         if haskey(model.ext[:_iesopt_kwargs][:config], "general.parameters.mode")
             pmode = model.ext[:_iesopt_kwargs][:config]["general.parameters.mode"]
@@ -161,7 +169,7 @@ function _parse_global_specification!(model::JuMP.Model)
 
         if parameters isa String
             filename = normpath(ppath, parameters::String)
-            
+
             # Check if the file exists.
             if !isfile(filename)
                 # Check if it is just missing the full extension.
