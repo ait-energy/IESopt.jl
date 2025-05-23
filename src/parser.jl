@@ -125,7 +125,36 @@ function _parse_global_specification!(model::JuMP.Model)
                 normpath(model.ext[:_iesopt_wd]::String, parameters::String);
                 dicttype=Dict{String, Any},
             )::Dict{String, Any}
+        elseif parameters isa Vector{String}
+            parameters_merged = Dict{String, Any}()
+            for filename in parameters
+                if !endswith(filename, ".iesopt.param.yaml")
+                    @critical "Unrecognized file ending for global parameters, expected `.iesopt.param.yaml`" filename
+                end
+
+                p = YAML.load_file(
+                    normpath(model.ext[:_iesopt_wd]::String, filename::String);
+                    dicttype=Dict{String, Any},
+                )::Dict{String, Any}
+
+                # Based on the parameter mode we need to perform a safety check before merging.
+                if @config(model, general.parameters.mode) == "unique"
+                    # Check for duplicates.
+                    for (k, v) in p
+                        if haskey(parameters_merged, k)
+                            @critical "Duplicate parameter name found in global parameters" parameter = k
+                        end
+                    end
+                end
+
+                # Merge all parameters.
+                merge!(parameters_merged, p)
+            end
+
+            # Update parameters.
+            parameters = parameters_merged
         elseif parameters isa Dict
+            # Nothing to do, parameters are already given as dictionary.
         else
             @critical "Unrecognized format for global parameters" type = typeof(parameters)
         end
