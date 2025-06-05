@@ -30,8 +30,8 @@ functions:
 
     # Next we can modify a COP from some file.
     # Note that using `this.get_ts("heatpump_cop_gs@default_data")` would work too!
-    cop_default = this.get_ts("cop_default")
-    cop_new = cop_default .* this.get("real_efficiency_heatpump")
+    cop_default_variable = this.get_ts("cop_default")
+    cop_new = cop_default_variable .* this.get("real_efficiency_heatpump")
     
     this.set("_internal_ts_cop", "cop_new@a_new_file")
     this.set_ts("_internal_ts_cop", cop_new)
