@@ -36,58 +36,57 @@ function _profile_con_value_bounds!(profile::Profile)
     end
 
     # Constrain the `value` based on the setting of `mode`.
-    if profile.mode === :ranged
-        if !_isempty(profile.lb)
-            if !_has_representative_snapshots(model)
-                profile.con.value_lb = @constraint(
+    if !_isempty(profile.lb)
+        if !_has_representative_snapshots(model)
+            profile.con.value_lb = @constraint(
+                model,
+                [t = get_T(model)],
+                profile.var.aux_value[t] >= access(profile.lb, t, NonEmptyScalarExpressionValue),
+                base_name = make_base_name(profile, "value_lb"),
+                container = Array
+            )
+        else
+            # Create all representatives.
+            _repr = Dict(
+                t => @constraint(
                     model,
-                    [t = get_T(model)],
                     profile.var.aux_value[t] >= access(profile.lb, t, NonEmptyScalarExpressionValue),
-                    base_name = make_base_name(profile, "value_lb"),
-                    container = Array
-                )
-            else
-                # Create all representatives.
-                _repr = Dict(
-                    t => @constraint(
-                        model,
-                        profile.var.aux_value[t] >= access(profile.lb, t, NonEmptyScalarExpressionValue),
-                        base_name = make_base_name(profile, "value_lb[$(t)]")
-                    ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
-                )
+                    base_name = make_base_name(profile, "value_lb[$(t)]")
+                ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
+            )
 
-                # Create all constraints, either as themselves or their representative.
-                profile.con.value_lb = collect(
-                    internal(model).model.snapshots[t].is_representative ? _repr[t] :
-                    _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
-                )
-            end
+            # Create all constraints, either as themselves or their representative.
+            profile.con.value_lb = collect(
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
+            )
         end
-        if !_isempty(profile.ub)
-            if !_has_representative_snapshots(model)
-                profile.con.value_ub = @constraint(
-                    model,
-                    [t = get_T(model)],
-                    profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
-                    base_name = make_base_name(profile, "value_ub"),
-                    container = Array
-                )
-            else
-                # Create all representatives.
-                _repr = Dict(
-                    t => @constraint(
-                        model,
-                        profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
-                        base_name = make_base_name(profile, "value_ub[$(t)]")
-                    ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
-                )
+    end
 
-                # Create all constraints, either as themselves or their representative.
-                profile.con.value_ub = collect(
-                    internal(model).model.snapshots[t].is_representative ? _repr[t] :
-                    _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
-                )
-            end
+    if !_isempty(profile.ub)
+        if !_has_representative_snapshots(model)
+            profile.con.value_ub = @constraint(
+                model,
+                [t = get_T(model)],
+                profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
+                base_name = make_base_name(profile, "value_ub"),
+                container = Array
+            )
+        else
+            # Create all representatives.
+            _repr = Dict(
+                t => @constraint(
+                    model,
+                    profile.var.aux_value[t] <= access(profile.ub, t, NonEmptyScalarExpressionValue),
+                    base_name = make_base_name(profile, "value_ub[$(t)]")
+                ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
+            )
+
+            # Create all constraints, either as themselves or their representative.
+            profile.con.value_ub = collect(
+                internal(model).model.snapshots[t].is_representative ? _repr[t] :
+                _repr[internal(model).model.snapshots[t].representative] for t in get_T(model)
+            )
         end
     end
 

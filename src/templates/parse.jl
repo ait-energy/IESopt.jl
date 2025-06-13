@@ -324,6 +324,19 @@ function _parse_noncore!(model::JuMP.Model, description::Dict{String, Any}, cnam
     type = pop!(description[cname], "type")
     template = _require_template(model, type)
 
+    # Extract tags, if there are any.
+    if "tags" in keys(description[cname])
+        model_tags = internal(model).model.tags
+        tags = pop!(description[cname], "tags")
+        tags = tags isa String ? [tags] : tags
+        for tag in tags
+            if !haskey(model_tags, tag)
+                model_tags[tag] = Vector{String}()
+            end
+            push!(model_tags[tag], cname)
+        end
+    end
+
     # Remember its name and type properly, before that is lost due to flattening, by constructing a Virtual.
     internal(model).model.components[cname] = Virtual(;
         model,
