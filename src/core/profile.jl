@@ -151,12 +151,12 @@ function _isvalid(profile::Profile)
     end
 
     if profile.mode === :create
-        !_isempty(profile.node_from) &&
+        !isnothing(profile.node_from) &&
             @critical "`mode: create` cannot be used with `node_from`" profile = profile.name
-        _isempty(profile.node_to) || @critical "`mode: create` must specify `node_to`" profile = profile.name
+        isnothing(profile.node_to) && @critical "`mode: create` must specify `node_to`" profile = profile.name
     elseif profile.mode === :destroy
-        !_isempty(profile.node_to) && @critical "`mode: destroy` cannot be used with `node_to`" profile = profile.name
-        _isempty(profile.node_from) || @critical "`mode: destroy` must specify `node_from`" profile = profile.name
+        !isnothing(profile.node_to) && @critical "`mode: destroy` cannot be used with `node_to`" profile = profile.name
+        isnothing(profile.node_from) && @critical "`mode: destroy` must specify `node_from`" profile = profile.name
     end
 
     if !(profile.mode in [:fixed, :create, :destroy, :ranged])
