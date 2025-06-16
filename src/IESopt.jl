@@ -514,8 +514,11 @@ function parse!(
                     @critical "Trying to access data with out-of-bounds or empty range" filename from to nrows
                 end
 
-                internal(model).input.files[fn] =
-                    DataFrames.mapcols!(v -> float.(v), df[from:to, :]; cols=names(df, Int))
+                internal(model).input.files[fn] = DataFrames.mapcols!(
+                    v -> float.(v),
+                    df[from:to, :];
+                    cols=names(df, Union{Int, Missing}),
+                )::DataFrames.DataFrame
             end
             @debug "Successfully merged $(length(virtual_files)) virtual file(s)"
         end
