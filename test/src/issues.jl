@@ -34,6 +34,26 @@ end
     @test JuMP.objective_value(IESopt.run(cfg; virtual_files=Dict("data" => df), config)) ≈ obj atol = 0.1
 
     config = Dict("optimization.snapshots.count" => 168, "optimization.snapshots.offset" => 168)
+    @test_logs (:error, "[generate] Error(s) during model generation") match_mode = :any generate!(
+        cfg;
+        virtual_files=Dict("data" => df),
+        config,
+    )
+
+    config = Dict(
+        "optimization.snapshots.count" => 168,
+        "optimization.snapshots.offset" => 168,
+        "optimization.snapshots.apply_to_virtual_files" => true,
+    )
     obj = JuMP.objective_value(IESopt.run(cfg; config))
+    @test JuMP.objective_value(IESopt.run(cfg; virtual_files=Dict("data" => df), config)) ≈ obj atol = 0.1
+
+    config = Dict("optimization.snapshots.count" => 168, "optimization.snapshots.offset" => 0)
+    obj = JuMP.objective_value(IESopt.run(cfg; config))
+    config = Dict(
+        "optimization.snapshots.count" => 168,
+        "optimization.snapshots.offset" => 168,
+        "optimization.snapshots.apply_to_virtual_files" => false,
+    )
     @test JuMP.objective_value(IESopt.run(cfg; virtual_files=Dict("data" => df), config)) ≈ obj atol = 0.1
 end
