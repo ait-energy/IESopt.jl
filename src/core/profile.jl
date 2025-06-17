@@ -144,9 +144,19 @@ function _isvalid(profile::Profile)
         @critical "<carrier> could not be detected correctly" profile = profile.name
     end
 
-    if (profile.mode === :create) || (profile.mode === :destroy)
-        !_isempty(profile.lb) && (@warn "Setting <lb> is ignored" profile = profile.name mode = profile.mode)
-        !_isempty(profile.ub) && (@warn "Setting <ub> is ignored" profile = profile.name mode = profile.mode)
+    if profile.mode !== :ranged
+        !_isempty(profile.lb) && (@critical "Using `lb` requires `mode: ranged`" profile = profile.name)
+    elseif profile.mode === :fixed
+        !_isempty(profile.ub) && (@critical "Cannot use `ub` with `mode: fixed`" profile = profile.name)
+    end
+
+    if profile.mode === :create
+        !isnothing(profile.node_from) &&
+            @critical "`mode: create` cannot be used with `node_from`" profile = profile.name
+        isnothing(profile.node_to) && @critical "`mode: create` must specify `node_to`" profile = profile.name
+    elseif profile.mode === :destroy
+        !isnothing(profile.node_to) && @critical "`mode: destroy` cannot be used with `node_to`" profile = profile.name
+        isnothing(profile.node_from) && @critical "`mode: destroy` must specify `node_from`" profile = profile.name
     end
 
     if !(profile.mode in [:fixed, :create, :destroy, :ranged])

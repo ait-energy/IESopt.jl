@@ -76,6 +76,7 @@ function _build_template_function_validate(template::CoreTemplate)
             __parameters__ = __virtual__._parameters
             __model__ = __virtual__.model
             this = __virtual__
+            has_addon(str::String) = haskey(internal(this.model).input.addons, str)
 
             __valid__ = true
             try
