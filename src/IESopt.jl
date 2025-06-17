@@ -497,7 +497,7 @@ function parse!(
 
                 # Offset and aggregation don't work together.
                 if !isnothing(aggregation) && offset != 0
-                    @critical "Snapshot aggregation and non-zero offsets are currently not supported"
+                    @critical "[parse] Snapshot aggregation and non-zero offsets are currently not supported"
                 end
 
                 # Get the number of df rows and and the model's snapshot count
@@ -507,11 +507,20 @@ function parse!(
                 # Get the range of df rows we want to return.
                 # Without snapshot aggregation we can return the rows specified by offset and count.
                 # Otherwise, we start at 1 and multiply the number of rows to return by the number of snapshots to aggregate.
+                if offset != 0
+                    try
+                        if !@config(model, optimization.snapshots.apply_to_virtual_files, Bool)
+                            offset = 0
+                        end
+                    catch
+                        @critical "[parse] Missing `optimization.snapshots.apply_to_virtual_files` when using offset"
+                    end
+                end
                 from, to = isnothing(aggregation) ? (offset + 1, offset + count) : (1, count * (aggregation::Float64))
 
                 # Check if the range of rows is in bounds.
                 if from < 1 || to > nrows || from > to
-                    @critical "Trying to access data with out-of-bounds or empty range" filename from to nrows
+                    @critical "[parse] Trying to access data with out-of-bounds or empty range" filename from to nrows
                 end
 
                 internal(model).input.files[fn] = DataFrames.mapcols!(
@@ -520,7 +529,7 @@ function parse!(
                     cols=names(df, Union{Int, Missing}),
                 )::DataFrames.DataFrame
             end
-            @debug "Successfully merged $(length(virtual_files)) virtual file(s)"
+            @debug "[parse] Successfully merged $(length(virtual_files)) virtual file(s)"
         end
     end
 
