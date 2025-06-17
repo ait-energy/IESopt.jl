@@ -43,7 +43,7 @@ end
     config = Dict(
         "optimization.snapshots.count" => 168,
         "optimization.snapshots.offset" => 168,
-        "optimization.snapshots.apply_to_virtual_files" => true,
+        "optimization.snapshots.offset_virtual_files" => true,
     )
     obj = JuMP.objective_value(IESopt.run(cfg; config))
     @test JuMP.objective_value(IESopt.run(cfg; virtual_files=Dict("data" => df), config)) ≈ obj atol = 0.1
@@ -53,7 +53,7 @@ end
     config = Dict(
         "optimization.snapshots.count" => 168,
         "optimization.snapshots.offset" => 168,
-        "optimization.snapshots.apply_to_virtual_files" => false,
+        "optimization.snapshots.offset_virtual_files" => false,
     )
     @test JuMP.objective_value(IESopt.run(cfg; virtual_files=Dict("data" => df), config)) ≈ obj atol = 0.1
 end

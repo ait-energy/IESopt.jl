@@ -28,8 +28,8 @@ function _prepare_config_optimization!(model::JuMP.Model)
         "representatives" => get(data_snapshots, "representatives", nothing),
         "aggregate" => get(data_snapshots, "aggregate", nothing),
     )
-    if haskey(data_snapshots, "apply_to_virtual_files")
-        @config(model, optimization.snapshots.apply_to_virtual_files) = data_snapshots["apply_to_virtual_files"]::Bool
+    if haskey(data_snapshots, "offset_virtual_files")
+        @config(model, optimization.snapshots.offset_virtual_files) = data_snapshots["offset_virtual_files"]::Bool
     end
 
     # Objectives.

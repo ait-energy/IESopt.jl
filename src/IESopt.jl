@@ -509,11 +509,11 @@ function parse!(
                 # Otherwise, we start at 1 and multiply the number of rows to return by the number of snapshots to aggregate.
                 if offset != 0
                     try
-                        if !@config(model, optimization.snapshots.apply_to_virtual_files, Bool)
+                        if !@config(model, optimization.snapshots.offset_virtual_files, Bool)
                             offset = 0
                         end
                     catch
-                        @critical "[parse] Missing `optimization.snapshots.apply_to_virtual_files` when using offset"
+                        @critical "[parse] Missing `optimization.snapshots.offset_virtual_files` when using offset"
                     end
                 end
                 from, to = isnothing(aggregation) ? (offset + 1, offset + count) : (1, count * (aggregation::Float64))
