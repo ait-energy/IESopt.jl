@@ -20,7 +20,7 @@ function _prepare_config_optimization!(model::JuMP.Model)
     count = data_snapshots["count"]
     weight_config = get(data_snapshots, "weights", nothing)
     weights = weight_config isa Real ? float(weight_config) : weight_config
-    @config(model, optimization.snapshots) = Dict(
+    @config(model, optimization.snapshots) = Dict{String, Any}(
         "count" => count::Int64,
         "offset" => get(data_snapshots, "offset", 0)::Int64,
         "names" => get(data_snapshots, "names", nothing),
@@ -28,6 +28,9 @@ function _prepare_config_optimization!(model::JuMP.Model)
         "representatives" => get(data_snapshots, "representatives", nothing),
         "aggregate" => get(data_snapshots, "aggregate", nothing),
     )
+    if haskey(data_snapshots, "offset_virtual_files")
+        @config(model, optimization.snapshots.offset_virtual_files) = data_snapshots["offset_virtual_files"]::Bool
+    end
 
     # Objectives.
     objectives = get(data, "objectives", Dict{String, Vector{String}}())
