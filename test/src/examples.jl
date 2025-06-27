@@ -319,3 +319,7 @@ end
         parameters=["default", Dict("demand" => 1)],
     )
 end
+
+@testitem "58_energy_to_celcius" tags = [:examples] setup = [TestExampleModule] begin
+    TestExampleModule.check(; obj=245.84)
+end
