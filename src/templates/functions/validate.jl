@@ -66,16 +66,19 @@ function _build_template_function_validate(template::CoreTemplate)
     # Get code from "validate" and remove trailing newline.
     code = chomp(template.yaml["functions"]["validate"])
 
+    rgf_id = Tuple(reinterpret(UInt32, SHA.sha1(chomp(code))))
+
     # Parse the code into an expression.
     code_ex = Meta.parse("""begin\n$(code)\nend"""; filename="$(template.name).iesopt.template.yaml")
 
     # Convert into a proper function.
-    template.functions[:validate] = @RuntimeGeneratedFunction(
+    template.functions[:validate] = _compile_rgf(
         :(function (__virtual__::Virtual)
             __template_name__ = $(template).name
             __parameters__ = __virtual__._parameters
             __model__ = __virtual__.model
             this = __virtual__
+            has_addon(str::String) = haskey(internal(this.model).input.addons, str)
 
             __valid__ = true
             try
@@ -87,7 +90,8 @@ function _build_template_function_validate(template::CoreTemplate)
                 rethrow(e)
             end
             return __valid__
-        end)
+        end);
+        id=rgf_id,
     )
 
     return nothing

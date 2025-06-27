@@ -350,9 +350,10 @@ function _getcsv(model::JuMP.Model, filename::String; sink=DataFrames.DataFrame,
         @critical "Trying to access data with out-of-bounds or empty range" filename from to nrows
     end
 
-    return DataFrames.mapcols(
-        v -> v isa AbstractVector{Int64} ? convert(Vector{Float64}, v) : v,
-        identity.(table[from:to, :]::DataFrames.DataFrame)::DataFrames.DataFrame,
+    return DataFrames.mapcols!(
+        v -> float.(v),
+        table[from:to, :];
+        cols=names(table, Union{Int, Missing}),
     )::DataFrames.DataFrame
 end
 
