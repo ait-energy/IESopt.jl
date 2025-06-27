@@ -1,0 +1,120 @@
+# This is a example how Space Heating and Domestic Hot Water (DHW) can be modeled 
+# Both technologier inherent flexibility which is incentivized by a dynamic electricity price
+# The model is based on a single family house with a heat pump for space heating and DHW
+# The optimzation duration is one year with 15 minute time steps
+
+parameters:
+# Parameters for space heating 
+  gfa: 120 # Gross Floor Area in m²
+  cw: 0.08 # specific heat capacity of bricks in kWh/(m²*K)
+  sh_ub: 23 # assuming allowed room temperature ranges between 19 and 23 degrees Celsius
+  sh_lb: 19 # lower bound for space heating temperature in degrees Celsius
+# Parameters for Domestic Hot Water (DHW)
+  delta_dhw_tank: 10 # assuming a temperature difference of 10 K for the DHW tank
+  cp: 1.16 # specific heat capacity of water kWh/(kg*K)
+    
+config:
+  general:
+    name:
+      model: ExampleModel58
+      scenario: Household_1
+    version:
+      core: 2.6.3
+      python: 3.12.8
+  optimization:
+    problem_type: LP
+    snapshots:
+      count: 35040  # 15-Min-Intervals in one year
+      weights: 0.25 # Duration of each time step in hours (for 15 min steps)
+    solver:
+      name: highs
+      log: false
+
+  results:
+    enabled: true
+    memory_only: true
+
+  paths:
+    files: files/58/
+
+# files with yearly input data
+  files:
+    el_price: yearly_el_prices_kwh.csv # dynamic electricity price derived from entso-e transperency paltform for the year 2021 in 15 minute intervals
+    heat_summary: converted_heat_summary.csv # COP_ASHP_floor, COP_ASHP_water, space_SFH_kW/kWh, water_SFH_kW/kWh derived from When2Heat: https://data.open-power-system-data.org/when2heat/2023-07-27
+
+carriers:
+  electricity: {}
+  heat: {}
+#*******************************************************************************************************************************************************************
+
+components:
+
+  el_market:
+    type: Profile
+    mode: create
+    node_to: public_grid
+    cost: dap_eur_kwh@el_price # dynamic electricity price derived from entso-e transperency paltform for the year 2021 in 15 minute intervals
+    carrier: electricity
+  
+  public_grid:
+    type: Node
+    carrier: electricity
+
+  grid_connection:
+    type: Connection
+    node_from: public_grid
+    node_to: connection_point
+    lb: 0
+    ub: 10
+    carrier: electricity
+
+  connection_point:
+    type: Node
+    carrier: electricity
+
+  # model the heat pump for Space Heating - incorporating the heat pump's COP
+  space_heating_unit:
+    type: Unit
+    inputs: {electricity: connection_point}
+    outputs: {heat: space_heating_node}
+    conversion: 1 electricity -> cop_ashp_floor@heat_summary heat # ASHP air source heat pump with floor heating
+    capacity: 2 in:electricity
+
+  space_heating_node:
+    type: Node
+    carrier: heat
+    has_state: True
+    state_lb: 0
+    state_ub: (<gfa> * <cw>) / (<sh_ub> - <sh_lb>) # 9.6 kWh/K * 4 K = 38.4 kWh
+# energy_to_c: GFA * cw # 120 m² * 0.08 kWh/(m²*K) = 9.6 kWh/K
+
+  space_heating_demand:
+    type: Profile
+    carrier: heat
+    node_from: space_heating_node
+    value: space_sfh@heat_summary * 8000 # space_sfh = space heating demand in kW/kWh (kW/ annual head demand in kWh)
+    # assuming annual heat damend for household is 8.000 kWh/a
+
+  # model the heat pump for DHW - incorporating the heat pump's COP
+  dhw_unit:
+    type: Unit
+    inputs: {electricity: connection_point}
+    outputs: {heat: dhw_node}
+    conversion: 1 electricity -> cop_ashp_water@heat_summary heat
+    capacity: 1 in:electricity
+
+  dhw_node:
+    type: Node
+    carrier: heat
+    has_state: True
+    state_cyclic: disabled
+    state_lb: 0
+    state_ub: (2.5 * <gfa>) * <delta_dhw_tank> * <cp> # flexible capacity based on water tank volume and temperature range
+  # tank_vol: 2.5 * gfa # tank volume in m³ based on Önorm h 5056-1:2019
+  # models the domestic hot water demand of a single family house
+  dhw_demand:
+    type: Profile
+    carrier: heat
+    node_from: dhw_node
+    value: water_sfh@heat_summary * 2500 # water_sfh = Domestic hot water demand in kW/kWh (kW/ annual domestic hot water demand in kWh)
+    # assuming 4 person household uses 2.500 kWh/a for domestic hot water
