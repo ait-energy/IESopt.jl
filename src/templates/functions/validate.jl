@@ -31,7 +31,7 @@ macro check(expr)
                 $ArgCheck.@check $expr
             catch e
                 if isa(e, $ArgCheck.CheckError)
-                    local cname = $(:__component__)
+                    local cname = $(:this).name
                     local message = replace(e.msg, "\n" => " ", "\"" => "'")
                     if occursin(" must hold. Got ", message)
                         local violated, reason = split(message, " must hold. Got ")
@@ -43,7 +43,7 @@ macro check(expr)
 
                     $(:__valid__) = false
                 else
-                    local cname = $(:__component__)
+                    local cname = $(:this).name
                     rethrow(ErrorException("""Got unexpected error while validating the template.
                     ------------
                     > COMPONENT: $cname
