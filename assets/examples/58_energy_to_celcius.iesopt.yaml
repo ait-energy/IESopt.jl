@@ -1,7 +1,7 @@
 # This is a example how Space Heating and Domestic Hot Water (DHW) can be modeled 
 # Both technologier inherent flexibility which is incentivized by a dynamic electricity price
 # The model is based on a single family house with a heat pump for space heating and DHW
-# The optimzation duration is one day with 15 minute time steps
+# The optimization duration is one day with 15 minute time steps
 
 parameters:
 # Parameters for space heating 
@@ -39,7 +39,7 @@ config:
 
 # files with yearly input data
   files:
-    el_price: yearly_el_prices_kwh.csv # dynamic electricity price derived from entso-e transperency paltform for the year 2021 in 15 minute intervals
+    el_price: yearly_el_prices_kwh.csv # dynamic electricity price derived from entso-e transparency platform for the year 2021 in 15 minute intervals
     heat_summary: converted_heat_summary.csv # COP_ASHP_floor, COP_ASHP_water, space_SFH_kW/kWh, water_SFH_kW/kWh derived from When2Heat: https://data.open-power-system-data.org/when2heat/2023-07-27
 
 carriers:
@@ -53,7 +53,7 @@ components:
     type: Profile
     mode: create
     node_to: public_grid
-    cost: dap_eur_kwh@el_price # dynamic electricity price derived from entso-e transperency paltform for the year 2021 in 15 minute intervals
+    cost: dap_eur_kwh@el_price # dynamic electricity price derived from entso-e transparency platform for the year 2021 in 15 minute intervals
     carrier: electricity
   
   public_grid:
