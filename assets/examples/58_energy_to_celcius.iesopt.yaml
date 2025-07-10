@@ -1,7 +1,7 @@
 # This is a example how Space Heating and Domestic Hot Water (DHW) can be modeled 
 # Both technologier inherent flexibility which is incentivized by a dynamic electricity price
 # The model is based on a single family house with a heat pump for space heating and DHW
-# The optimzation duration is one year with 15 minute time steps
+# The optimzation duration is one day with 15 minute time steps
 
 parameters:
 # Parameters for space heating 
@@ -24,7 +24,7 @@ config:
   optimization:
     problem_type: LP
     snapshots:
-      count: 35040  # 15-Min-Intervals in one year
+      count: 96  # 15-Min-Intervals in one day
       weights: 0.25 # Duration of each time step in hours (for 15 min steps)
     solver:
       name: highs
