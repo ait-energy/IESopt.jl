@@ -13,7 +13,13 @@ function _decision_obj_sos!(decision::Decision)
     decision.obj.sos = JuMP.AffExpr(0.0)
     if decision.mode === :sos1
         for i in eachindex(decision.var.sos1_value)
-            JuMP.add_to_expression!(decision.obj.sos, decision.var.sos1_value[i], decision.sos[i]["cost"])
+            if haskey(decision.sos[i], "fixed_cost")
+                JuMP.add_to_expression!(decision.obj.sos, decision.var.sos[i], decision.sos[i]["fixed_cost"])
+            end
+
+            if haskey(decision.sos[i], "cost")
+                JuMP.add_to_expression!(decision.obj.sos, decision.var.sos1_value[i], decision.sos[i]["cost"])
+            end
         end
     elseif decision.mode === :sos2
         for i in eachindex(decision.var.sos)
