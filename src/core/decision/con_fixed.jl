@@ -4,7 +4,7 @@
 to be added
 """
 function _decision_con_fixed!(decision::Decision)
-    if isnothing(decision.fixed_cost) || (decision.mode === :sos1)
+    if _isempty(decision.fixed_cost) || (decision.mode === :sos1)
         return
     end
 
@@ -19,7 +19,7 @@ function _decision_con_fixed!(decision::Decision)
     else
         decision.con.fixed = @constraint(
             model,
-            decision.var.value <= decision.var.fixed * decision.ub,
+            decision.var.value <= decision.var.fixed * access(decision.ub),
             base_name = make_base_name(decision, "fixed")
         )
     end

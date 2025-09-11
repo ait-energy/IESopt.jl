@@ -4,7 +4,7 @@
 to be added
 """
 function _decision_var_fixed!(decision::Decision)
-    if isnothing(decision.fixed_cost) || (decision.mode === :sos1)
+    if _isempty(decision.fixed_cost) || (decision.mode === :sos1)
         return
     end
 

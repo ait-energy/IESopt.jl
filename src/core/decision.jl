@@ -20,17 +20,17 @@ component's settings, as well as have associated costs.
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "`0`"}```
     Minimum size of the decision value (considered for each "unit" if count allows multiple "units").
     """
-    lb::_OptionalScalarInput = 0
+    lb::Expression = @_default_expression(0.0)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "``+\\infty``"}```
     Maximum size of the decision value (considered for each "unit" if count allows multiple "units").
     """
-    ub::_OptionalScalarInput = nothing
+    ub::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "monetary (per value)", "default": "`0`"}```
     Cost that the decision value induces, given as ``cost \cdot value``.
     """
-    cost::_OptionalScalarInput = nothing
+    cost::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "numeric", "unit": "-", "default": "-"}```
     If `mode: fixed`, this value is used as the fixed value of the decision. This can be useful if this `Decision` was
@@ -39,7 +39,7 @@ component's settings, as well as have associated costs.
     the constraint that fixes the value, assisting in approaches like Benders decomposition. Note that this does not
     change the induced cost in any way.
     """
-    fixed_value::_OptionalScalarInput = nothing
+    fixed_value::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "-", "unit": "monetary", "default": "-"}```
     This setting activates a "fixed cost" component for this decision variable, which requires that the model's problem
@@ -50,7 +50,7 @@ component's settings, as well as have associated costs.
     (continuous) way, incuring the (variable) `cost` as well. More complex cost functions can be modelled by switching
     to mode `sos1` or `sos2` and using the `sos` parameter.
     """
-    fixed_cost::_OptionalScalarInput = nothing
+    fixed_cost::Expression = @_default_expression(nothing)
 
     raw"""```{"mandatory": "no", "values": "`linear`, `binary`, `integer`, `sos1`, `sos2`, `fixed`", "unit": "-", "default": "`linear`"}```
     Type of the decision variable that is constructed. `linear` results in a continuous decision, `integer` results in a
@@ -94,24 +94,24 @@ function _isvalid(decision::Decision)
         @critical "Model config only allows LP but MILP is required" decision = decision.name mode = decision.mode
     end
 
-    if !isnothing(decision.fixed_cost) && !_is_milp(model)
+    if !_isempty(decision.fixed_cost) && !_is_milp(model)
         @critical "Model config only allows LP but MILP is required for modelling fixed costs" decision = decision.name mode =
             decision.mode
     end
 
-    if (decision.mode === :binary) && !isnothing(decision.ub) && decision.ub != 1.0
+    if (decision.mode === :binary) && !_isempty(decision.ub) && access(decision.ub) !== 1.0
         @critical "Binary variables with `ub != 1` are not possible" decision = decision.name ub = decision.ub
     end
 
-    if (decision.mode in [:sos1, :sos2]) && !isnothing(decision.cost)
+    if (decision.mode in [:sos1, :sos2]) && !_isempty(decision.cost)
         @critical "SOS1/SOS2 Decisions should not have a `cost` parameter" decision = decision.name mode = decision.mode
     end
 
-    if (decision.mode != :fixed) && !isnothing(decision.fixed_value)
+    if (decision.mode != :fixed) && !_isempty(decision.fixed_value)
         @critical "Decisions that are not fixed can not have a pre-set value" decision = decision.name
     end
 
-    if !isnothing(decision.fixed_cost) && isnothing(decision.ub) && !(decision.mode in [:sos1, :sos2])
+    if !_isempty(decision.fixed_cost) && _isempty(decision.ub) && !(decision.mode in [:sos1, :sos2])
         @critical "Decisions with fixed costs require a defined upper bound" decision = decision.name
     end
 

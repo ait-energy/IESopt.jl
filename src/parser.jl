@@ -568,13 +568,11 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             # Convert to Symbol
             mode = Symbol(pop!(prop, "mode", :linear))
 
-            lb = pop!(prop, "lb", 0)
-            ub = pop!(prop, "ub", nothing)
-            cost = pop!(prop, "cost", nothing)
-
-            (lb isa AbstractString) && (lb = eval(Meta.parse(lb)))
-            (ub isa AbstractString) && (ub = eval(Meta.parse(ub)))
-            (cost isa AbstractString) && (cost = eval(Meta.parse(cost)))
+            lb = _convert_to_expression(model, pop!(prop, "lb", 0))
+            ub = _convert_to_expression(model, pop!(prop, "ub", nothing))
+            cost = _convert_to_expression(model, pop!(prop, "cost", nothing))
+            fixed_value = _convert_to_expression(model, pop!(prop, "fixed_value", nothing))
+            fixed_cost = _convert_to_expression(model, pop!(prop, "fixed_cost", nothing))
 
             # Initialize.
             components[name] = Decision(;
@@ -586,6 +584,8 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
                 lb,
                 ub,
                 cost,
+                fixed_value,
+                fixed_cost,
                 Dict(Symbol(k) => v for (k, v) in prop)...,
             )
             # elseif type == "Expression"
