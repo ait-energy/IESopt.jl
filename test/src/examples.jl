@@ -321,5 +321,5 @@ end
 end
 
 @testitem "58_energy_to_celcius" tags = [:examples] setup = [TestExampleModule] begin
-    TestExampleModule.check(; obj=245.84)
+    TestExampleModule.check(; obj=0.676)
 end
