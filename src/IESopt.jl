@@ -481,7 +481,6 @@ function parse!(
     # TODO: properly check necessity of deepcopy (especially when adding "components" and "load_components")
     isempty(addons) || @error "The `addons` keyword argument is not yet supported"
     isempty(carriers) || @error "The `carriers` keyword argument is not yet supported"
-    isempty(components) || @error "The `components` keyword argument is not yet supported"
     isempty(load_components) || @error "The `load_components` keyword argument is not yet supported"
 
     # Load the model specified by `filename`.

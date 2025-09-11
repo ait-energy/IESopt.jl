@@ -53,6 +53,10 @@ function _parse_model!(model::JuMP.Model, filename::String)
 
         # Fully flatten the model description before parsing.
         _flatten_model!(model, description)
+
+        # Replace component configs passed by the user as kwargs
+        _replace_components_from_user!(model)
+
         merge!(internal(model).aux._flattened_description, deepcopy(description))
 
         # Construct the objectives container & add all registered objectives.

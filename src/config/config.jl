@@ -24,6 +24,14 @@ function _replace_config_from_user!(model::JuMP.Model)
     return _replace_config_from_user!(config, kwargs)
 end
 
+function _replace_components_from_user!(model::JuMP.Model)
+    config = internal(model).input._tl_yaml["components"]
+    kwargs = model.ext[:_iesopt_kwargs][:components]
+    for (component, settings) in kwargs
+        _replace_config_from_user!(config[component], settings)
+    end
+end
+
 function _prepare_config_and_logger!(model::JuMP.Model)
     _replace_config_from_user!(model)
 
