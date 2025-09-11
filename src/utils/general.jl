@@ -579,12 +579,12 @@ function _profiling_format_top(model::JuMP.Model, n::Int64=5; mode::Symbol=:time
     )
 end
 
-_is_valid_template_name(s::String) = !isnothing(match(r"""^[A-Z][A-Za-z]+$""", s))
+_is_valid_template_name(s::String) = !isnothing(match(r"""^[A-Z][A-Za-z0-9]+$""", s))
 
 @testitem "is_valid_template_name" tags = [:unittest, :utils] begin
     set = zip(
         ["", "fooBar", "foobar", "Foo_Bar", "Foo-Bar", "FooBar-", "FooBar1", "F", "FooBar", "Foobar"],
-        [false, false, false, false, false, false, false, false, true, true],
+        [false, false, false, false, false, false, true, false, true, true],
     )
     for (name, result) in set
         @test IESopt._is_valid_template_name(name) == result
