@@ -58,6 +58,10 @@ end
 
     @test sum(sp) ≈ -0.25 atol = 0.01
     @test sum(abs.(sp)) ≈ 4.75 atol = 0.01
+
+    # We can also overwrite the settings of components in nested templates.
+    # Fixing the initial state results in a higher objective value.
+    TestExampleModule.check(; obj=4402.8, components=Dict("group.bess.state" => Dict("state_initial" => 5)))
 end
 
 @testitem "17_varying_connection_capacity" tags = [:examples] setup = [TestExampleModule] begin
