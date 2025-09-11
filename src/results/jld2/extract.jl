@@ -11,12 +11,26 @@ function _convert_to_result(@nospecialize(component::_CoreComponent))
     end
 
     if JuMP.has_duals(component.model)
-        for (k, v) in getfield(getproperty(component, :var), :dict)
-            any(x -> isa.(x, JuMP.VariableRef), v) || continue # skip if not a variable (pf_theta can be Float64)
-            setproperty!(getproperty(ret, :var), Symbol("$(k)__dual"), JuMP.reduced_cost.(v))
+        # Reduced costs for variables.
+        if @config(component.model, results.enabled) == :all
+            prop_ret_var = getproperty(ret, :var)
+            for (k, v) in getfield(getproperty(component, :var), :dict)
+                any(x -> isa.(x, JuMP.VariableRef), v) || continue # skip if not a variable (pf_theta can be Float64)
+                setproperty!(prop_ret_var, Symbol("$(k)__dual"), JuMP.reduced_cost.(v))
+            end
+        elseif @config(component.model, results.enabled) == :reduced
+            @debug "[optimize > results > JLD2] Skip extracting reduced costs for variables"
         end
+
+        # Shadow prices for constraints.
+        prop_ret_con = getproperty(ret, :con)
         for (k, v) in getfield(getproperty(component, :con), :dict)
-            setproperty!(getproperty(ret, :con), Symbol("$(k)__dual"), JuMP.shadow_price.(v))
+            if @config(component.model, results.enabled) == :reduced
+                # Only extract duals for stateless nodes, since those correspond to "energy prices".
+                isa(component, Node) || continue
+                component.has_state && continue
+            end
+            setproperty!(prop_ret_con, Symbol("$(k)__dual"), JuMP.shadow_price.(v))
         end
     end
 
