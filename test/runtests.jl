@@ -21,7 +21,6 @@ include("src/examples.jl")
 
     @run_package_tests verbose = true filter = ti -> (:general in ti.tags)
 
-    include("src/unit_tests.jl")
     @run_package_tests verbose = true filter = ti -> (:unittest in ti.tags)
 
     @testset "Basic (IESopt.jl)" verbose = true begin
