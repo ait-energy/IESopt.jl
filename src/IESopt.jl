@@ -373,6 +373,11 @@ function _attach_optimizer(model::JuMP.Model)
             JuMP.set_optimizer(model, () -> IESopt.MOA.Optimizer(HiGHS.Optimizer))
         else
             JuMP.set_optimizer(model, HiGHS.Optimizer)
+
+            if !haskey(@config(model, optimization.solver.attributes), "ComputeInfeasibilityCertificate")
+                @debug "[generate > attach] Default `ComputeInfeasibilityCertificate` to `false` for HiGHS"
+                @config(model, optimization.solver.attributes)["ComputeInfeasibilityCertificate"] = false
+            end
         end
     else
         try
@@ -409,7 +414,13 @@ function _attach_optimizer(model::JuMP.Model)
             @suppress JuMP.set_attribute(model, attr, value)
             @debug "[generate > attach] Setting attribute" attr value
         catch
-            @error "[generate > attach] Failed to set attribute" attr value
+            try
+                # If the attribute is not a "general" one, try getting it from the solver's interface.
+                @suppress JuMP.set_attribute(model, eval(Meta.parse("$(solver).$(attr)()")), value)
+                @debug "[generate > attach] Setting attribute" attr value
+            catch
+                @error "[generate > attach] Failed to set attribute" attr value
+            end
         end
     end
 
