@@ -4,13 +4,10 @@ include("sections/files.jl")
 include("sections/results.jl")
 include("sections/paths.jl")
 
-function _replace_config_from_user(model::JuMP.Model)
-    isempty(model.ext[:_iesopt_kwargs][:config]) && return nothing
-    data = internal(model).input._tl_yaml["config"]
-
-    for (k, v) in model.ext[:_iesopt_kwargs][:config]
-        accessors = split(k, '.')
-        current = data
+function _replace_config_from_user!(config::Dict{String}, settings)
+    for (k, v) in pairs(settings)
+        accessors = split(string(k), '.')
+        current = config
         for (i, accessor) in enumerate(accessors)
             if i == length(accessors)
                 current[accessor] = v
@@ -21,8 +18,14 @@ function _replace_config_from_user(model::JuMP.Model)
     end
 end
 
+function _replace_config_from_user!(model::JuMP.Model)
+    config = internal(model).input._tl_yaml["config"]
+    kwargs = model.ext[:_iesopt_kwargs][:config]
+    return _replace_config_from_user!(config, kwargs)
+end
+
 function _prepare_config_and_logger!(model::JuMP.Model)
-    _replace_config_from_user(model)
+    _replace_config_from_user!(model)
 
     _prepare_config_general!(model)
 
