@@ -2,6 +2,9 @@
 
 @testitem "01_basic_single_node" tags = [:examples] setup = [TestExampleModule] begin
     TestExampleModule.check(; obj=525.0)
+    # We can overwrite the settings of specific components.
+    # An increased CO2 price (100 -> 200) results in a higher objective value
+    TestExampleModule.check(; obj=675, components=Dict("co2_emissions" => Dict("cost" => 200)))
 end
 
 @testitem "02_advanced_single_node" tags = [:examples] setup = [TestExampleModule] begin
