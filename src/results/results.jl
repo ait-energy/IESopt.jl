@@ -61,7 +61,7 @@ include("jld2/ResultsJLD2.jl")
 include("duckdb/ResultsDuckDB.jl")
 
 function _handle_result_extraction(model::JuMP.Model)
-    if @config(model, results.enabled, Bool)
+    if @config(model, results.enabled) != :none
         # TODO: include content of result config section
         if !JuMP.is_solved_and_feasible(model)
             @error "[optimize > results] Extracting results is only possible for a solved and feasible model"

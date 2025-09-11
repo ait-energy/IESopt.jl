@@ -4,7 +4,19 @@ function _prepare_config_results!(model::JuMP.Model)
     @config(model, results) = Dict{String, Union{Symbol, Bool}}()
 
     # Enabled.
-    @config(model, results.enabled) = get(data, "enabled", !get(data, "disabled", false))::Bool
+    if haskey(data, "disabled")
+        @warn "The `disabled` entry in `results` is deprecated; use `enabled` instead"
+    end
+    results_enabled = get(data, "enabled", !get(data, "disabled", false))
+    if results_enabled === true
+        @warn "Passing `true` to `results.enabled` is deprecated; use `all`, or any other specific setting instead"
+        results_enabled = "all"
+    end
+    if results_enabled === false
+        @warn "Passing `false` to `results.enabled` is deprecated; use `none` instead"
+        results_enabled = "none"
+    end
+    @config(model, results.enabled) = Symbol(results_enabled)
 
     # Memory only.
     memory_only = get(data, "memory_only", true)::Bool

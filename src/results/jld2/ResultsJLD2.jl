@@ -8,6 +8,7 @@ module ResultsJLD2
 using ..IESopt:
     internal,
     @config,
+    Node,
     _result_fields,
     _CoreComponent,
     _CoreComponentResult,
