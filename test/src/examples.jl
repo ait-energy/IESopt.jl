@@ -270,7 +270,7 @@ end
     model = TestExampleModule.check(; obj=2_532_909.2063)
 
     @test JuMP.value.(get_component(model, "pipeline.invest").var.value) ≈ 42.0 atol = 1e-2
-    @test get_component(model, "pipeline.invest").cost ≈ 60067.3621 atol = 1e-2
+    @test access(get_component(model, "pipeline.invest").cost) ≈ 60067.3621 atol = 1e-2
 end
 
 @testitem "56_final_state_decision_cyclic" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
