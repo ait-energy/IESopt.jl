@@ -55,7 +55,7 @@ function _parse_model!(model::JuMP.Model, filename::String)
         _flatten_model!(model, description)
 
         # Replace component configs passed by the user as kwargs
-        _replace_components_from_user!(model)
+        description = _replace_components_from_user(model, description)
 
         merge!(internal(model).aux._flattened_description, deepcopy(description))
 
