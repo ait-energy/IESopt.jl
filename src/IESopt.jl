@@ -803,7 +803,11 @@ function _optimize!(model::JuMP.Model; @nospecialize(kwargs...))
                 JuMP.termination_status(model) solver_status = JuMP.raw_status(model)
         end
     elseif JuMP.result_count(model) == 0
-        @error "[optimize] No results returned after call to `optimize!`. This most likely indicates an infeasible or unbounded model. You can check with `IESopt.compute_IIS(model)` which constraints make your model infeasible. Note: this requires a solver that supports this (e.g. Gurobi)"
+        termination_status = JuMP.termination_status(model)
+        @error "[optimize] No results returned after call to `optimize!`" termination_status
+        if JuMP.termination_status(model) == JuMP.INFEASIBLE
+            @info "[optimize] Find out why your model is infeasible by calling `IESopt.compute_IIS(model)`"
+        end
         return nothing
     else
         if !isnothing(@config(model, optimization.multiobjective))
@@ -855,21 +859,34 @@ Compute the IIS and print it. If `filename` is specified it will instead write a
 will fail if the solver does not support IIS computation.
 """
 function compute_IIS(model::JuMP.Model; filename::String="")
+    if JuMP.termination_status(model) !== JuMP.INFEASIBLE
+        @critical "[compute_IIS] Model status is not `infeasible`; IIS computation is not possible"
+        return nothing
+    end
+
+    @info "[compute_IIS] Begin computing IIS"
+    JuMP.compute_conflict!(model)
+
+    if JuMP.get_attribute(model, JuMP.MOI.ConflictStatus()) !== JuMP.MOI.CONFLICT_FOUND
+        @critical "[compute_IIS] Failed to find conflict"
+        return nothing
+    end
+
     print = false
     if filename === ""
         print = true
     end
 
-    JuMP.compute_conflict!(model)
+    @info "[compute_IIS] Extracting IIS"
+    iis_model, _ = @suppress JuMP.copy_conflict(model)
+
     conflict_constraint_list = JuMP.ConstraintRef[]
-    for (F, S) in JuMP.list_of_constraint_types(model)
-        for con in JuMP.all_constraints(model, F, S)
-            if JuMP.MOI.get(model, JuMP.MOI.ConstraintConflictStatus(), con) == JuMP.MOI.IN_CONFLICT
-                if print
-                    println(con)
-                else
-                    push!(conflict_constraint_list, con)
-                end
+    for (F, S) in JuMP.list_of_constraint_types(iis_model)
+        for con in JuMP.all_constraints(iis_model, F, S)
+            if print
+                println(con)
+            else
+                push!(conflict_constraint_list, con)
             end
         end
     end
@@ -880,6 +897,8 @@ function compute_IIS(model::JuMP.Model; filename::String="")
                 println(io, con)
             end
         end
+
+        @info "[compute_IIS] IIS written to file" filename
     end
 
     return nothing
