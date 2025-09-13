@@ -8,7 +8,7 @@ include("sections/paths.jl")
     _nest_recursive(settings::Union{AbstractDict, NamedTuple, Base.Pairs})
 
 Return a nested `Dict{String, Any}` representation of `settings`
-expanding all `.` occurences in keys to another nesting level.
+expanding all `.` occurrences in keys to another nesting level.
 
 This turns any of
 
