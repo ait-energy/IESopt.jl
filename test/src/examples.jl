@@ -2,6 +2,9 @@
 
 @testitem "01_basic_single_node" tags = [:examples] setup = [TestExampleModule] begin
     TestExampleModule.check(; obj=525.0)
+    # We can overwrite the settings of specific components.
+    # An increased CO2 price (100 -> 200) results in a higher objective value
+    TestExampleModule.check(; obj=675, components=Dict("co2_emissions" => Dict("cost" => 200)))
 end
 
 @testitem "02_advanced_single_node" tags = [:examples] setup = [TestExampleModule] begin
@@ -55,6 +58,15 @@ end
 
     @test sum(sp) ≈ -0.25 atol = 0.01
     @test sum(abs.(sp)) ≈ 4.75 atol = 0.01
+
+    # We can also overwrite the settings of components in nested templates.
+    # Fixing the initial state results in a higher objective value.
+    TestExampleModule.check(; obj=4402.8, components=Dict("group.bess.state" => Dict("state_initial" => 5)))
+    # Increasing the electricity cost further increases the objective value
+    TestExampleModule.check(;
+        obj=6604.1,
+        components=Dict("group" => Dict("bess.state.state_initial" => 5, "buy_elec.cost" => 150)),
+    )
 end
 
 @testitem "17_varying_connection_capacity" tags = [:examples] setup = [TestExampleModule] begin
@@ -258,6 +270,11 @@ end
 
     @test JuMP.value.(get_component(model, "tariff_power_consumption").var.value) ≈ 4.5738 atol = 1e-2
     @test sum(JuMP.value.(get_component(model, "ev").var.state)) ≈ 713.5135 atol = 1e-2
+
+    # Only considering the first half of the snapshots results in a lower objective value.
+    TestExampleModule.check(; obj=11.8378, config=Dict("optimization.snapshots.count" => 12))
+    # That's also true for the second half.
+    TestExampleModule.check(; obj=8.9575, config=Dict("optimization.snapshots" => (count=12, offset=12)))
 end
 
 @testitem "54_simple_roomtemperature" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
@@ -278,6 +295,9 @@ end
 
     @test JuMP.value(get_component(model, "storage").var.state[1]) == 100
     @test sum(JuMP.value, get_component(model, "storage").exp.injection) == 0
+
+    # not requiring a final state reduces the objective value
+    TestExampleModule.check(; obj=-3.5926424306e+03, components=Dict("storage.state_final" => nothing))
 end
 
 @testitem "57_structured_global_parameters" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
