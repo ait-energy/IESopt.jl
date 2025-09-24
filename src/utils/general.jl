@@ -363,6 +363,16 @@ function _getfromcsv(model::JuMP.Model, file::String, column::String)
     return @view df[get_T(model), column]
 end
 
+"""
+    get_file_data(model::JuMP.Model, str::String)
+
+Get data from a registered (CSV) file based on a string in the format "column@file".
+"""
+function get_file_data(model::JuMP.Model, str::String)
+    col, file = String.(split(str, "@"))
+    return _getfromcsv(model, file, col)
+end
+
 function _conv_S2NI(model::JuMP.Model, str::AbstractString)
     # This handles pure values like "2.0".
     val = tryparse(Float64, str)
