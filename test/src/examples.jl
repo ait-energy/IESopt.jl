@@ -5,6 +5,10 @@
     # We can overwrite the settings of specific components.
     # An increased CO2 price (100 -> 200) results in a higher objective value
     TestExampleModule.check(; obj=675, components=Dict("co2_emissions" => Dict("cost" => 200)))
+    # We can also disable components.
+    # Zero demand results in zero cost.
+    TestExampleModule.check(; obj=0, components=Dict("demand.enabled" => false))
+    TestExampleModule.check(; obj=0, components=Dict("demand.disabled" => true))
 end
 
 @testitem "02_advanced_single_node" tags = [:examples] setup = [TestExampleModule] begin
@@ -225,6 +229,13 @@ end
     @test sum(setpoint) ≈ -1.09 atol = 0.01
     @test minimum(setpoint) ≈ -4.65 atol = 0.01
     @test maximum(setpoint) ≈ 3.58 atol = 0.01
+
+    # We can disable multiple components configured in a template.
+    # In this case, removing the storage results in an infeasible model.
+    model = TestExampleModule.run(; components=Dict("storage.disabled" => true))
+    @test JuMP.termination_status(model) == JuMP.INFEASIBLE
+    # There is no component with "storage" in its name in the model
+    @test !any(contains("storage"), keys(internal(model).model.components))
 end
 
 @testitem "49_csv_format" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
