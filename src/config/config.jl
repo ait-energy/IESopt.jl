@@ -114,7 +114,7 @@ end
 
 function _replace_components_from_user!(description, model::JuMP.Model)
     kwargs = model.ext[:_iesopt_kwargs][:components]
-    isempty(kwargs) && return description
+    isempty(kwargs) && return nothing
     _merge_recursive!(description, _nest_once(_flatten_recursive(kwargs)))
     filter!(
         p -> !_parse_bool(model, get(last(p), "disabled", false)) && _parse_bool(model, get(last(p), "enabled", true)),
