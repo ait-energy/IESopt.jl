@@ -229,6 +229,13 @@ end
     @test sum(setpoint) ≈ -1.09 atol = 0.01
     @test minimum(setpoint) ≈ -4.65 atol = 0.01
     @test maximum(setpoint) ≈ 3.58 atol = 0.01
+
+    # We can disable multiple components configured in a template.
+    # In this case, removing the storage results in an infeasible model.
+    model = TestExampleModule.run(; components=Dict("storage.disabled" => true))
+    @test JuMP.termination_status(model) == JuMP.INFEASIBLE
+    # There is no component with "storage" in its name in the model
+    @test !any(contains("storage"), keys(internal(model).model.components))
 end
 
 @testitem "49_csv_format" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
