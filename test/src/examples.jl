@@ -7,8 +7,8 @@
     TestExampleModule.check(; obj=675, components=Dict("co2_emissions" => Dict("cost" => 200)))
     # We can also disable components.
     # Zero demand results in zero cost.
-    TestExampleModule.check(; obj=0, componenents=Dict("demand.enabled" => false))
-    TestExampleModule.check(; obj=0, componenents=Dict("demand.disabled" => true))
+    TestExampleModule.check(; obj=0, components=Dict("demand.enabled" => false))
+    TestExampleModule.check(; obj=0, components=Dict("demand.disabled" => true))
 end
 
 @testitem "02_advanced_single_node" tags = [:examples] setup = [TestExampleModule] begin
