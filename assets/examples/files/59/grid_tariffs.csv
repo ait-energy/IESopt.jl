@@ -1,0 +1,13 @@
+name,type,lb,ub,cost
+grid_tariff_power_consumption_1,Decision,0,1000,9.5
+grid_tariff_power_consumption_2,Decision,0,1000,9.5
+grid_tariff_power_consumption_3,Decision,0,1000,9.5
+grid_tariff_power_consumption_4,Decision,0,1000,9.5
+grid_tariff_power_consumption_5,Decision,0,1000,9.5
+grid_tariff_power_consumption_6,Decision,0,1000,9.5
+grid_tariff_power_consumption_7,Decision,0,1000,9.5
+grid_tariff_power_consumption_8,Decision,0,1000,9.5
+grid_tariff_power_consumption_9,Decision,0,1000,9.5
+grid_tariff_power_consumption_10,Decision,0,1000,9.5
+grid_tariff_power_consumption_11,Decision,0,1000,9.5
+grid_tariff_power_consumption_12,Decision,0,1000,9.5

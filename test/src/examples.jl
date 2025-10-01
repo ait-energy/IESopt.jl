@@ -354,3 +354,12 @@ end
 @testitem "58_energy_to_celcius" tags = [:examples] setup = [TestExampleModule] begin
     TestExampleModule.check(; obj=0.676)
 end
+
+@testitem "59_monthly_grid_tariffs" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    model = TestExampleModule.check(; obj=430.6434279)
+
+    check = [0.7671, 1.05944, 0.88882, 1.12406, 0.47066, 1.18851, 0.8652, 0.85323, 0.88125, 0.89728, 0.99962, 0.75116]
+    for m in 1:12
+        @test JuMP.value(get_component(model, "grid_tariff_power_consumption_$m").var.value) ≈ check[m] atol = 1e-4
+    end
+end
