@@ -173,6 +173,13 @@ include("decision/var_sos.jl")
 include("decision/var_value.jl")
 
 function _construct_variables!(decision::Decision)
+    # We need to finalize earlier than for other components, since the following function already use the fields
+    _finalize(decision.lb)
+    _finalize(decision.ub)
+    _finalize(decision.cost)
+    _finalize(decision.fixed_value)
+    _finalize(decision.fixed_cost)
+
     _decision_var_fixed!(decision)
     _decision_var_sos!(decision)
     _decision_var_value!(decision)
