@@ -333,9 +333,10 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
     @info "[parse] Creating and parameterizing $(length(description)) core components"
 
     components = internal(model).model.components
+	core_components = ["Connection", "Decision", "Node", "Profile", "Unit"]
 
     model_tags = internal(model).model.tags
-    for type in ["Connection", "Decision", "Node", "Profile", "Unit"]
+    for type in core_components
         model_tags[type] = Vector{String}()
     end
 
@@ -347,6 +348,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
         end
 
         type = pop!(prop, "type")
+		type ∈ core_components || error("Non core components cannot be constructed.")
         name = desc
 
         if !has_invalid_component_name && !_is_valid_component_name(name)
@@ -603,8 +605,6 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
             #         parametric=parametric,
             #         Dict(Symbol(k) => v for (k, v) in prop)...,
             #     )
-        else
-            error("Non core components cannot be constructed.")
         end
     end
 
