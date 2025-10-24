@@ -51,6 +51,7 @@ function validate(toplevel_config_file::String)
     # Find all relevant files in the specified folders.
     for entry in folders
         folder = abspath(model_path, entry)
+        isdir(folder) || continue
         for (root, _, files) in walkdir(folder)
             for file in files
                 if endswith(file, ".iesopt.template.yaml") || endswith(file, ".jl")

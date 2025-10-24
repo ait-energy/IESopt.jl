@@ -1,7 +1,7 @@
 @setup_workload begin
     # list = [...]
 
-    const __dir = Assets.get_path("examples")
+    __dir = Assets.get_path("examples")
 
     @compile_workload begin
         fn = String(normpath(__dir, "01_basic_single_node.iesopt.yaml"))
