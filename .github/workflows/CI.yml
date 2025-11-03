@@ -5,7 +5,8 @@ on:
       - main
     tags: ['*']
   pull_request:
-    types: [review_requested, ready_for_review]
+    branches:
+      - main
   workflow_dispatch:
 concurrency:
   # Skip intermediate builds: always.
