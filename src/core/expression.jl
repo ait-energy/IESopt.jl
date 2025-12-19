@@ -10,7 +10,7 @@ function _string_to_fevalexpr(model::JuMP.Model, @nospecialize(str::AbstractStri
     starting_access_index = 1
     extracted_expressions = NamedTuple[]
 
-    tokens = JuliaSyntax.tokenize(str)
+    tokens = JuliaSyntax.tokenize(str; operators_as_identifiers=false)
     TOK_TOMB = JuliaSyntax.Token(JuliaSyntax.SyntaxHead(JuliaSyntax.K"TOMBSTONE", 0), 0:0)
     last_token = TOK_TOMB
 

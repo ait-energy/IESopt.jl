@@ -565,7 +565,7 @@ Builds and prepares the given IESopt model. This function performs the following
 """
 function build!(model::JuMP.Model)
     # Prepare the model, ensuring some conversions before consistency checks.
-    _prepare_model!(model)
+    @invokelatest _prepare_model!(model)
 
     # Perform conistency checks on all parsed components.
     all_components_ok = true::Bool
@@ -577,7 +577,7 @@ function build!(model::JuMP.Model)
     end
 
     # Build the model.
-    _build_model!(model)
+    @invokelatest _build_model!(model)
 
     @info "[build] Model successfully built"
 
