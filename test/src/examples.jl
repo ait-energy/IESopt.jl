@@ -363,3 +363,14 @@ end
         @test JuMP.value(get_component(model, "grid_tariff_power_consumption_$m").var.value) ≈ check[m] atol = 1e-4
     end
 end
+
+@testitem "60_custom_math" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    model = TestExampleModule.check(; obj=6725.0)
+
+    check = [2.75, 5.5, 7.0, 8.0, 9.0, 10.0, 5.0, 5.0, 15.0]
+    vin = JuMP.value.(model[:var_input])
+    vout = JuMP.value.(get_component(model, "grid_electricity").exp.generation)
+    
+    @test all(vin .≈ 2.0 .* check)
+    @test all(vout .≈ check)
+end
