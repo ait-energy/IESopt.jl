@@ -369,6 +369,10 @@ function _isvalid(unit::Unit)
         @critical "Enabled ramps are currently not supported while using representative Snapshots" unit = unit.name
     end
 
+    if !_isempty(unit.availability_factor) && !_isempty(unit.availability)
+        @critical "Setting both the `availability` and the `availability_factor` is not allowed" unit = unit.name
+    end
+
     return true
 end
 
