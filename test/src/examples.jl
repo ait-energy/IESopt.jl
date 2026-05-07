@@ -9,6 +9,14 @@
     # Zero demand results in zero cost.
     TestExampleModule.check(; obj=0, components=Dict("demand.enabled" => false))
     TestExampleModule.check(; obj=0, components=Dict("demand.disabled" => true))
+    # We cannot set both the availability and the availability factor.
+    cfg = String(Assets.get_path("examples", "01_basic_single_node.iesopt.yaml"))
+    @test_logs (:error, "[generate] Error(s) during model generation") match_mode = :any generate!(
+        cfg,
+        # `plant_wind` has an availability factor set in the config.
+        # So adding an availability here should error.
+        components=Dict("plant_wind.availability" => 1),
+    )
 end
 
 @testitem "02_advanced_single_node" tags = [:examples] setup = [TestExampleModule] begin
