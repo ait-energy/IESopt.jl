@@ -20,7 +20,7 @@ but also enables modelling commodities that are not (treated as) representing so
 end
 
 @recompile_invalidations begin
-    Base.hash(carrier::Carrier) = hash(carrier.name)
+    Base.hash(carrier::Carrier, h::UInt) = hash(carrier.name, h)
 end
 
 """
