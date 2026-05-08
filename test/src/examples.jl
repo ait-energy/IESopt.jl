@@ -35,8 +35,21 @@ end
     TestExampleModule.check(; obj=2015.6)
 end
 
-@testitem "09_csv_only" tags = [:examples] setup = [TestExampleModule] begin
+@testitem "09_csv_only" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     TestExampleModule.check(; obj=667437.8)
+
+    # we can pass more components in tables using extra_components
+    extra_units = DataFrames.DataFrame(;
+        name="extra_wind",
+        type="Unit",
+        inputs="{'wind': 'wind'}",
+        outputs="{'electricity': 'node1'}",
+        conversion="1 wind -> 1 electricity",
+        capacity="3 out:electricity",
+        availability_factor="ex07_plant_wind_availability_factor@data",
+    )
+    # additional wind reduces the objective function
+    TestExampleModule.check(; extra_components=extra_units, obj=190534.75)
 end
 
 @testitem "10_basic_load_shedding" tags = [:examples] setup = [TestExampleModule] begin
@@ -236,6 +249,22 @@ end
     @test JuMP.termination_status(model) == JuMP.INFEASIBLE
     # There is no component with "storage" in its name in the model
     @test !any(contains("storage"), keys(internal(model).model.components))
+
+    # We can add additional components defined as templates with a table in `extra_components`
+    # Adding a "different" storage this way makes the model feasible again.
+    storage_df = DataFrames.DataFrame(; name="other_storage", type="CustomStorage", connect_to="grid")
+    TestExampleModule.check(; components=Dict("storage.disabled" => true), extra_components=storage_df, obj=981.17)
+
+    # We can also pass multiple tables to `extra_components`.
+    # Additional demand increases the objective value even with additional storage.
+    demands_df = DataFrames.DataFrame(;
+        name=["extra_demand$i" for i in 1:3],
+        type="Profile",
+        carrier="electricity",
+        node_from="grid",
+        value=0.1,
+    )
+    TestExampleModule.check(; extra_components=[storage_df, demands_df], obj=1057.28)
 end
 
 @testitem "49_csv_format" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
