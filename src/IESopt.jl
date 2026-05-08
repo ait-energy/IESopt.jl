@@ -190,6 +190,7 @@ Build, optimize, and return a model.
 - `filename::String`: The path to the top-level configuration file.
 
 # Keyword Arguments
+The keyword arguments are passed to [`IESopt.parse`](@ref).
 
 Keyword arguments are passed to the `generate!(...)` function.
 """
@@ -245,7 +246,7 @@ Generates an IESopt model from a given file and attaches an optimizer if necessa
 - `filename::String`: The path to the file containing the model definition.
 
 # Keyword Arguments
-To be documented.
+The keyword arguments are passed to [`IESopt.parse!`](@ref).
 
 # Returns
 - `model::JuMP.Model`: The generated IESopt model.
@@ -460,7 +461,23 @@ Parse the model configuration from a specified file and update the given `JuMP.M
 - `filename::AbstractString`: The path to the configuration file. The file must have a `.iesopt.yaml` extension.
 
 # Keyword Arguments
-To be documented.
+- `parameters::Union{Dict, Vector}`: Replacements for global model parameters defined in `filename`.
+- `config::Dict`: Replacements for parameters in the config section of `filename`.
+    This can be a nested `Dict` or a "flat" version where levels are separated by `"."`.
+    For example, to set the snapshots config of a Model, you could use any of the following
+    - `config=Dict("optimization.snapshots.count" => 4, "optimization.snapshots.weights" => 0.25)`
+    - `config=Dict("optimization.snapshots" => Dict("count" => 4, "weights" => 0.25))`
+    - `config=Dict("optimization" => Dict("snapshots" => Dict("count" => 4, "weights" => 0.25)))`
+- `components::Dict`: Replacements for parameters in the components section of `filename`.
+    This can be used to overwrite individual component parameters,
+    like the initial state of a `Node` in a rolling horizon setup (`components=Dict("battery.state.state_initial" => 1)`),
+    or to disable individual components.
+- `extra_components::Union{Nothing, DataFrame, Vector{DataFrame}}`:
+    One or more DataFrames with extra components to be addad to the model.
+    Analogous to the CSV files in the load_components section of the config file, each row corresponds to a single component.
+- `virtual_files::Dict{String, DataFrame}`:
+    Additional "timeseries" `DataFrame`s that can be accessed in the config analogous to the CSV files set in the `config.files`
+    section of the config.
 
 # Returns
 - `Bool`: Returns `true` if the model was successfully parsed.
@@ -477,6 +494,7 @@ function parse!(
     carriers::Dict=_global_settings.carriers,
     components::Dict=_global_settings.components,
     load_components::Dict=_global_settings.load_components,
+    extra_components::Union{Nothing, Vector, DataFrames.DataFrame}=nothing,
     virtual_files::Dict{String, DataFrames.DataFrame}=Dict{String, DataFrames.DataFrame}(),
 )
     @nospecialize
@@ -493,6 +511,7 @@ function parse!(
         :carriers => deepcopy(carriers),
         :components => components,
         :load_components => load_components,
+        :extra_components => extra_components,
     )
 
     # TODO: properly check necessity of deepcopy (especially when adding "components" and "load_components")

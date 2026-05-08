@@ -1,6 +1,7 @@
 # Setup snippets, etc. for testing.
 @testsnippet Dependencies begin
     import IESopt.Assets
+    import IESopt.DataFrames
     import IESopt.JuMP
 end
 

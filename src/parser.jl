@@ -51,6 +51,9 @@ function _parse_model!(model::JuMP.Model, filename::String)
         # Parse potential external CSV files defining components.
         _parse_components_csv!(model, internal(model).input._tl_yaml, description)
 
+        # Parse potential external CSV files defining components.
+        _parse_extra_components_from_user!(description, model)
+
         # Fully flatten the model description before parsing.
         _flatten_model!(model, description)
 
@@ -333,7 +336,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
     @info "[parse] Creating and parameterizing $(length(description)) core components"
 
     components = internal(model).model.components
-	core_components = ["Connection", "Decision", "Node", "Profile", "Unit"]
+    core_components = ["Connection", "Decision", "Node", "Profile", "Unit"]
 
     model_tags = internal(model).model.tags
     for type in core_components
@@ -348,7 +351,7 @@ function _parse_components!(model::JuMP.Model, @nospecialize(description::Dict{S
         end
 
         type = pop!(prop, "type")
-		type ∈ core_components || error("Non core components cannot be constructed.")
+        type ∈ core_components || error("Non core components cannot be constructed.")
         name = desc
 
         if !has_invalid_component_name && !_is_valid_component_name(name)
@@ -653,45 +656,79 @@ function _parse_components_csv!(
         end
     end
 
-    warnlogcount = 0
+    global_parameters = internal(model).input.parameters
     for file in files_to_load
         df = _getfile(model, file; path=:components, slice=false)
+        _parse_components_from_df!(description, df, global_parameters)
+    end
+end
 
-        # todo: this is probably super inefficient
-        for row in eachrow(df)
-            name = row.name
+function _parse_extra_components_from_user!(description, model::JuMP.Model)
+    extra_components = model.ext[:_iesopt_kwargs][:extra_components]
+    isnothing(extra_components) && return nothing
+    global_parameters = internal(model).input.parameters
+    if extra_components isa DataFrames.AbstractDataFrame
+        _parse_components_from_df!(description, extra_components, global_parameters)
+        return nothing
+    end
+    for df in extra_components
+        _parse_components_from_df!(description, df, global_parameters)
+    end
+end
 
-            if haskey(description, name)
-                @critical "[parse] Duplicate component entry detected" file component = name
-            end
-            props = row[DataFrames.Not(:name)]
+function _parse_components_from_df!(description, df, global_parameters)
+    for row in DataFrames.eachrow(df)
+        if haskey(description, row.name)
+            @critical "[parse] Duplicate component entry detected" component = row.name
+        end
+        description[row.name] = _parse_component_description(row, global_parameters)
+    end
+end
 
-            dict_entries = Vector{String}()
-            sizehint!(dict_entries, length(props))
-            for (k, v) in zip(names(props), values(props))
-                if !ismissing(v)
-                    if !isnothing(internal(model).input.parameters) && v[1] == '<'
-                        # This is a parameter that we need to replace.
-                        push!(dict_entries, "$k: $(internal(model).input.parameters[v[2:(end - 1)]])")
-                    else
-                        push!(dict_entries, "$k: $v")
-                    end
-                else
-                    # Is this a global parameter that we should fill in automatically?
-                    if !isnothing(internal(model).input.parameters) && haskey(internal(model).input.parameters, k)
-                        if warnlogcount == 0
-                            @warn "[parse] You left a field empty in a CSV component definition file that corresponds to a global parameter. Automatic replacement is happening. Did you really intend this?" component =
-                                name property = k
-                            warnlogcount += 1
-                        end
-                        push!(dict_entries, "$k: $(internal(model).input.parameters[k])")
-                    end
-
-                    # We skip values that are "just missing".
-                end
-            end
-
-            description[name] = YAML.load(join(dict_entries, "\n"); dicttype=Dict{String, Any})
+function _parse_component_description(container, global_parameters)
+    description = Dict{String, Any}()
+    sizehint!(description, length(container) - 1)
+    for (name, value) in pairs(container)
+        if Symbol(name) !== :name
+            _set_component_parameter!(description, name, value, global_parameters)
         end
     end
+    return description
+end
+
+function _set_component_parameter!(dict, name, value, ::Any)
+    dict[string(name)] = value
+    return nothing
+end
+function _set_component_parameter!(dict, name, value::AbstractString, global_parameters)
+    if startswith(value, "<") && endswith(value, ">")
+        parameter_name = value[2:(end - 1)]
+        dict[string(name)] = global_parameters[parameter_name]
+    elseif startswith(value, "{") && endswith(value, "}")
+        dict[string(name)] = YAML.load(value; dicttype=Dict{String, Any})
+    else
+        dict[string(name)] = string(value)
+    end
+end
+function _set_component_parameter!(dict, name, value::AbstractString, ::Nothing)
+    dict[string(name)] = string(value)
+    return nothing
+end
+function _set_component_parameter!(::Any, ::Any, ::Missing, ::Nothing) end
+function _set_component_parameter!(dict, name, ::Missing, global_parameters)
+    key = string(name)
+    if haskey(global_parameters, key)
+        @warn(
+            string(
+                "[parse] You left a field empty in a component definition. ",
+                "It corresponds to a global parameter. ",
+                "Automatic replacement is happening. ",
+                "Did you really intend this?",
+            ),
+            property = key,
+            maxlog = 1
+        )
+        dict[key] = global_parameters[key]
+    end
+    return nothing
 end
