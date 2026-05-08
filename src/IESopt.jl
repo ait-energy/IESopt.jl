@@ -455,7 +455,7 @@ Parse the model configuration from a specified file and update the given `JuMP.M
 - `filename::AbstractString`: The path to the configuration file. The file must have a `.iesopt.yaml` extension.
 
 # Keyword Arguments
-- `parameters::Union{Dict, Vector}`: Replacements for global model paramenters defined in `filename`.
+- `parameters::Union{Dict, Vector}`: Replacements for global model parameters defined in `filename`.
 - `config::Dict`: Replacements for parameters in the config section of `filename`.
     This can be a nested `Dict` or a "flat" version where levels are separated by `"."`.
     For example, to set the snapshots config of a Model, you could use any of the following
