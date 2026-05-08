@@ -471,6 +471,7 @@ function parse!(
     carriers::Dict=_global_settings.carriers,
     components::Dict=_global_settings.components,
     load_components::Dict=_global_settings.load_components,
+    extra_components::Union{Nothing,Vector,DataFrames.DataFrame}=nothing,
     virtual_files::Dict{String, DataFrames.DataFrame}=Dict{String, DataFrames.DataFrame}(),
 )
     @nospecialize
@@ -487,6 +488,7 @@ function parse!(
         :carriers => deepcopy(carriers),
         :components => components,
         :load_components => load_components,
+        :extra_components => extra_components,
     )
 
     # TODO: properly check necessity of deepcopy (especially when adding "components" and "load_components")

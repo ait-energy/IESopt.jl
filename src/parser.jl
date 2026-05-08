@@ -51,6 +51,9 @@ function _parse_model!(model::JuMP.Model, filename::String)
         # Parse potential external CSV files defining components.
         _parse_components_csv!(model, internal(model).input._tl_yaml, description)
 
+        # Parse potential external CSV files defining components.
+        _parse_extra_components_from_user!(description, model)
+
         # Fully flatten the model description before parsing.
         _flatten_model!(model, description)
 
@@ -653,9 +656,22 @@ function _parse_components_csv!(
         end
     end
 
+    global_parameters = internal(model).input.parameters
     for file in files_to_load
         df = _getfile(model, file; path=:components, slice=false)
-        global_parameters = internal(model).input.parameters
+        _parse_components_from_df!(description, df, global_parameters)
+    end
+end
+
+function _parse_extra_components_from_user!(description, model::JuMP.Model)
+    extra_components = model.ext[:_iesopt_kwargs][:extra_components]
+    isnothing(extra_components) && return nothing
+    global_parameters = internal(model).input.parameters
+    if extra_components isa DataFrames.AbstractDataFrame
+        _parse_components_from_df!(description, extra_components, global_parameters)
+        return nothing
+    end
+    for df in extra_components
         _parse_components_from_df!(description, df, global_parameters)
     end
 end
