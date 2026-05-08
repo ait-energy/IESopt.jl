@@ -374,10 +374,16 @@ function _attach_optimizer(model::JuMP.Model)
         else
             JuMP.set_optimizer(model, HiGHS.Optimizer)
 
-            if !haskey(@config(model, optimization.solver.attributes), "ComputeInfeasibilityCertificate")
-                @debug "[generate > attach] Default `ComputeInfeasibilityCertificate` to `false` for HiGHS"
-                @config(model, optimization.solver.attributes)["ComputeInfeasibilityCertificate"] = false
-            end
+            compute_infeasibility_certificate = pop!(
+                @config(model, optimization.solver.attributes),
+                "ComputeInfeasibilityCertificate",
+                (@debug "[generate > attach] Default `ComputeInfeasibilityCertificate` to `false` for HiGHS"; false),
+            )
+            @suppress JuMP.set_attribute(
+                model,
+                HiGHS.ComputeInfeasibilityCertificate(),
+                compute_infeasibility_certificate,
+            )
         end
     else
         try
