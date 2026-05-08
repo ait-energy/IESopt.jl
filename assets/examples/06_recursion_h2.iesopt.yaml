@@ -14,7 +14,7 @@ config:
     solver:
       name: highs
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
 # We not only define units but also colors, that can be later picked up by the standardized visualization tools. Observe

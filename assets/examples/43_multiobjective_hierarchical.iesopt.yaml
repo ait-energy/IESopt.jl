@@ -22,7 +22,7 @@ config:
         solver: ipm
   # ------------------------------------------------------------------------------------------------------------------ #
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
 carriers:

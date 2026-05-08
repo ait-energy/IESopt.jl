@@ -10,7 +10,7 @@ config:
       count: 4
       weights: 0.25
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
 carriers:

@@ -21,7 +21,7 @@ config:
     data: example_data.csv
   # ------------------------------------------------------------------------------------------------------------------ #
   results:
-    enabled: true
+    enabled: all
     memory_only: false
     compress: false
     include: input+git+log

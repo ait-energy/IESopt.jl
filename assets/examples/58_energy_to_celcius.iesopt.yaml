@@ -31,7 +31,7 @@ config:
       log: false
 
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
   paths:

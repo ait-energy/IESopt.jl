@@ -12,7 +12,7 @@ config:
     solver:
       name: highs
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
 # We consider a full-year planning horizon, so 8760 snapshots. This time we want IESopt to name them, since we do
