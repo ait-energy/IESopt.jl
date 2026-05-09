@@ -542,12 +542,11 @@ function _unit_capacity_limits(unit::Unit)
         if !_isfixed(unit.capacity)
             @critical "Endogenuous <capacity> and <availability> are currently not supported" unit = unit.name
         end
-        max_conversion =
-            min.(
-                1.0,
-                access(unit.availability, NonEmptyNumericalExpressionValue) ./
-                access(unit.capacity, NonEmptyNumericalExpressionValue),
-            )
+        max_conversion = min.(
+            1.0,
+            access(unit.availability, NonEmptyNumericalExpressionValue) ./
+            access(unit.capacity, NonEmptyNumericalExpressionValue),
+        )
     else
         max_conversion = 1.0
     end

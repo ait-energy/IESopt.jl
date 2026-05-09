@@ -76,7 +76,7 @@ macro profile(arg1, arg2=nothing, arg3=nothing)
     args = esc.(func_call.args[2:end])
 
     # Generate code that runs the function within the @timed macro, capturing the profiling and saving it.
-    quote
+    return quote
         local profile, profiling, identifier, method
 
         method = methods($func)[1]
