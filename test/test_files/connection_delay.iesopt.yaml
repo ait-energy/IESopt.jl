@@ -9,7 +9,7 @@ config:
     snapshots:
       count: 4
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
 carriers:

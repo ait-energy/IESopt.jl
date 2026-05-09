@@ -11,7 +11,7 @@ config:
     snapshots:
       count: 1
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
 carriers:

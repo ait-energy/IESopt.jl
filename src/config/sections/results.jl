@@ -7,7 +7,7 @@ function _prepare_config_results!(model::JuMP.Model)
     if haskey(data, "disabled")
         @warn "The `disabled` entry in `results` is deprecated; use `enabled` instead"
     end
-    results_enabled = get(data, "enabled", !get(data, "disabled", false))
+    results_enabled = get(data, "enabled", get(data, "disabled", false) ? "none" : "all")
     if results_enabled === true
         @warn "Passing `true` to `results.enabled` is deprecated; use `all`, or any other specific setting instead"
         results_enabled = "all"

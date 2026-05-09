@@ -11,7 +11,7 @@ config:
   files:
     data: example_data.csv
   results:
-    enabled: true
+    enabled: all
     memory_only: true
   paths:
     files: files

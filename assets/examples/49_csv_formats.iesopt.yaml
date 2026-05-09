@@ -17,7 +17,7 @@ config:
       decimal: ","   # "German-style" decimal separator.
     data: 49/example_data.csv
   results:
-    enabled: true
+    enabled: all
     memory_only: true
   paths:
     files: files

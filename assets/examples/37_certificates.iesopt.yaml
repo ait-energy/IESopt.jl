@@ -13,7 +13,7 @@ config:
   paths:
     files: files
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
 carriers:

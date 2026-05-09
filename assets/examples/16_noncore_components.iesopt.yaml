@@ -14,7 +14,7 @@ config:
     data: example_data.csv
     default_data: _default.csv
   results:
-    enabled: true
+    enabled: all
     memory_only: true
   paths:
     files: files

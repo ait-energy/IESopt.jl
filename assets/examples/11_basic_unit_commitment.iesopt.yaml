@@ -11,7 +11,7 @@ config:
     solver:
       name: highs
   results:
-    enabled: true
+    enabled: all
     memory_only: true
 
 carriers:
