@@ -86,7 +86,7 @@ function _constr_group_alike_tostring(group)
 
     parameters = []
 
-    rhs = round.(JuMP.normalized_rhs.(group.constraints), digits=4)
+    rhs = round.(JuMP.normalized_rhs.(group.constraints); digits=4)
     if allequal(rhs)
         rhs = "$(JuMP.normalized_rhs(group.constraints[1]))"
     else

@@ -198,7 +198,7 @@ function stochastic(
     # Add the new variable and modify the objective of the main-problem.
     @info "[stochastic] Modify main model and add initial cut"
     n_subs = length(stochastic_data.subs)
-    @variable(stochastic_data.main, θ[s=1:n_subs], lower_bound = stochastic_data.initial_lower_bound)
+    @variable(stochastic_data.main, θ[s = 1:n_subs], lower_bound = stochastic_data.initial_lower_bound)
     @objective(stochastic_data.main, Min, JuMP.objective_function(stochastic_data.main) + sum(θ) / n_subs)
 
     # Permanently silence sub-problems.
