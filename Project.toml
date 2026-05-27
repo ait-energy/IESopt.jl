@@ -2,6 +2,9 @@ name = "IESopt"
 uuid = "ed3f0a38-8ad9-4cf8-877e-929e8d190fe9"
 version = "2.11.0"
 
+[workspace]
+projects = ["test", "docs"]
+
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
