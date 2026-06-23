@@ -361,7 +361,7 @@ end
 mutable struct _IESoptResultData
     components::Dict{String, _CoreComponentResult}
     objectives::Dict{String, Float64}
-    customs::Dict{Symbol, Union{Float64, Vector{Float64}}}
+    customs::Dict{Symbol, Union{Float64, Array{Float64}}}
     _templates::Dict{String, Any}
 end
 
@@ -424,7 +424,7 @@ function _IESoptResultData()
     return _IESoptResultData(
         Dict{String, _CoreComponentResult}(),
         Dict{String, Float64}(),
-        Dict{Symbol, Union{Float64, Vector{Float64}}}(),
+        Dict{Symbol, Union{Float64, Array{Float64}}}(),
         Dict{String, Any}(),
     )
 end
