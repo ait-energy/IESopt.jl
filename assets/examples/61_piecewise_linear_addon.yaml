@@ -1,0 +1,41 @@
+config:
+  general:
+    version:
+      core: 2.6.3
+  optimization:
+    problem_type: MILP
+    snapshots:
+      count: 9
+    solver:
+      name: highs
+  paths:
+    addons: files/61
+
+addons:
+  CustomMath: {}
+
+carriers:
+  electricity: {}
+  gas: {}
+
+components:
+  grid_electricity:
+    type: Node
+    carrier: electricity
+
+  grid_gas:
+    type: Node
+    carrier: gas
+
+  demand_elec:
+    type: Profile
+    carrier: electricity
+    node_from: grid_electricity
+    value: [2.75,  5.50,  7.00,  8.00,  9.00, 10.00, 5.00, 5.00, 15.00]
+
+  create_gas:
+    type: Profile
+    carrier: gas
+    node_to: grid_gas
+    mode: create
+    cost: 50.0
