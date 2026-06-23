@@ -306,7 +306,7 @@ end
     end
 
     function Base.propertynames(ccr::_CoreComponentResult)
-        return (propertynames(ccr)..., :exp, :var, :con, :obj, keys(getfield(ccr, :_info))...)
+        return (:exp, :var, :con, :obj, :res, keys(getfield(ccr, :_info))...)
     end
 end
 
