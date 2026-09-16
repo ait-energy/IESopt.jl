@@ -56,7 +56,7 @@ OptExtSCIP = "SCIP"
 [compat]
 ArgCheck = "2.3.0"
 CPLEX = "1.0.3"
-CSV = "0.10"
+CSV = "0.10, 1"
 Cbc = "1.2.0"
 DataFrames = "1.6"
 Dates = "<0.0.1,1"
