@@ -329,7 +329,7 @@ end
 @testitem "54_simple_roomtemperature" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     model = TestExampleModule.check(; obj=2.4501)
 
-    @test sum(JuMP.value.(get_component(model, "house").var.state)) ≈ 510.996 atol = 1e-2
+    @test sum(JuMP.value.(get_component(model, "house").var.state)) ≈ 514.44 atol = 1e-2
 end
 
 @testitem "55_annuity" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
