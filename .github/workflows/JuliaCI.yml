@@ -14,6 +14,10 @@ on:
 jobs:
   julia-ci:
     uses: julia-testitems/testitem-workflow/.github/workflows/juliaci.yml@v2
+    with:
+      include-linux-x86: false
+      include-windows-x86: false
+      include-macos-aarch64: false
     permissions: write-all
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
