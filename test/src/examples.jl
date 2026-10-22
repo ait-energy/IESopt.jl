@@ -17,7 +17,6 @@
         # So adding an availability here should error.
         components=Dict("plant_wind.availability" => 1),
     )
-    rm(normpath(Assets.get_path("examples"), "out"), recursive=true, force=true)
 end
 
 @testitem "02_advanced_single_node" tags = [:examples] setup = [TestExampleModule] begin

@@ -24,7 +24,6 @@ end
         optimize!(m)
         @test JuMP.objective_value(m) ≈ obj atol = 0.1
         safe_close_filelogger(m)
-        clear_output && rm(normpath(Assets.get_path("examples"), "out"), recursive=true, force=true)
         return m
     end
 
@@ -41,7 +40,6 @@ end
         m = generate!(String(Assets.get_path("examples", "$filename.iesopt.yaml")); kwargs...)
         optimize!(m)
         safe_close_filelogger(m)
-        clear_output && rm(normpath(Assets.get_path("examples"), "out"), recursive=true, force=true)
         return m
     end
 end

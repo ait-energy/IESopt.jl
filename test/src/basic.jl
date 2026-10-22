@@ -16,8 +16,6 @@
     model = generate!(joinpath(PATH_TESTFILES, "availability_test_failure.iesopt.yaml"))
     @suppress optimize!(model)      # `@test_logs` fails because: https://github.com/JuliaLang/julia/issues/48456
     @test JuMP.termination_status(model) == JuMP.MOI.INFEASIBLE
-
-    TestFiles.clean()
 end
 
 @testitem "Connection (loss)" setup=[Dependencies, TestFiles] begin
@@ -40,8 +38,6 @@ end
     @test JuMP.value(get_component(model, "conn2").var.flow[1]) ≈ 10.0 atol = 0.01
     @test JuMP.value(get_component(model, "conn3").var.flow[1]) ≈ 10.0 atol = 0.01
     @test JuMP.value(get_component(model, "conn4").var.flow[1]) ≈ 10.0 atol = 0.01
-
-    TestFiles.clean()
 end
 
 @testitem "Connection (delay)" setup=[Dependencies, TestFiles] begin
@@ -61,8 +57,6 @@ end
     @test maximum(abs.(JuMP.value.(get_component(model, "conn4").exp.out) .- [0.0, 0.0, 0.948, 0.948])) <= 1e-3
 
     @test JuMP.objective_value(model) ≈ 10.4985 atol = 0.01
-
-    TestFiles.clean()
 end
 
 @testitem "Versioning" begin
@@ -117,7 +111,5 @@ end
             cd(PATH_CURRENT)
             IESopt.safe_close_filelogger(model)
         end
-
-        TestFiles.clean()
     end
 end

@@ -1,7 +1,6 @@
 @testitem "#35" setup=[TestFiles] begin
     model = generate!(joinpath(PATH_TESTFILES, "issues", "35", "config.iesopt.yaml"))
     @test access(get_component(model, "electricity_demand").value) ≈ 7e-6
-    TestFiles.clean()
 end
 
 @testitem "#38" setup=[Dependencies, TestFiles] begin
@@ -14,8 +13,6 @@ end
 
     optimize!(model)
     @test JuMP.objective_value(model) ≈ 0.0 atol = 0.1
-
-    TestFiles.clean()
 end
 
 @testitem "#95" setup=[Dependencies, TestFiles] begin
@@ -57,6 +54,4 @@ end
         "optimization.snapshots.offset_virtual_files" => false,
     )
     @test JuMP.objective_value(IESopt.run(cfg; virtual_files=Dict("data" => df), config)) ≈ obj atol = 0.1
-
-    TestFiles.clean()
 end
