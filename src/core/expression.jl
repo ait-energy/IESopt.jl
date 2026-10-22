@@ -19,10 +19,10 @@ function _string_to_fevalexpr(model::JuMP.Model, @nospecialize(str::AbstractStri
         if JuliaSyntax.kind(token) == JuliaSyntax.K"Identifier"
             if !isempty(tokens) && (
                 JuliaSyntax.kind(first(tokens)) == JuliaSyntax.K"@" ||
-                JuliaSyntax.kind(first(tokens)) == JuliaSyntax.K":"
+                    JuliaSyntax.kind(first(tokens)) == JuliaSyntax.K":"
             )
                 if JuliaSyntax.kind(last_token) in
-                   (JuliaSyntax.K"Identifier", JuliaSyntax.K"Integer", JuliaSyntax.K"Float")
+                    (JuliaSyntax.K"Identifier", JuliaSyntax.K"Integer", JuliaSyntax.K"Float")
                     @critical "Detected ambiguous command in expression; if you are using, e.g., a column accessor of a file that starts with a number, we cannot determine that properly because `4x` has the same meaning as `4*x` in Julia, but you could also mean a column named `\"4x\"`; please refactor this and run the model again" expression =
                         str command = join(JuliaSyntax.untokenize.((last_token, token), str))
                 end
@@ -258,9 +258,9 @@ const NonEmptyExpressionValue = Union{JuMP.VariableRef, JuMP.AffExpr, Vector{JuM
 _name(e::Expression) = e.empty || isnothing(e.internal) ? "" : e.internal.name
 _isfixed(e::Expression) = (
     e.empty ||
-    (e.value isa Float64) ||
-    (e.value isa Vector{Float64}) ||
-    (!any(occursin(':', el) for el in e.internal.elements))
+        (e.value isa Float64) ||
+        (e.value isa Vector{Float64}) ||
+        (!any(occursin(':', el) for el in e.internal.elements))
 )::Bool
 _isempty(e::Expression) = e.empty::Bool
 

@@ -20,7 +20,7 @@ function _decision_con_sos_value!(decision::Decision)
         decision.con.sos_value = @constraint(
             model,
             decision.var.value ==
-            _affine_expression(decision.var.sos[i] * decision.sos[i]["value"] for i in eachindex(decision.var.sos)),
+                _affine_expression(decision.var.sos[i] * decision.sos[i]["value"] for i in eachindex(decision.var.sos)),
             base_name = make_base_name(decision, "sos_value")
         )
     end

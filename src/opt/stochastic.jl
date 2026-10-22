@@ -337,9 +337,9 @@ function _iterative_stochastic(stochastic_data::StochasticData)
             cut = JuMP.@constraint(
                 stochastic_data.main,
                 stochastic_data.main[:θ][i] >=
-                obj_subs[i] + sum(
+                    obj_subs[i] + sum(
                     extract_result(stochastic_data.subs[i], comp_name, "value"; mode="dual") *
-                    (get_component(stochastic_data.main, comp_name).var.value - value) for
+                        (get_component(stochastic_data.main, comp_name).var.value - value) for
                     (comp_name, value) in current_decisions
                 )
             )
