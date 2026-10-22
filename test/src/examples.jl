@@ -17,6 +17,7 @@
         # So adding an availability here should error.
         components=Dict("plant_wind.availability" => 1),
     )
+    rm(normpath(Assets.get_path("examples"), "out"), recursive=true, force=true)
 end
 
 @testitem "02_advanced_single_node" tags = [:examples] setup = [TestExampleModule] begin
@@ -239,8 +240,8 @@ end
     model_CH = TestExampleModule.run(; parameters=Dict("enable_DE" => false, "enable_AT" => false))
 
     @test JuMP.objective_value(model_coupled) <=
-          JuMP.objective_value(model_AT_DE) + JuMP.objective_value(model_CH) <=
-          JuMP.objective_value(model_individual)
+        JuMP.objective_value(model_AT_DE) + JuMP.objective_value(model_CH) <=
+        JuMP.objective_value(model_individual)
 end
 
 @testitem "48_custom_results" tags = [:examples] setup = [Dependencies, TestExampleModule] begin

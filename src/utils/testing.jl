@@ -10,7 +10,7 @@ end
     import IESopt.Assets, IESopt.JuMP
     using Suppressor
 
-    function check(cfg_name=nothing; obj, kwargs...)
+    function check(cfg_name=nothing; obj, clear_output=true, kwargs...)
         if isnothing(cfg_name)
             testset = Test.get_testset().description
             filename = occursin(":", testset) ? split(testset, ":")[2] : testset
@@ -24,10 +24,11 @@ end
         optimize!(m)
         @test JuMP.objective_value(m) ≈ obj atol = 0.1
         safe_close_filelogger(m)
+        clear_output && rm(normpath(Assets.get_path("examples"), "out"), recursive=true, force=true)
         return m
     end
 
-    function run(cfg_name=nothing; kwargs...)
+    function run(cfg_name=nothing; clear_output=true, kwargs...)
         if isnothing(cfg_name)
             testset = Test.get_testset().description
             filename = occursin(":", testset) ? split(testset, ":")[2] : testset
@@ -40,6 +41,7 @@ end
         m = generate!(String(Assets.get_path("examples", "$filename.iesopt.yaml")); kwargs...)
         optimize!(m)
         safe_close_filelogger(m)
+        clear_output && rm(normpath(Assets.get_path("examples"), "out"), recursive=true, force=true)
         return m
     end
 end
