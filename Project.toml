@@ -1,6 +1,6 @@
 name = "IESopt"
 uuid = "ed3f0a38-8ad9-4cf8-877e-929e8d190fe9"
-version = "2.11.0"
+version = "2.12.0"
 
 [workspace]
 projects = ["test", "docs"]
