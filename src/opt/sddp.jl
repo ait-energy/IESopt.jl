@@ -43,8 +43,8 @@ JuMP.@objective(
     model,
     Min,
     sum(get_component(model, "thermal").var.aux_value[t] * true_cost[t] for t in 1:(8760 * 4)) +
-    objs["build1_value"].func +
-    objs["build2_value"].func
+        objs["build1_value"].func +
+        objs["build2_value"].func
 );
 optimize!(model)    # 7.3446044558e+07  (15s)
 extract_result(model, "build1", "value"; mode="value")  # 10
@@ -81,7 +81,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=365, sense=:Min, lower_bound=0.0, o
         JuMP.@constraint(
             model,
             x_storage_cap.out ==
-            x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
+                x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
         )
     else
         JuMP.@constraint(model, x_storage_cap.out == x_storage_cap.in)
@@ -120,7 +120,7 @@ simulations = SDDP.simulate(
         :build =>
             (model::JuMP.Model) ->
                 JuMP.value(get_component(model, "build1").var.value) +
-                JuMP.value(get_component(model, "build2").var.value),
+                    JuMP.value(get_component(model, "build2").var.value),
         :thermal => (model::JuMP.Model) -> JuMP.value(get_component(model, "thermal").var.aux_value[1]),
     ),
 )
@@ -174,7 +174,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
     JuMP.@constraint(
         model,
         x_storage_cap.out ==
-        x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
+            x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
     )
 
     _z = 0
@@ -210,7 +210,7 @@ simulations = SDDP.simulate(
         :build =>
             (model::JuMP.Model) ->
                 JuMP.value(get_component(model, "build1").var.value) +
-                JuMP.value(get_component(model, "build2").var.value),
+                    JuMP.value(get_component(model, "build2").var.value),
         :thermal => (model::JuMP.Model) -> JuMP.value(get_component(model, "thermal").var.aux_value[1]),
     ),
 )
@@ -260,7 +260,7 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
     JuMP.@constraint(
         model,
         x_storage_cap.out ==
-        x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
+            x_storage_cap.in + get_component(model, "build1").var.value + get_component(model, "build2").var.value
     )
 
     _z = 0
@@ -284,8 +284,8 @@ sddp_model = SDDP.LinearPolicyGraph(; stages=20, sense=:Min, lower_bound=0.0, op
         SDDP.@stageobjective(
             model,
             objs["thermal"].func +
-            max(5, (t / 5.0 * 2500 + ω.capex) / 20) * (objs["build1_value"].func + 2 * objs["build2_value"].func) +
-            _z * 1e6
+                max(5, (t / 5.0 * 2500 + ω.capex) / 20) * (objs["build1_value"].func + 2 * objs["build2_value"].func) +
+                _z * 1e6
         )
         return
     end
@@ -303,7 +303,7 @@ simulations = SDDP.simulate(
         :build =>
             (model::JuMP.Model) ->
                 JuMP.value(get_component(model, "build1").var.value) +
-                JuMP.value(get_component(model, "build2").var.value),
+                    JuMP.value(get_component(model, "build2").var.value),
         :thermal => (model::JuMP.Model) -> JuMP.value(get_component(model, "thermal").var.aux_value[1]),
     ),
 )

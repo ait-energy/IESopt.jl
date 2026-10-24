@@ -239,8 +239,8 @@ end
     model_CH = TestExampleModule.run(; parameters=Dict("enable_DE" => false, "enable_AT" => false))
 
     @test JuMP.objective_value(model_coupled) <=
-          JuMP.objective_value(model_AT_DE) + JuMP.objective_value(model_CH) <=
-          JuMP.objective_value(model_individual)
+        JuMP.objective_value(model_AT_DE) + JuMP.objective_value(model_CH) <=
+        JuMP.objective_value(model_individual)
 end
 
 @testitem "48_custom_results" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
@@ -328,7 +328,9 @@ end
 @testitem "54_simple_roomtemperature" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
     model = TestExampleModule.check(; obj=2.4501)
 
-    @test sum(JuMP.value.(get_component(model, "house").var.state)) ≈ 510.996 atol = 1e-2
+    # apparently we find a different optimal solution with julia v1.13
+    expected_house_state_sum = VERSION >= v"1.13" ? 514.44 : 510.996
+    @test sum(JuMP.value.(get_component(model, "house").var.state)) ≈ expected_house_state_sum atol = 1e-2
 end
 
 @testitem "55_annuity" tags = [:examples] setup = [Dependencies, TestExampleModule] begin

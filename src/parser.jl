@@ -123,7 +123,7 @@ function _parse_global_specification!(model::JuMP.Model)
 
     # Check if there are global parameters that need replacement.
     if haskey(data, "parameters") ||
-       (!isempty(internal(model).input.stochastic) && !isempty(internal(model).input.stochastic[:scenario]))
+        (!isempty(internal(model).input.stochastic) && !isempty(internal(model).input.stochastic[:scenario]))
 
         # Check the global parameters that were passed.
         if global_parameters isa Vector
@@ -307,7 +307,7 @@ function _flatten_model!(model::JuMP.Model, @nospecialize(description::Dict{Stri
 
         # Skip a component if it is "disabled" (since we are still in the top-level).
         if _parse_bool(model, get(description[cname], "disabled", false)) ||
-           !_parse_bool(model, pop!(description[cname], "enabled", true))
+            !_parse_bool(model, pop!(description[cname], "enabled", true))
             delete!(description, cname)
             cnt_disabled_components += 1
             continue

@@ -355,7 +355,7 @@ function _isvalid(unit::Unit)
     # todo: resolve the issue and then remove this
     if (
         (!isnothing(unit.min_on_time) || !isnothing(unit.min_off_time)) &&
-        any(_weight(model, t) != 1 for t in get_T(model)[2:end])
+            any(_weight(model, t) != 1 for t in get_T(model)[2:end])
     )
         @warn "min_on_time/min_off_time is NOT tested for Snapshot weights != 1" unit = unit.name
     end
@@ -518,7 +518,7 @@ function _normalize_conversion_expressions!(unit::Unit)
 
                 if any(
                     unit.conversion_dict[dir][carrier] .≈
-                    unit.min_conversion .* unit.conversion_at_min_dict[dir][carrier],
+                        unit.min_conversion .* unit.conversion_at_min_dict[dir][carrier],
                 )
                     @warn "Linearization of efficiencies resulting in unexpected behaviour" unit = unit.name dir = dir carrier =
                         carrier.name
@@ -545,7 +545,7 @@ function _unit_capacity_limits(unit::Unit)
         max_conversion = min.(
             1.0,
             access(unit.availability, NonEmptyNumericalExpressionValue) ./
-            access(unit.capacity, NonEmptyNumericalExpressionValue),
+                access(unit.capacity, NonEmptyNumericalExpressionValue),
         )
     else
         max_conversion = 1.0

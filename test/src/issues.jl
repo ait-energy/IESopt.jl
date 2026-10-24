@@ -1,9 +1,9 @@
-@testset "#35" begin
+@testitem "#35" setup=[TestFiles] begin
     model = generate!(joinpath(PATH_TESTFILES, "issues", "35", "config.iesopt.yaml"))
     @test access(get_component(model, "electricity_demand").value) ≈ 7e-6
 end
 
-@testset "#38" begin
+@testitem "#38" setup=[Dependencies, TestFiles] begin
     model = generate!(joinpath(PATH_TESTFILES, "issues", "38", "config.iesopt.yaml"))
     supplier = get_component(model, "electricity_supply")
     demand_ub = access(supplier.supply.ub)
@@ -15,10 +15,8 @@ end
     @test JuMP.objective_value(model) ≈ 0.0 atol = 0.1
 end
 
-@testset "#95" begin
-    DataFrames = IESopt.DataFrames
-    CSV = IESopt.CSV
-    JuMP = IESopt.JuMP
+@testitem "#95" setup=[Dependencies, TestFiles] begin
+    import IESopt.CSV
 
     data = normpath(Assets.get_path("examples"), "files", "example_data.csv")
     cfg = String(Assets.get_path("examples", "07_csv_filestorage.iesopt.yaml"))

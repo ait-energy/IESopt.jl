@@ -314,7 +314,7 @@ function _parse_noncore!(model::JuMP.Model, description::Dict{String, Any}, cnam
     # Check if this component or container is disabled. For a component we can immediately "skip" it here, for a
     # container, disabling will also disable every contained component, therefore we can also "skip" it completely.
     if _parse_bool(model, pop!(description[cname], "disabled", false)) ||
-       !_parse_bool(model, pop!(description[cname], "enabled", true))
+        !_parse_bool(model, pop!(description[cname], "enabled", true))
         # We delete the element (component or container) from the model.
         delete!(description, cname)
         # Returning `[]` makes sure that no new components are added to the flattened model (see `_flatten_model!`).

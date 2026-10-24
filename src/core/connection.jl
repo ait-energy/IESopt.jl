@@ -226,7 +226,7 @@ function _isvalid(connection::Connection)
     end
 
     if !_isempty(connection.loss) &&
-       (_isempty(connection.lb) || !_isfixed(connection.lb) || any(<(0), connection.lb.value))
+        (_isempty(connection.lb) || !_isfixed(connection.lb) || any(<(0), connection.lb.value))
         @critical "Setting <loss> for Connection requires nonnegative <lb>" connection = connection.name
     end
 
