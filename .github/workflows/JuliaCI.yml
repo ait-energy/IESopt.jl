@@ -13,7 +13,7 @@ on:
 
 jobs:
   julia-ci:
-    uses: franckgaga/testitem-workflow/.github/workflows/juliaci.yml@patch-1
+    uses: daschw/testitem-workflow/.github/workflows/juliaci.yml@doc-patch
     with:
       include-linux-x86: false
       include-windows-x86: false
