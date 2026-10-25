@@ -214,16 +214,16 @@ function _obj_tostring(model::JuMP.Model; digits=4)
             if allequal(info[2])
                 obj_str *=
                     "{$(sign) " *
-                    string(abs(round(info[2][1]; digits=4))) *
-                    " \\cdot \\sum_{t \\in T}" *
-                    _escape_variable("$(varname)[1]", 1) *
-                    "}"
+                        string(abs(round(info[2][1]; digits=4))) *
+                        " \\cdot \\sum_{t \\in T}" *
+                        _escape_variable("$(varname)[1]", 1) *
+                        "}"
             else
                 obj_str *=
                     "{+ " *
-                    "\\sum_{t \\in T} \\vb{cost}_{$(cost_count),t} \\cdot" *
-                    _escape_variable("$(varname)[1]", 1) *
-                    "}"
+                        "\\sum_{t \\in T} \\vb{cost}_{$(cost_count),t} \\cdot" *
+                        _escape_variable("$(varname)[1]", 1) *
+                        "}"
 
                 rng = (min(info[2]...), max(info[2]...))
                 cost_values *= "\n\\begin{dmath}[style={\\eqmargin=0pt}]\n{\\vb{cost}_{$(cost_count),t} \\in [$(rng[1]),$(rng[2])] \\qquad \\forall t \\in T}\n\\end{dmath}"
@@ -235,16 +235,16 @@ function _obj_tostring(model::JuMP.Model; digits=4)
             if allequal(info[2])
                 obj_str *=
                     "{$(sign) " *
-                    string(abs(round(info[2][1]; digits=4))) *
-                    "\\cdot \\sum_{t \\in S \\subset T}" *
-                    _escape_variable("$(varname)[1]", 1) *
-                    "}"
+                        string(abs(round(info[2][1]; digits=4))) *
+                        "\\cdot \\sum_{t \\in S \\subset T}" *
+                        _escape_variable("$(varname)[1]", 1) *
+                        "}"
             else
                 obj_str *=
                     "{+ " *
-                    "\\sum_{t \\in S \\subset T} \\vb{cost}_{$(cost_count),t} \\cdot" *
-                    _escape_variable("$(varname)[1]", 1) *
-                    "}"
+                        "\\sum_{t \\in S \\subset T} \\vb{cost}_{$(cost_count),t} \\cdot" *
+                        _escape_variable("$(varname)[1]", 1) *
+                        "}"
 
                 rng = (min(info[2]...), max(info[2]...))
                 cost_values *= "\n\\begin{dmath}[style={\\eqmargin=0pt}]\n{\\vb{cost}_{$(cost_count),t} \\in [$(rng[1]),$(rng[2])] \\qquad \\forall t \\in S \\subset T}\n\\end{dmath}"

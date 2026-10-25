@@ -66,8 +66,8 @@ function _node_con_nodalbalance!(node::Node)
                 node.con.nodalbalance[t] = @constraint(
                     model,
                     node.var.state[t] <=
-                    node.var.state[t_other] * (factor^_weight(model, t_other)) +
-                    node.exp.injection[injection_t_other] * _weight(model, t_other),
+                        node.var.state[t_other] * (factor^_weight(model, t_other)) +
+                        node.exp.injection[injection_t_other] * _weight(model, t_other),
                     base_name = make_base_name(node, "nodalbalance", t)
                 )
             elseif (t == 1) && (node.state_cyclic === :leq)
@@ -79,8 +79,8 @@ function _node_con_nodalbalance!(node::Node)
                 node.con.nodalbalance[t] = @constraint(
                     model,
                     node.var.state[t] >=
-                    node.var.state[t_other] * (factor^_weight(model, t_other)) +
-                    node.exp.injection[injection_t_other] * _weight(model, t_other),
+                        node.var.state[t_other] * (factor^_weight(model, t_other)) +
+                        node.exp.injection[injection_t_other] * _weight(model, t_other),
                     base_name = make_base_name(node, "nodalbalance", t)
                 )
             else
@@ -112,8 +112,8 @@ function _node_con_nodalbalance!(node::Node)
                     node.con.nodalbalance[t] = @constraint(
                         model,
                         node.var.state[t] >=
-                        node.var.state[t_other] * (factor^_weight(model, t_other)) +
-                        node.exp.injection[injection_t_other] * _weight(model, t_other),
+                            node.var.state[t_other] * (factor^_weight(model, t_other)) +
+                            node.exp.injection[injection_t_other] * _weight(model, t_other),
                         base_name = make_base_name(node, "nodalbalance", t)
                     )
                 elseif node.nodal_balance === :destroy
@@ -121,8 +121,8 @@ function _node_con_nodalbalance!(node::Node)
                     node.con.nodalbalance[t] = @constraint(
                         model,
                         node.var.state[t] <=
-                        node.var.state[t_other] * (factor^_weight(model, t_other)) +
-                        node.exp.injection[injection_t_other] * _weight(model, t_other),
+                            node.var.state[t_other] * (factor^_weight(model, t_other)) +
+                            node.exp.injection[injection_t_other] * _weight(model, t_other),
                         base_name = make_base_name(node, "nodalbalance", t)
                     )
                 end

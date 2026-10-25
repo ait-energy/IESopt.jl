@@ -77,7 +77,7 @@ function _unit_con_conversion_bounds!(unit::Unit)
             t => @constraint(
                 model,
                 _get(limits[:min], t) * access(uc, t, NonEmptyScalarExpressionValue) + uvc[t] <=
-                _get(limits[:online], t) * access(uc, t, NonEmptyScalarExpressionValue),
+                    _get(limits[:online], t) * access(uc, t, NonEmptyScalarExpressionValue),
                 base_name = make_base_name(unit, "conversion_ub[t]")
             ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
         )

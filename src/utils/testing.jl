@@ -10,10 +10,10 @@ end
     import IESopt.Assets, IESopt.JuMP
     using Suppressor
 
-    function check(cfg_name=nothing; obj, kwargs...)
+    function check(cfg_name=nothing; obj, clear_output=true, kwargs...)
         if isnothing(cfg_name)
             testset = Test.get_testset().description
-            filename = occursin(":", testset) ? split(testset, ":")[2] : testset
+            filename = last(split(testset, ":"))
         else
             filename = cfg_name
         end
@@ -27,10 +27,10 @@ end
         return m
     end
 
-    function run(cfg_name=nothing; kwargs...)
+    function run(cfg_name=nothing; clear_output=true, kwargs...)
         if isnothing(cfg_name)
             testset = Test.get_testset().description
-            filename = occursin(":", testset) ? split(testset, ":")[2] : testset
+            filename = last(split(testset, ":"))
         else
             filename = cfg_name
         end

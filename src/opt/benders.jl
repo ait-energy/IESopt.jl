@@ -315,7 +315,7 @@ function _cb_benders(benders_data::BendersData, cb_data::Any)
         user_sum = sum(
             sum(
                 JuMP.reduced_cost.(benders_data.sub[obj].data) .*
-                (benders_data.main[obj].data .- current_user_defined_variables[obj].data),
+                    (benders_data.main[obj].data .- current_user_defined_variables[obj].data),
             ) for obj in benders_data.user_defined_variables
         )
     else
@@ -323,13 +323,13 @@ function _cb_benders(benders_data::BendersData, cb_data::Any)
     end
     cut = JuMP.@build_constraint(
         benders_data.main[:θ] >=
-        obj_sub +
-        sum(
-            extract_result(benders_data.sub, comp_name, "value"; mode="dual") *
-            (get_component(benders_data.main, comp_name).var.value - value) for
-            (comp_name, value) in current_decisions
-        ) +
-        user_sum
+            obj_sub +
+            sum(
+                extract_result(benders_data.sub, comp_name, "value"; mode="dual") *
+                    (get_component(benders_data.main, comp_name).var.value - value) for
+                (comp_name, value) in current_decisions
+            ) +
+            user_sum
     )
 
     JuMP.MOI.submit(benders_data.main, JuMP.MOI.LazyConstraint(cb_data), cut)
@@ -442,7 +442,7 @@ function _iterative_benders(benders_data::BendersData; exploration_iterations=0)
             user_sum = sum(
                 sum(
                     JuMP.reduced_cost.(benders_data.sub[obj].data) .*
-                    (benders_data.main[obj].data .- current_user_defined_variables[obj].data),
+                        (benders_data.main[obj].data .- current_user_defined_variables[obj].data),
                 ) for obj in benders_data.user_defined_variables
             )
         else
@@ -451,13 +451,13 @@ function _iterative_benders(benders_data::BendersData; exploration_iterations=0)
         cut = JuMP.@constraint(
             benders_data.main,
             benders_data.main[:θ] >=
-            obj_sub +
-            sum(
-                extract_result(benders_data.sub, comp_name, "value"; mode="dual") *
-                (get_component(benders_data.main, comp_name).var.value - value) for
-                (comp_name, value) in current_decisions
-            ) +
-            user_sum
+                obj_sub +
+                sum(
+                    extract_result(benders_data.sub, comp_name, "value"; mode="dual") *
+                        (get_component(benders_data.main, comp_name).var.value - value) for
+                    (comp_name, value) in current_decisions
+                ) +
+                user_sum
         )
         benders_data.cuts += 1
 

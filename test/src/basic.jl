@@ -1,4 +1,6 @@
-@testset "Basic models" begin
+@testitem "Basic models" setup=[Dependencies, TestFiles] begin
+    using Suppressor: @suppress
+
     model = generate!(joinpath(PATH_TESTFILES, "increased_fuel.iesopt.yaml"))
     optimize!(model)
     @test JuMP.objective_value(model) ≈ 0 atol = 0.1
@@ -16,7 +18,7 @@
     @test JuMP.termination_status(model) == JuMP.MOI.INFEASIBLE
 end
 
-@testset "Connection (loss)" begin
+@testitem "Connection (loss)" setup=[Dependencies, TestFiles] begin
     model = generate!(joinpath(PATH_TESTFILES, "connection_loss.iesopt.yaml"))
     optimize!(model)
 
@@ -38,7 +40,7 @@ end
     @test JuMP.value(get_component(model, "conn4").var.flow[1]) ≈ 10.0 atol = 0.01
 end
 
-@testset "Connection (delay)" begin
+@testitem "Connection (delay)" setup=[Dependencies, TestFiles] begin
     model = generate!(joinpath(PATH_TESTFILES, "connection_delay.iesopt.yaml"))
     IESopt.optimize!(model)
 
@@ -57,7 +59,9 @@ end
     @test JuMP.objective_value(model) ≈ 10.4985 atol = 0.01
 end
 
-@testset "Versioning" begin
+@testitem "Versioning" begin
+    using Suppressor: @capture_err
+
     v_curr = VersionNumber(string(pkgversion(IESopt))::String)
     v_good = [v_curr, VersionNumber(v_curr.major)]
     v_bad = [@v_str("1"), VersionNumber(v_curr.major + 1), VersionNumber(v_curr.major, v_curr.minor, v_curr.patch + 1)]
@@ -75,7 +79,7 @@ end
     end
 end
 
-@testset "Filesystem paths" verbose = true begin
+@testitem "Filesystem paths" setup=[Dependencies, TestFiles] begin
     for fn in (
         "include_components.iesopt.yaml",
         "include_components_slash.iesopt.yaml",
@@ -108,19 +112,4 @@ end
             IESopt.safe_close_filelogger(model)
         end
     end
-end
-
-# Clean up output files after testing is done.
-GC.gc()
-try
-    rm(normpath(PATH_TESTFILES, "out"); force=true, recursive=true)
-catch
-    @warn "Failed to cleanup output files after testing, left-overs might be present" path =
-        normpath(PATH_TESTFILES, "out")
-end
-try
-    rm(normpath(PATH_TESTFILES, "filesystem", "out"); force=true, recursive=true)
-catch
-    @warn "Failed to cleanup output files after testing, left-overs might be present" path =
-        normpath(PATH_TESTFILES, "filesystem", "out")
 end

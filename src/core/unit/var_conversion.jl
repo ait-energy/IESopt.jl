@@ -57,7 +57,7 @@ function _connect_unit_var_conversion!(unit::Unit)
             dir => Dict(
                 carrier => (
                     (value .- unit.min_conversion .* unit.conversion_at_min_dict[dir][carrier]) ./
-                    (1.0 - unit.min_conversion)
+                        (1.0 - unit.min_conversion)
                 ) for (carrier, value) in unit.conversion_dict[dir]
             ) for dir in [:in, :out]
         )
@@ -78,9 +78,9 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict, incremental_eff
         for carrier in keys(unit.conversion_dict[:in])
             _total(unit, :in, carrier.name)[t] = (
                 _get(unit.conversion_at_min_dict[:in][carrier], t) *
-                limits[:min][t] *
-                access(unit.capacity, t, NonEmptyScalarExpressionValue) +
-                _get(incremental_efficiencies[:in][carrier], t) * unit.var.conversion[t]
+                    limits[:min][t] *
+                    access(unit.capacity, t, NonEmptyScalarExpressionValue) +
+                    _get(incremental_efficiencies[:in][carrier], t) * unit.var.conversion[t]
             )
             JuMP.add_to_expression!(
                 components[unit.inputs[carrier]].exp.injection[t],
@@ -92,9 +92,9 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict, incremental_eff
         for carrier in keys(unit.conversion_dict[:out])
             _total(unit, :out, carrier.name)[t] = (
                 _get(unit.conversion_at_min_dict[:out][carrier], t) *
-                limits[:min][t] *
-                access(unit.capacity, t, NonEmptyScalarExpressionValue) +
-                _get(incremental_efficiencies[:out][carrier], t) * unit.var.conversion[t]
+                    limits[:min][t] *
+                    access(unit.capacity, t, NonEmptyScalarExpressionValue) +
+                    _get(incremental_efficiencies[:out][carrier], t) * unit.var.conversion[t]
             )
             JuMP.add_to_expression!(
                 components[unit.outputs[carrier]].exp.injection[t],
