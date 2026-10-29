@@ -263,9 +263,20 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
                 filepath_core;
                 reload=@config(model, general.performance.force_addon_reload, Bool)
             )
-        else
-            @critical "Failed to find addon location" filename filepath_local filepath_core
         end
+
+        # We might also want to support modules that are not loaded in Main but in another
+        # module, like e.g. a TestExampleModule
+        loaded_modules = filter(pair -> Symbol(last(pair)) === module_name, Base.loaded_modules)
+        if !isempty(loaded_modules)
+            @debug "Addon already loaded in a different module than Main" addon=module_name
+            if @config(model, general.performance.force_addon_reload, Bool)
+                @warn "Cannot force reload an addon that is already loaded without file; ignoring reload, and reusing the existing module" module_name
+            end
+            return only(values(loaded_modules))
+        end
+
+        @critical "Failed to find addon location" filename filepath_local filepath_core
     end
 end
 
