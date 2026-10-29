@@ -56,23 +56,6 @@ const _OptionalScalarInput = Union{_ScalarInput, Nothing}
 const _String = AbstractString #CSV.InlineStrings.AbstractString
 const _OptionalString = Union{_String, Nothing}
 
-_get(::Nothing) = nothing
-_get(::Nothing, t::_ID) = nothing
-_get(bound::_ScalarInput) = bound
-_get(bound::_ScalarInput, t::_ID) = bound
-
-# todo: this is potentially unoptimized since the binding is not constant
-#       see: https://stackoverflow.com/a/34023458/5377696
-# this comment was related to: https://gitlab-intern.ait.ac.at/energy/commons/marketflow/core/-/blob/6d54998118a91b18b8d58846745be636890ec815/src/utils.jl#L54
-function _get(bound::_PresolvedAffExpr)
-    return sum(coeff * var.field(var.comp) for (coeff, var) in bound.variables; init=bound.constant)
-end
-
-# todo: is there a case where decisions will be "per snapshot"?
-function _get(bound::_PresolvedAffExpr, t::_ID)
-    return sum(coeff * var.field(var.comp, t) for (coeff, var) in bound.variables; init=bound.constant)
-end
-
 function _safe_parse(::Type{Float64}, str::AbstractString)
     ret = tryparse(Float64, str)
     if !isnothing(ret)
@@ -109,18 +92,6 @@ function _affine_expression(elements; init::Float64=0.0)
 
     return expr
 end
-
-"""
-    _get(numerical_input::_NumericalInput, t::UInt)
-
-Get the value of the `numerical_input` at time (snapshot index) `t`.
-"""
-# _get(x::Number, t::UInt) = x  # this is already done above (see `ScalarInput`)
-_get(@nospecialize(x::AbstractVector{<:Real}), t::_ID) = x[t]
-_get(x::JuMP.AffExpr, t::_ID) = x
-_get(x::Vector{JuMP.AffExpr}, t::_ID) = x[t]
-
-# TODO: refactor everything to only use this single public function (removing `_get`)
 
 """
     get_value_at(x::T, ::_ID) where {T <: Union{Nothing, Real, JuMP.VariableRef, JuMP.AffExpr}}
