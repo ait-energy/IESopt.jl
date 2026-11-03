@@ -66,7 +66,9 @@ function _unit_con_conversion_bounds!(unit::Unit)
             [t = get_T(model)],
             # NOTE: this is `min[t] * capacity[t] + conversion[t] <= online[t] * capacity[t]`
             # equal to: conversion[t] <= capacity[t] * (online[t] - min[t])
-            uvc[t] <= access(uc, t, NonEmptyScalarExpressionValue) * (_get(limits[:online], t) - _get(limits[:min], t)),
+            uvc[t] <=
+                access(uc, t, NonEmptyScalarExpressionValue) *
+                (get_value_at(limits[:online], t) - get_value_at(limits[:min], t)),
             base_name = make_base_name(unit, "conversion_ub"),
             container = Array
         )
@@ -76,8 +78,8 @@ function _unit_con_conversion_bounds!(unit::Unit)
         _repr = Dict(
             t => @constraint(
                 model,
-                _get(limits[:min], t) * access(uc, t, NonEmptyScalarExpressionValue) + uvc[t] <=
-                    _get(limits[:online], t) * access(uc, t, NonEmptyScalarExpressionValue),
+                get_value_at(limits[:min], t) * access(uc, t, NonEmptyScalarExpressionValue) + uvc[t] <=
+                    get_value_at(limits[:online], t) * access(uc, t, NonEmptyScalarExpressionValue),
                 base_name = make_base_name(unit, "conversion_ub[t]")
             ) for t in get_T(model) if internal(model).model.snapshots[t].is_representative
         )

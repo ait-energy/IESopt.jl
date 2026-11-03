@@ -77,10 +77,10 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict, incremental_eff
 
         for carrier in keys(unit.conversion_dict[:in])
             _total(unit, :in, carrier.name)[t] = (
-                _get(unit.conversion_at_min_dict[:in][carrier], t) *
+                get_value_at(unit.conversion_at_min_dict[:in][carrier], t) *
                     limits[:min][t] *
                     access(unit.capacity, t, NonEmptyScalarExpressionValue) +
-                    _get(incremental_efficiencies[:in][carrier], t) * unit.var.conversion[t]
+                    get_value_at(incremental_efficiencies[:in][carrier], t) * unit.var.conversion[t]
             )
             JuMP.add_to_expression!(
                 components[unit.inputs[carrier]].exp.injection[t],
@@ -91,10 +91,10 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict, incremental_eff
 
         for carrier in keys(unit.conversion_dict[:out])
             _total(unit, :out, carrier.name)[t] = (
-                _get(unit.conversion_at_min_dict[:out][carrier], t) *
+                get_value_at(unit.conversion_at_min_dict[:out][carrier], t) *
                     limits[:min][t] *
                     access(unit.capacity, t, NonEmptyScalarExpressionValue) +
-                    _get(incremental_efficiencies[:out][carrier], t) * unit.var.conversion[t]
+                    get_value_at(incremental_efficiencies[:out][carrier], t) * unit.var.conversion[t]
             )
             JuMP.add_to_expression!(
                 components[unit.outputs[carrier]].exp.injection[t],
@@ -120,7 +120,7 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict)
         carrier => _total(unit, :out, carrier.name) for carrier in keys(unit.conversion_dict[:out])
     )
 
-    _a = collect(_get(limits[:min], t) for t in get_T(model))
+    _a = collect(get_value_at(limits[:min], t) for t in get_T(model))
     _b = collect(access(unit.capacity, t) for t in get_T(model))
     _c = unit_var_conversion
 
@@ -149,9 +149,9 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict)
         for t in _T
             _inpinj_t = _inpinj[t]::JuMP.AffExpr
 
-            # (_get(limits[:min], t) * _get(unit.capacity, t) + unit.var.conversion[t]) * _get(mult, t)
+            # (get_value_at(limits[:min], t) * get_value_at(unit.capacity, t) + unit.var.conversion[t]) * get_value_at(mult, t)
             # = (a*b + c) * d
-            _d = _get(mult, t)::Float64
+            _d = get_value_at(mult, t)::Float64
             _expr = input_totals[carrier][t]::JuMP.AffExpr
             _coeff = (_d * _term2[t])::Float64
 
@@ -173,9 +173,9 @@ function _connect_unit_var_conversion!(unit::Unit, limits::Dict)
         for t in _T
             _outinj_t = _outinj[t]::JuMP.AffExpr
 
-            # (_get(limits[:min], t) * _get(unit.capacity, t) + unit.var.conversion[t]) * _get(mult, t)
+            # (get_value_at(limits[:min], t) * get_value_at(unit.capacity, t) + unit.var.conversion[t]) * get_value_at(mult, t)
             # = (a*b + c) * d
-            _d = _get(mult, t)::Float64
+            _d = get_value_at(mult, t)::Float64
             _expr = output_totals[carrier][t]::JuMP.AffExpr
             _coeff = (_d * _term2[t])::Float64
 
