@@ -234,10 +234,63 @@ function _getfile(model::JuMP.Model, filename::String; path::Symbol=:auto, sink=
                 filepath_core;
                 reload=@config(model, general.performance.force_addon_reload, Bool)
             )
-        else
-            @critical "Failed to find addon location" filename filepath_local filepath_core
+        end
+
+        # We might also want to support modules that are not loaded in Main but in another
+        # module, like e.g. a TestExampleModule.
+        loaded_module = _find_module(module_name)
+        if !isnothing(loaded_module)
+            @debug "Addon already loaded, outside IESopt" addon = module_name
+            if @config(model, general.performance.force_addon_reload, Bool)
+                @warn """Cannot force reload an addon that is already loaded, outside IESopt;
+                ignoring reload, and reusing the existing module""" addon = module_name
+            end
+            return loaded_module
+        end
+
+        @critical "Failed to find addon location" filename filepath_local filepath_core
+    end
+end
+
+"""
+    _find_module(target::Symbol)
+
+Find a Module loaded under the name `target`.
+First check in Base.loaded_modules. (This only contains "full" Packages with UUIDs).
+Then recursively traverse all loaded Modules, checking all imported Symbols.
+Return the found Module, or `nothing` otherwise.
+"""
+function _find_module(target::Symbol)
+    loaded_modules = filter(pair -> Symbol(last(pair)) === target, Base.loaded_modules)
+    isempty(loaded_modules) || return only(values(loaded_modules))
+    return _find_module_recursive(target)
+end
+
+function _find_module_recursive(target::Symbol, current::Module=Main, visited=Set{Module}([Base, Core, IESopt]))
+    current in visited && return nothing
+    push!(visited, current)
+
+    if nameof(current) === target
+        return current
+    end
+
+    for name in names(current; all=true, imported=true, usings=true)
+        if isdefined(current, name)
+            try
+                obj = getfield(current, name)
+                if obj isa Module && obj != current
+                    result = _find_module_recursive(target, obj, visited)
+                    if result !== nothing
+                        return result
+                    end
+                end
+            catch
+                continue
+            end
         end
     end
+
+    return nothing
 end
 
 """

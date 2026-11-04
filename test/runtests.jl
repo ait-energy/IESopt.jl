@@ -7,6 +7,7 @@ using TestItemRunner
     const PATH_CURRENT = pwd()
 end
 
+include("src/addon.jl")
 include("src/basic.jl")
 include("src/examples.jl")
 include("src/issues.jl")
