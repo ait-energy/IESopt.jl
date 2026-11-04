@@ -8,7 +8,7 @@
 [![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://ait-energy.github.io/iesopt/)
 
 [![License](https://img.shields.io/github/license/ait-energy/IESopt.jl)](LICENSE)
-[![Build Status](https://github.com/ait-energy/IESopt.jl/actions/workflows/JuliaCI.yml/badge.svg?branch=main)](https://github.com/ait-energy/IESopt.jl/actions/workflows/JuliaCI.yml?query=branch%3Amain)
+[![Julia CI](https://github.com/ait-energy/IESopt.jl/actions/workflows/JuliaCI.yml/badge.svg)](https://github.com/ait-energy/IESopt.jl/actions/workflows/JuliaCI.yml)
 [![Coverage](https://codecov.io/gh/ait-energy/IESopt.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/ait-energy/IESopt.jl)
 [![Aqua](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
