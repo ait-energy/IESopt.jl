@@ -25,4 +25,4 @@ components:
 
 functions:
   finalize: |
-    this.exp.setpoint = this.discharging.var.flow - this.charging.var.flow
+    this.exp.setpoint = this.discharging.exp.out - this.charging.exp.in
