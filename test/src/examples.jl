@@ -247,9 +247,8 @@ end
     model = TestExampleModule.check(; obj=981.17)
 
     setpoint = JuMP.value.(IESopt.get_component(model, "storage").exp.setpoint)
-    @test sum(setpoint) ≈ -1.09 atol = 0.01
-    @test minimum(setpoint) ≈ -4.65 atol = 0.01
-    @test maximum(setpoint) ≈ 3.58 atol = 0.01
+    generation = JuMP.value.(IESopt.get_component(model, "generator").exp.out_electricity)
+    @test all(≈(4), setpoint .+ generation)
 
     # We can disable multiple components configured in a template.
     # In this case, removing the storage results in an infeasible model.

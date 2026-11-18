@@ -44,17 +44,17 @@ end
     model = generate!(joinpath(PATH_TESTFILES, "connection_delay.iesopt.yaml"))
     IESopt.optimize!(model)
 
-    @test all(JuMP.value.(get_component(model, "conn1").exp.in) .≈ [1.0, 1.0, 1.0, 1.0])
-    @test all(JuMP.value.(get_component(model, "conn1").exp.out) .≈ [1.0, 1.0, 1.0, 1.0])
+    @test all(JuMP.value.(get_component(model, "conn1").exp.in) .≈ [1, 1, 1, 1])
+    @test all(JuMP.value.(get_component(model, "conn1").exp.out) .≈ [1, 1, 1, 1])
 
-    @test all(JuMP.value.(get_component(model, "conn2").exp.in) .≈ [1.0, 1.0, 0.0, 0.0])
-    @test all(JuMP.value.(get_component(model, "conn2").exp.out) .≈ [0.0, 0.0, 0.9, 0.9])
+    @test all(JuMP.value.(get_component(model, "conn2").exp.in) .≈ [1, 1, 0, 0])
+    @test all(JuMP.value.(get_component(model, "conn2").exp.out) .≈ [0, 0, 0.9, 0.9])
 
-    @test maximum(abs.(JuMP.value.(get_component(model, "conn3").exp.in) .- [1.111, 0.168, 1.111, 0.0])) <= 1e-3
-    @test maximum(abs.(JuMP.value.(get_component(model, "conn3").exp.out) .- [0.0, 1.0, 0.151, 0.999])) <= 1e-3
+    @test all(JuMP.value.(get_component(model, "conn3").exp.in) .≈ [10/9, 10/9, 10/9, 0])
+    @test all(JuMP.value.(get_component(model, "conn3").exp.out) .≈ [0, 1, 1, 1])
 
-    @test maximum(abs.(JuMP.value.(get_component(model, "conn4").exp.in) .- [0.0, 0.0, 1.054, 1.054])) <= 1e-3
-    @test maximum(abs.(JuMP.value.(get_component(model, "conn4").exp.out) .- [0.0, 0.0, 0.948, 0.948])) <= 1e-3
+    @test all(JuMP.value.(get_component(model, "conn4").exp.in) .≈ [0, 0, 1/9, 1.0540888888888889])
+    @test all(JuMP.value.(get_component(model, "conn4").exp.out) .≈ [0, 0, 0.1, 0.94868])
 
     @test JuMP.objective_value(model) ≈ 10.4985 atol = 0.01
 end

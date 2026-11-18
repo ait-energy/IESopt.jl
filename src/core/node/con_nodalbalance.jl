@@ -130,17 +130,13 @@ function _node_con_nodalbalance!(node::Node)
         end
     elseif node.nodal_balance === :enforce
         if !_has_representative_snapshots(model)
-            nei = node.exp.injection::Vector{JuMP.AffExpr}
-            w = _weight.(model, get_T(model))
-            e = @expression(model, w .* nei)  # TODO: catch "weight = 1.0", since we can then turn off the multiplications!
-            node.con.nodalbalance = @constraint(model, e .== 0.0, base_name = make_base_name(node, "nodalbalance"))
-            # node.con.nodalbalance = @constraint(
-            #     model,
-            #     [t = get_T(model)],
-            #     _weight(model, t) * node.exp.injection[t] == 0,
-            #     base_name = make_base_name(node, "nodalbalance"),
-            #     container = Array
-            # )
+            node.con.nodalbalance = @constraint(
+                model,
+                [t = get_T(model)],
+                _weight(model, t) * node.exp.injection[t] == 0,
+                base_name = make_base_name(node, "nodalbalance"),
+                container = Array
+            )
         else
             # Create all representatives.
             _repr = Dict(
