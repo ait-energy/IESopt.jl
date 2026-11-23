@@ -16,28 +16,21 @@ function _decision_con_sos1!(decision::Decision)
         base_name = make_base_name(decision, "sos_set")
     )
 
-    decision.con.sos1_lb = Vector{JuMP.ConstraintRef}()
-    decision.con.sos1_ub = Vector{JuMP.ConstraintRef}()
-    sizehint!(decision.con.sos1_lb, length(decision.sos) - 1)
-    sizehint!(decision.con.sos1_ub, length(decision.sos) - 1)
-    for i in eachindex(decision.sos)
-        push!(
-            decision.con.sos1_lb,
-            @constraint(
-                model,
-                decision.sos[i]["lb"] * decision.var.sos[i] <= decision.var.sos1_value[i],
-                base_name = make_base_name(decision, "sos1_lb[$(i)]")
-            )
-        )
-        push!(
-            decision.con.sos1_ub,
-            @constraint(
-                model,
-                decision.var.sos1_value[i] <= decision.sos[i]["ub"] * decision.var.sos[i],
-                base_name = make_base_name(decision, "sos1_ub[$(i)]")
-            )
-        )
-    end
+    decision.con.sos1_lb = @constraint(
+        model,
+        [i in eachindex(decision.sos)],
+        decision.sos[i]["lb"] * decision.var.sos[i] <= decision.var.sos1_value[i],
+        base_name = make_base_name(decision, "sos1_lb"),
+        container = Array
+    )
+
+    decision.con.sos1_ub = @constraint(
+        model,
+        [i in eachindex(decision.sos)],
+        decision.var.sos1_value[i] <= decision.sos[i]["ub"] * decision.var.sos[i],
+        base_name = make_base_name(decision, "sos1_ub"),
+        container = Array
+    )
 
     return nothing
 end
