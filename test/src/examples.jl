@@ -209,6 +209,14 @@ end
     @test JuMP.value.(get_component(model, "sell_id").exp.value) == [0, 1, 0, 1]
 end
 
+@testitem "32_sos" tags = [:examples] setup = [Dependencies, TestExampleModule] begin
+    for cost_param in ("invest1.fixed_cost", "invest1.cost", "invest2.cost")
+        @test_logs (:error, "[generate] Error(s) during model generation") match_mode = :any TestExampleModule.run(;
+            components=Dict(cost_param => 1),
+        )
+    end
+end
+
 # Disabled, because Benders needs to modify Decisions (which is currently not possible due to immutability).
 # @testset "Benders decomposition" begin
 #     model = generate!(joinpath(PATH_EXAMPLES, "33_benders_investment.iesopt.yaml"))
