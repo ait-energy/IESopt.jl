@@ -22,7 +22,6 @@ components:
     type: Decision
     mode: sos1
     lb: 100
-    fixed_cost: 0
     sos:
       - {cost: 195, lb: 0, ub: 100}
       - {cost: 145, lb: 100, ub: 500}

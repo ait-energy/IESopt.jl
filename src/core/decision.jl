@@ -107,6 +107,11 @@ function _isvalid(decision::Decision)
         @critical "SOS1/SOS2 Decisions should not have a `cost` parameter" decision = decision.name mode = decision.mode
     end
 
+    if decision.mode === :sos1 && !_isempty(decision.fixed_cost)
+        @critical "SOS1 Decisions should not have a `fixed_cost` parameter. You can pass individual fixed cost to the sos1 list." decision =
+            decision.name
+    end
+
     if (decision.mode != :fixed) && !_isempty(decision.fixed_value)
         @critical "Decisions that are not fixed can not have a pre-set value" decision = decision.name
     end
